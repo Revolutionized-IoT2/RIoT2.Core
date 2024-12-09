@@ -66,7 +66,7 @@ namespace RIoT2.Common.Services
         {
             //Do not listen configuration when in debug -> configuration is loaded from local file in DEBUG! 
 
-            if (Common.MqttClient.IsMatch(mqttEventArgs.Topic, _configurationTopic)) 
+            if (MqttClient.IsMatch(mqttEventArgs.Topic, _configurationTopic)) 
             {
                 #if DEBUG
                 _logger.LogWarning($"Received topic {mqttEventArgs.Topic}, but skipped because DEBUG");

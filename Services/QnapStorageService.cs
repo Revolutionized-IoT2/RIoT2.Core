@@ -44,9 +44,9 @@ namespace RIoT2.Common.Services
 
             try
             {
-                var response = await Web.Instance.GetAsync(cmd);
+                var response = await Web.GetAsync(cmd);
                 var content = await response.Content.ReadAsStringAsync();
-                var result = Json.Instance.Deserialize<QNAPResult>(content);
+                var result = Json.Deserialize<QNAPResult>(content);
                 if (result.Status != 1)
                     throw new Exception($"Could not delete file. Delete result: {content}");
             }
@@ -66,14 +66,14 @@ namespace RIoT2.Common.Services
 
             try
             {
-                var responseMeta = Web.Instance.GetAsync(cmdMeta);
-                var responseData = Web.Instance.GetAsync(cmdData);
+                var responseMeta = Web.GetAsync(cmdMeta);
+                var responseData = Web.GetAsync(cmdData);
                 Task.WaitAll(responseMeta, responseData);
 
                 if (!responseMeta.Result.IsSuccessStatusCode || !responseData.Result.IsSuccessStatusCode)
                     throw new Exception("Error downloading file");
 
-                QNAPFolderResult metaResult = Json.Instance.Deserialize<QNAPFolderResult>(await responseMeta.Result.Content.ReadAsStringAsync());
+                QNAPFolderResult metaResult = Json.Deserialize<QNAPFolderResult>(await responseMeta.Result.Content.ReadAsStringAsync());
                 var metadata = metaResult.datas[0];
 
                 Document document = (Document)metadata;
