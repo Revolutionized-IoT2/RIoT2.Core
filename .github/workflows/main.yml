@@ -12,7 +12,7 @@ jobs:
       CommitsSinceVersionSource: ${{ steps.gitversion.outputs.CommitsSinceVersionSource }} 
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0 #fetch-depth is needed for GitVersion
         
@@ -31,11 +31,13 @@ jobs:
     
     #Build/pack the project
     - name: Setup .NET
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
+    - name: Restore dependencies
+      run: dotnet restore
     - name: Build and Pack NuGet package
-      run: dotnet pack src/services/Florage.Shared/Florage.Shared.csproj -p:Version='${{ steps.gitversion.outputs.SemVer }}' -c Release
+      run: dotnet pack RIoT2.Core.csproj -p:Version='${{ steps.gitversion.outputs.SemVer }}' -c Release
     - name: Upload NuGet package to GitHub
       uses: actions/upload-artifact@v4
       with:
