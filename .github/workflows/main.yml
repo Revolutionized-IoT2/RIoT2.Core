@@ -28,6 +28,6 @@ jobs:
      
      - name: Publish
        run: >
-        dotnet nuget push PackageUtils.${{ github.ref_name }}.nupkg
+        dotnet nuget push RIoT2.Core.${{ github.ref_name }}.nupkg
         -s https://nuget.pkg.github.com/Revolutionized-IoT2/index.json
         -k ${{ secrets.NUGET_PACKAGE_TOKEN }}
