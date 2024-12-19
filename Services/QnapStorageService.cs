@@ -7,11 +7,10 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using System.Xml;
-using static System.Net.Mime.MediaTypeNames;
 using RIoT2.Core.Utils;
 using RIoT2.Core;
 
-namespace RIoT2.Common.Services
+namespace RIoT2.Core.Services
 {
     public class QnapStorageService : IStorageService
     {

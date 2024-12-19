@@ -3,7 +3,7 @@ using RIoT2.Core.Utils;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace RIoT2.Common.Services
+namespace RIoT2.Core.Services
 {
     public class WebhookService : IWebhookService
     {

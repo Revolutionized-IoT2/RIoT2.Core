@@ -13,7 +13,7 @@ using System.Linq;
 using RIoT2.Core.Interfaces;
 using RIoT2.Core;
 
-namespace RIoT2.Common.Services
+namespace RIoT2.Core.Services
 {
     public class DeviceSchedulerService : IHostedService
     {

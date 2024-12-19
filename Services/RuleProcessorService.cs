@@ -7,7 +7,7 @@ using System;
 using Rule = RIoT2.Core.Models.Rule;
 using Microsoft.Extensions.Logging;
 
-namespace RIoT2.Common.Services
+namespace RIoT2.Core.Services
 {
     public class RuleProcessorService : IRuleProcessorService
     {

@@ -6,7 +6,7 @@ using RIoT2.Core.Interfaces.Services;
 using RIoT2.Core;
 using RIoT2.Core.Utils;
 
-namespace RIoT2.Common.Services
+namespace RIoT2.Core.Services
 {
     public class RuleEvaluation
     {

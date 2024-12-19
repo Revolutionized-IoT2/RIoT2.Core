@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using RIoT2.Core;
 
-namespace RIoT2.Common.Services
+namespace RIoT2.Core.Services
 {
     public class FTPStorageService : IStorageService
     {

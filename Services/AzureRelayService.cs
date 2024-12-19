@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Web;
 using RIoT2.Core;
 
-namespace RIoT2.Common.Services
+namespace RIoT2.Core.Services
 {
 
     /*

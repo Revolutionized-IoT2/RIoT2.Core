@@ -2,7 +2,7 @@
 using RIoT2.Core.Interfaces;
 using RIoT2.Core.Interfaces.Services;
 
-namespace RIoT2.Common.Services
+namespace RIoT2.Core.Services
 {
     public class ReportService : IReportService
     {

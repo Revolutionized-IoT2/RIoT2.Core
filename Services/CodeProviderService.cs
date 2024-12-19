@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace RIoT2.Common.Services
+namespace RIoT2.Core.Services
 {
     public class CodeProviderService : ICodeProviderService
     {

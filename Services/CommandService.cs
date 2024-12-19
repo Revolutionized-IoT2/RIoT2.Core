@@ -1,7 +1,7 @@
 ﻿using RIoT2.Core.Interfaces.Services;
 using RIoT2.Core.Models;
 
-namespace RIoT2.Common.Services
+namespace RIoT2.Core.Services
 {
     public class CommandService : ICommandService
     {

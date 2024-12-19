@@ -7,7 +7,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
-namespace RIoT2.Common.Services
+namespace RIoT2.Core.Services
 {
     public class NodeMqttService : INodeMqttService
     {

@@ -3,7 +3,7 @@ using RIoT2.Core.Interfaces.Services;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace RIoT2.Common.Services
+namespace RIoT2.Core.Services
 {
     public class MemoryStorageService : IMemoryStorageService
     {
