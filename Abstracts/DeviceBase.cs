@@ -158,7 +158,10 @@ namespace RIoT2.Core.Abstracts
 
         public void SendReport(IDevice device, Report report)
         {
-            ReportUpdated(device, report);
+            if(State != DeviceState.Running)
+                Logger.LogWarning($"Could not send report. Device {Name} is not running");
+            else 
+                ReportUpdated(device, report);
         }
 
         /// <summary>
@@ -169,6 +172,12 @@ namespace RIoT2.Core.Abstracts
         /// <param name="threshold"></param>
         public void SendReportIfValueChanged(IDevice device, Report report, double? threshold = null)
         {
+            if (State != DeviceState.Running) 
+            {
+                Logger.LogWarning($"Could not send report. Device {Name} is not running");
+                return;
+            }
+
             lock (_sendReportIfValueChangedLock)
             {
                 var prevReport = _previousReports.FirstOrDefault(x => x.Id == report.Id);
@@ -217,6 +226,12 @@ namespace RIoT2.Core.Abstracts
 
         public void RefreshReport(string group, string name)
         {
+            if (State != DeviceState.Running)
+            {
+                Logger.LogWarning($"Could not refresh report. Device {Name} is not running");
+                return;
+            }
+
             if (group != Id)
                 return;
 
