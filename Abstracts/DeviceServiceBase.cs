@@ -24,9 +24,6 @@ namespace RIoT2.Core.Abstracts
             _logger = logger;
             _configurationService = configurationService;
             Devices = devices;
-            #if (NETCOREAPP)
-                             //TODO if net core app, load device plugin dll's
-            #endif
         }
 
         public virtual List<IDevice> Devices { get; private set; }
