@@ -49,16 +49,9 @@ namespace RIoT2.Core.Abstracts
             if (_devicesStarted) 
                 StopAllDevices();
 
-            foreach (var device in Devices.Where(x => x.IsInitialized)) 
+            foreach (var device in Devices.Where(x => x.State == DeviceState.Initialized)) 
             {
-                try 
-                {
-                    device.Start();
-                }
-                catch (Exception x)
-                {
-                    _logger.LogError(x, $"Error while starting device: {device.Name}");
-                }
+                device.Start();
             }
 
             _devicesStarted = true;

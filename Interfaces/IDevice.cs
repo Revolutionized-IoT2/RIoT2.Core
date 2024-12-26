@@ -6,7 +6,8 @@ namespace RIoT2.Core.Interfaces
     public interface IDevice
     {
         DeviceConfiguration Configuration { get; }
-        bool IsInitialized { get; }
+        DeviceState State { get; }
+        string StateMessage { get; }
         string Id { get; }
         string Name { get; }
         void Start();

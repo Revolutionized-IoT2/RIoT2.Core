@@ -19,19 +19,19 @@ namespace RIoT2.Core.Abstracts
             ReportTemplates = new List<ReportTemplate>();
             _previousReports = new List<Report>();
             _numericTrends = new Dictionary<string, int>();
-            IsInitialized = false;
+            State = DeviceState.Stopped;
+            StateMessage = "";
         }
 
         public DeviceConfiguration Configuration { get { return _configuration; } }
-
         private List<Report> _previousReports;
         private Dictionary<string, int> _numericTrends;
         private DeviceConfiguration _configuration;
         private readonly object _sendReportIfValueChangedLock = new object();
-
         public event ReportUpdatedHandler ReportUpdated;
 
-        public bool IsInitialized { get; private set; }
+        public DeviceState State { get; private set; }
+        public string StateMessage { get; private set; }
         public string Id { get; private set; }
         public string Name { get; private set; }
 
@@ -43,32 +43,65 @@ namespace RIoT2.Core.Abstracts
 
         public virtual IEnumerable<ReportTemplate> ReportTemplates { get; private set; }
 
-        public virtual void ConfigureDevice()
-        {
+        public abstract void ConfigureDevice();
 
+        public abstract void StartDevice();
+
+        public abstract void StopDevice();
+
+        public void Start() 
+        {
+            try
+            {
+                StartDevice();
+                State = DeviceState.Running;
+                StateMessage = "";
+            }
+            catch (Exception x) 
+            {
+                State = DeviceState.Error;
+                StateMessage = x.Message;
+            }
+        }
+
+        public void Stop()
+        {
+            try
+            {
+                StopDevice();
+                State = DeviceState.Stopped;
+                StateMessage = "";
+            }
+            catch (Exception x)
+            {
+                State = DeviceState.Error;
+                StateMessage = x.Message;
+            }
         }
 
         public void Initialize(DeviceConfiguration configuration)
         {
             _configuration = configuration;
-            ConfigureBase();
+            configureBase();
         }
 
-        internal void ConfigureBase()
+        private void configureBase()
         {
+            Id = _configuration.Id;
+            Name = _configuration.Name;
+            ReportTemplates = _configuration.ReportTemplates;
+            CommandTemplates = _configuration.CommandTemplates;
+
             try
             {
-                Id = _configuration.Id;
-                Name = _configuration.Name;
-                ReportTemplates = _configuration.ReportTemplates;
-                CommandTemplates = _configuration.CommandTemplates;
-                //RefreshInterval = _configuration.RefreshInterval;
                 ConfigureDevice();
-                IsInitialized = true;
+                State = DeviceState.Initialized;
+                StateMessage = "";
             }
             catch (Exception x)
             {
-                Logger.LogError(x, $"Could not configure device with id: {Id} and Name: {Name}");
+                State = DeviceState.Error;
+                StateMessage = x.Message;
             }
         }
 

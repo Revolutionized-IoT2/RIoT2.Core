@@ -99,4 +99,13 @@
         Started = 1,
         Stopped = 2,
     }
+
+    public enum DeviceState
+    {
+        Unknown = 0, //device state cannot be determined
+        Stopped = 1, //device is stopped and missing configuration
+        Initialized = 2, //device is configured, but configuration is not validated and device is not running
+        Running = 3, //device is configured and running normally
+        Error = 4 //device has configuration and it has been attempted to run or device has failed for some reason
+    }
 }
