@@ -220,13 +220,18 @@ namespace RIoT2.Core.Abstracts
             if (group != Id)
                 return;
 
-            Refresh(ReportTemplates.FirstOrDefault(x => x.Id == name));
+            try
+            {
+                Refresh(ReportTemplates.FirstOrDefault(x => x.Id == name));
+            }
+            catch (Exception x)
+            {
+                State = DeviceState.Error;
+                StateMessage = x.Message;
+            }
         }
 
-        public virtual void Refresh(ReportTemplate report)
-        {
-
-        }
+        public virtual void Refresh(ReportTemplate report) { }
 
         private bool thresholdOrTrendExeeded(string reportId, double prevValue, double newValue, double? threshold)
         {
