@@ -81,6 +81,7 @@ namespace RIoT2.Core.Utils
             var lwMsg = new NodeOnlineMessage()
             {
                 ConfigurationTemplateUrl = "",
+                DeviceStateUrl = "",
                 WebhookUrl = "",
                 IsOnline = false
             };

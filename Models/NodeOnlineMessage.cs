@@ -10,5 +10,6 @@
         public bool IsOnline { get; set; }
         public string ConfigurationTemplateUrl { get; set; }
         public string WebhookUrl { get; set; }
+        public string DeviceStateUrl { get; set; }
     }
 }
