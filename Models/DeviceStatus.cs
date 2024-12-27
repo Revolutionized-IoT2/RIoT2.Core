@@ -1,6 +1,6 @@
 ﻿namespace RIoT2.Core.Models
 {
-    public class DeviceState
+    public class DeviceStatus
     {
         public string Id { get; set; }
         public string Name { get; set; }
