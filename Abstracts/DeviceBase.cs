@@ -18,7 +18,7 @@ namespace RIoT2.Core.Abstracts
             ReportTemplates = new List<ReportTemplate>();
             _previousReports = new List<Report>();
             _numericTrends = new Dictionary<string, int>();
-            State = DeviceState.Stopped;
+            State = DeviceState.Unknown;
             StateMessage = "";
         }
 

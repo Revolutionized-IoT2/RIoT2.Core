@@ -10,15 +10,11 @@ namespace RIoT2.Core.Abstracts
     {
         private readonly ILogger _logger;
         private readonly INodeConfigurationService _configurationService;
-        private bool _isConfigured;
-        private bool _devicesStarted;
 
         public event DeviceServiceUpdatedHandler DevicesUpdated;
 
         public DeviceServiceBase(INodeConfigurationService configurationService, ILogger logger, List<IDevice> devices) 
         {
-            _devicesStarted = false;
-            _isConfigured = false;
             _logger = logger;
             _configurationService = configurationService;
             Devices = devices;
@@ -36,42 +32,51 @@ namespace RIoT2.Core.Abstracts
             return Devices.FirstOrDefault(x => x.ReportTemplates.Any(c => c.Id == reportId));
         }
 
-        public virtual void StartAllDevices()
+        public virtual void StartAllDevices(bool restartDevicesInErrorState = false)
         {
-            if (!_isConfigured)
-                ConfigureDevices();
+            bool anyStarted = false;
+            var devicesToStart = Devices.Where(x => x.State == DeviceState.Initialized || x.State == DeviceState.Stopped).ToList();
+            
+            if (restartDevicesInErrorState)
+                devicesToStart.AddRange(Devices.Where(x => x.State == DeviceState.Error));
 
-            if (_devicesStarted) 
-                StopAllDevices();
-
-            foreach (var device in Devices.Where(x => x.State == DeviceState.Initialized)) 
+            foreach (var device in devicesToStart) 
             {
                 device.Start();
+                anyStarted = true;
             }
 
-            _devicesStarted = true;
-            DevicesUpdated?.Invoke(ServiceEvent.Started);
+            if(anyStarted)
+                DevicesUpdated?.Invoke(ServiceEvent.Started);
         }
 
         public virtual void StopAllDevices()
         {
-            foreach (var device in Devices)
-                device.Stop();
-
-            _devicesStarted = false;
-            DevicesUpdated?.Invoke(ServiceEvent.Stopped);
+            bool anyStopped = false;
+            foreach (var device in Devices) 
+            {
+                if (device.State == DeviceState.Running) 
+                {
+                    device.Stop();
+                    anyStopped = true;
+                }
+            }
+                
+            if(anyStopped)
+                DevicesUpdated?.Invoke(ServiceEvent.Stopped);
         }
 
         public void ConfigureDevices()
         {
             foreach (var device in Devices)
             {
-                var configuration = _configurationService.DeviceConfiguration.DeviceConfigurations.FirstOrDefault(x => x.ClassFullName == device.GetType().FullName);
-                if (configuration != null)
-                    device.Initialize(configuration);
+                var configuration = _configurationService?.DeviceConfiguration?.DeviceConfigurations?.FirstOrDefault(x => x.ClassFullName == device.GetType().FullName);
+                if (configuration != null) 
+                {
+                    if(device.State != DeviceState.Running)
+                        device.Initialize(configuration);
+                }
             }
-
-            _isConfigured = true;
         }
     }
 }
