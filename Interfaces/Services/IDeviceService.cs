@@ -8,6 +8,7 @@ namespace RIoT2.Core.Interfaces.Services
         List<IDevice> Devices { get; }
         ICommandDevice GetDeviceByCommandId(string commandId);
         IDevice GetDeviceByReportId(string reportId);
+        void ConfigureDevices();
         void StartAllDevices(bool restartDevicesInErrorState = false);
         void StopAllDevices();
     }
