@@ -30,7 +30,8 @@ namespace RIoT2.Core.Interfaces.Services
         /// <typeparam name="T">Type of object to save</typeparam>
         /// <param name="obj">Object to save</param>
         /// <param name="persistent">If true, object is saved also into persistent store. If set to false object is only stored in memory.</param>
+        /// <param name="autoTypeNameHandling">If set to true, object is serialized with type information. Use if object has interface properties.</param>
         /// <returns></returns>
-        string Save<T>(T obj, bool persistent = true);
+        string Save<T>(T obj, bool persistent = true, bool autoTypeNameHandling = false);
     }
 }
