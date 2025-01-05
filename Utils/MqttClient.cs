@@ -82,7 +82,6 @@ namespace RIoT2.Core.Utils
             {
                 ConfigurationTemplateUrl = "",
                 DeviceStateUrl = "",
-                WebhookUrl = "",
                 IsOnline = false
             };
 
