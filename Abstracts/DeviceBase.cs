@@ -52,9 +52,9 @@ namespace RIoT2.Core.Abstracts
         {
             try
             {
-                StartDevice();
                 State = DeviceState.Running;
                 StateMessage = "";
+                StartDevice();
             }
             catch (Exception x) 
             {
@@ -93,9 +93,9 @@ namespace RIoT2.Core.Abstracts
 
             try
             {
-                ConfigureDevice();
                 State = DeviceState.Initialized;
                 StateMessage = "";
+                ConfigureDevice();
             }
             catch (Exception x)
             {
