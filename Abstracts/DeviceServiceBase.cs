@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using RIoT2.Core.Interfaces.Services;
+using System;
 
 namespace RIoT2.Core.Abstracts
 {
@@ -42,8 +43,15 @@ namespace RIoT2.Core.Abstracts
 
             foreach (var device in devicesToStart) 
             {
-                device.Start();
-                anyStarted = true;
+                try
+                {
+                    device.Start();
+                    anyStarted = true;
+                }
+                catch (Exception x)
+                {
+                    _logger.LogError(x, $"Error in StartAllDevices");
+                }
             }
 
             if(anyStarted)
@@ -57,8 +65,15 @@ namespace RIoT2.Core.Abstracts
             {
                 if (device.State == DeviceState.Running) 
                 {
-                    device.Stop();
-                    anyStopped = true;
+                    try
+                    {
+                        device.Stop();
+                        anyStopped = true;
+                    }
+                    catch (Exception x) 
+                    {
+                        _logger.LogError(x, $"Error in StopAllDevices");
+                    }
                 }
             }
                 
@@ -73,8 +88,15 @@ namespace RIoT2.Core.Abstracts
                 var configuration = _configurationService?.DeviceConfiguration?.DeviceConfigurations?.FirstOrDefault(x => x.ClassFullName == device.GetType().FullName);
                 if (configuration != null) 
                 {
-                    if(device.State != DeviceState.Running)
-                        device.Initialize(configuration);
+                    try 
+                    {
+                        if (device.State != DeviceState.Running)
+                            device.Initialize(configuration);
+                    }
+                    catch(Exception x)
+                    {
+                        _logger.LogError(x, $"Error in ConfigureDevices");
+                    }
                 }
             }
         }

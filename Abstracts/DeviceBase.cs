@@ -60,6 +60,7 @@ namespace RIoT2.Core.Abstracts
             {
                 State = DeviceState.Error;
                 StateMessage = x.Message;
+                throw new Exception($"Error starting {Name}:{Id}", x);
             }
         }
 
@@ -75,6 +76,7 @@ namespace RIoT2.Core.Abstracts
             {
                 State = DeviceState.Error;
                 StateMessage = x.Message;
+                throw new Exception($"Error stopping {Name}:{Id}", x);
             }
         }
 
@@ -101,6 +103,7 @@ namespace RIoT2.Core.Abstracts
             {
                 State = DeviceState.Error;
                 StateMessage = x.Message;
+                throw new Exception($"Error configuring {Name}:{Id}", x);
             }
         }
 
@@ -243,6 +246,7 @@ namespace RIoT2.Core.Abstracts
             {
                 State = DeviceState.Error;
                 StateMessage = x.Message;
+                Logger.LogError($"Error in RefreshReport for device {Name}: {x.Message}");
             }
         }
 
