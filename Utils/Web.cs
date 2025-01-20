@@ -10,7 +10,7 @@ namespace RIoT2.Core.Utils
 {
     public static class Web
     {
-        const int defaultTimeOutMilliseconds = 12000;
+        const int defaultTimeOutMilliseconds = 60000;
 
         public static async Task<HttpResponseMessage> GetWithBearerTokenAsync(
             string address,
