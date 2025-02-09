@@ -88,6 +88,7 @@
 
     public enum OperationType
     {
+        NoChange = 0,
         Created = 1,
         Read = 2,
         Updated = 3,
