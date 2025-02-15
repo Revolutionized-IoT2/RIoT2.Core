@@ -141,6 +141,7 @@ namespace RIoT2.Core.Services
         /// Additional data to inject:
         /// {date} -> dd-MM-yyyy
         /// {time} -> HH:mm:ss
+        /// {weekday} -> ddd -> mon, tues, wed
         /// </summary>
         /// <returns></returns>
         private string injectAdditionalDataToModel(string json) 
@@ -150,6 +151,9 @@ namespace RIoT2.Core.Services
 
             if (json.Contains("{date}"))
                 json = json.Replace(@"""{date}""", DateTime.Now.ToString("dd-MM-yyyy"));
+
+            if (json.Contains("{weekday}"))
+                json = json.Replace(@"""{weekday}""", DateTime.Now.ToString("ddd").ToLower());
 
             //find Reports from json: {R:guid}
             json = findAndReplaceGUIDPlaceHolders("R", json, _messages.Reports);
