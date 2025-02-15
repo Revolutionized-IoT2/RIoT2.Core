@@ -6,6 +6,9 @@ using System.Linq;
 using System;
 using Rule = RIoT2.Core.Models.Rule;
 using Microsoft.Extensions.Logging;
+using System.Text.RegularExpressions;
+using RIoT2.Core.Utils;
+using RIoT2.Core.Interfaces;
 
 namespace RIoT2.Core.Services
 {
@@ -13,14 +16,16 @@ namespace RIoT2.Core.Services
     {
         private readonly IOrchestratorConfigurationService _configuration;
         private readonly IFunctionService _functionService;
-        private readonly IStoredObjectService _storedObjecs;
+        private readonly IStoredObjectService _storedObjects;
+        private readonly IMessageStateService _messages;
         private readonly ILogger<RuleProcessorService> _logger;
 
-        public RuleProcessorService(ILogger<RuleProcessorService> logger, IOrchestratorConfigurationService configuration, IFunctionService functionService, IStoredObjectService storedObjectService) 
+        public RuleProcessorService(ILogger<RuleProcessorService> logger, IOrchestratorConfigurationService configuration, IFunctionService functionService, IStoredObjectService storedObjectService, IMessageStateService messageStateService) 
         {
+            _messages = messageStateService;
             _functionService = functionService;
             _configuration = configuration;
-            _storedObjecs = storedObjectService;
+            _storedObjects = storedObjectService;
             _logger = logger;
         }
 
@@ -37,13 +42,13 @@ namespace RIoT2.Core.Services
         {
             try
             {
-                var rule = _storedObjecs.GetAll<Rule>().FirstOrDefault(x => x.Id == id);
+                var rule = _storedObjects.GetAll<Rule>().FirstOrDefault(x => x.Id == id);
                 if (rule == null)
                     return new List<EventItem>();
 
                 var ruleDataModel = prepareTriggerData(rule, data);
 
-                RuleEvaluation r = new RuleEvaluation(_functionService, _configuration.GetCommandTemplates().ToList(), _storedObjecs.GetAll<Variable>().ToList(), rule, ruleDataModel, true);
+                RuleEvaluation r = new RuleEvaluation(_functionService, _configuration.GetCommandTemplates().ToList(), _storedObjects.GetAll<Variable>().ToList(), rule, ruleDataModel, true);
                 return r.Summary;
             }
             catch (Exception x)
@@ -121,6 +126,50 @@ namespace RIoT2.Core.Services
 
             return new ValueModel(triggerData.ToJson());
         }
+
+
+        /// <summary>
+        /// This method injects data to ValueModel Entity
+        /// Injectting Report, Command: {R:entityId}, {C:entityId}
+        /// Additional data to inject:
+        /// {date} -> dd-MM-yyyy
+        /// {time} -> HH:mm:ss
+        /// </summary>
+        /// <returns></returns>
+        private string injectAdditionalDataToModel(string json) 
+        {
+            if (json.Contains("{time}")) 
+                json = json.Replace(@"""{time}""", DateTime.Now.ToString("HH:mm:ss"));
+
+            if (json.Contains("{date}"))
+                json = json.Replace(@"""{date}""", DateTime.Now.ToString("dd-MM-yyyy"));
+
+            //find Reports from json: {R:guid}
+            json = findAndReplaceGUIDPlaceHolders("R", json, _messages.Reports);
+
+            //find Commands from json: {C:guid}
+            json = findAndReplaceGUIDPlaceHolders("C", json, _messages.Commands);
+
+            return json;
+        }
+
+        private string findAndReplaceGUIDPlaceHolders(string id, string str, IEnumerable<IMessage> messages) 
+        {
+            //{id:guid}
+            Regex reg = new Regex("[{]("+id+":)([a-z0-9]{8}[-][a-z0-9]{4}[-][a-z0-9]{4}[-][a-z0-9]{4}[-][a-z0-9]{12})[}]", RegexOptions.IgnoreCase);
+            var matches = reg.Matches(str);
+            foreach (Match match in matches)
+            {
+                if (match.Success)
+                {
+                    var guid = match.Value.Split(':').Last().Remove(match.Value.Length - 1);
+                    var val = messages.FirstOrDefault(x => x.Id == guid).Value.ToJson();
+                    //TODO TEST that whole json is retuned with value replaced
+                    str = match.Result(val);
+                }
+            }
+            return str;
+        }
             
         private async Task process(Rule rule, Report report, Func<List<RuleEvaluationResult>, Task> outputHandler)
         {
@@ -130,7 +179,7 @@ namespace RIoT2.Core.Services
                 var ruleDataModel = prepareTriggerData(rule, report.Value);
 
                 var commands = _configuration.GetCommandTemplates().ToList();
-                var variables = _storedObjecs.GetAll<Variable>().ToList();
+                var variables = _storedObjects.GetAll<Variable>().ToList();
 
                 RuleEvaluation r = new RuleEvaluation(_functionService, commands, variables, rule, ruleDataModel);
                 if (r.Results != null && r.Results.Count > 0)

@@ -3,7 +3,7 @@ using RIoT2.Core.Utils;
 
 namespace RIoT2.Core.Models
 {
-    public class Report : IReport
+    public class Report : IReport, IMessage
     {
         public string Id { get; set; }
         public long TimeStamp { get; set; }

@@ -3,7 +3,7 @@ using RIoT2.Core.Utils;
 
 namespace RIoT2.Core.Models
 {
-    public class Command : ICommand
+    public class Command : ICommand, IMessage
     {
         public string Id { get; set; }
         public ValueModel Value { get; set; }
