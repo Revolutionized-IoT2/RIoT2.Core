@@ -74,12 +74,32 @@ namespace RIoT2.Core.Services
             if(rule.Model == null)
                 return triggerData;
 
-            //handle injection
-            var json = rule.Model.ToJson();
-            if (json.Contains("{trigger-value}")) 
+            //if rule model is entity
+            if (rule.Model.Type == Core.ValueType.Entity)
             {
-                json = json.Replace(@"""{trigger-value}""", triggerData.ToJson());
-                json = json.Replace(@"""""", @""""); //fix possible double quote issue
+                var json = rule.Model.ToJson();
+                //if trigger-value is defined -> inject trigger to it
+                if (json.Contains("{trigger-value}"))
+                {
+                    json = json.Replace(@"""{trigger-value}""", triggerData.ToJson());
+                    json = injectAdditionalDataToModel(json);
+                    return new ValueModel(json);
+                }
+
+                ValueModel model = null;
+                //if trigger data is not entity -> append new property "trigger"
+                if (triggerData.Type != Core.ValueType.Entity)
+                {
+                    model = rule.Model.UpdateOrAddProperty(triggerData, "trigger");
+                }
+                else //if trigger data is also entity merge it -> override properties with same name and add new the ones that no not exist
+                {
+                    model = rule.Model.Merge(triggerData);
+                }
+
+                json = model.ToJson();
+                json = injectAdditionalDataToModel(json);
+
                 return new ValueModel(json);
             }
 
@@ -105,20 +125,7 @@ namespace RIoT2.Core.Services
                 if (bool.TryParse(triggerData.ToJson(), out var b))
                     return new ValueModel(b);
             }
-
-            //if rule model is entity and trigger in primitive-> a
-            if (rule.Model.Type == Core.ValueType.Entity) 
-            {
-                if (triggerData.Type != Core.ValueType.Entity)
-                {
-                    return rule.Model.UpdateOrAddProperty(triggerData, "trigger");
-                }
-                else 
-                {
-                    return rule.Model.Merge(triggerData);
-                }
-            }
-
+             
             if (rule.Model.Type == Core.ValueType.TextArray)
             {
                 return rule.Model.AppendModelToArray(triggerData);
@@ -149,6 +156,9 @@ namespace RIoT2.Core.Services
 
             //find Commands from json: {C:guid}
             json = findAndReplaceGUIDPlaceHolders("C", json, _messages.Commands);
+
+            //fix possible double quote issue
+            json = json.Replace(@"""""", @""""); 
 
             return json;
         }
