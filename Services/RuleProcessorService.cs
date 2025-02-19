@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 using RIoT2.Core.Utils;
 using RIoT2.Core.Interfaces;
+using Newtonsoft.Json.Linq;
 
 namespace RIoT2.Core.Services
 {
@@ -176,10 +177,13 @@ namespace RIoT2.Core.Services
             {
                 if (match.Success)
                 {
-                    var guid = match.Value.Split(':').Last().Remove(match.Value.Length - 1);
-                    var val = messages.FirstOrDefault(x => x.Id == guid).Value.ToJson();
-                    //TODO TEST that whole json is retuned with value replaced
-                    str = match.Result(val);
+                    var matchLast = match.Value.Split(':').Last();
+                    var guid = matchLast.Remove(matchLast.Length - 1);
+                    var msg = messages.FirstOrDefault(x => x.Id.ToLower() == guid.ToLower());
+                    if (msg != null)
+                    {
+                        str = str.Replace(match.Value, msg.Value.ToJson());
+                    }
                 }
             }
             return str;
