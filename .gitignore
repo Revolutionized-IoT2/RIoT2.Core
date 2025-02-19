@@ -6,3 +6,5 @@
 /obj
 /bin/Debug/netstandard2.0
 /bin/Release/netstandard2.0
+/Tests/bin/Debug/net8.0
+/Tests/obj
