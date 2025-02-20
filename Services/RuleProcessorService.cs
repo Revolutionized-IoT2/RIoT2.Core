@@ -148,13 +148,13 @@ namespace RIoT2.Core.Services
         private string injectAdditionalDataToModel(string json) 
         {
             if (json.Contains("{time}")) 
-                json = json.Replace(@"""{time}""", DateTime.Now.ToString("HH:mm:ss"));
+                json = json.Replace(@"{time}", DateTime.Now.ToString("HH:mm:ss"));
 
             if (json.Contains("{date}"))
-                json = json.Replace(@"""{date}""", DateTime.Now.ToString("dd-MM-yyyy"));
+                json = json.Replace(@"{date}", DateTime.Now.ToString("dd-MM-yyyy"));
 
             if (json.Contains("{weekday}"))
-                json = json.Replace(@"""{weekday}""", DateTime.Now.ToString("ddd").ToLower());
+                json = json.Replace(@"{weekday}", DateTime.Now.ToString("ddd").ToLower());
 
             //find Reports from json: {R:guid}
             json = findAndReplaceGUIDPlaceHolders("R", json, _messages.Reports);
