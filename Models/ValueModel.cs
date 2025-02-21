@@ -136,7 +136,7 @@ namespace RIoT2.Core.Models
             if (elem.ValueKind == JsonValueKind.Object)
             {
                 var expandoDict = new ExpandoObject() as IDictionary<string, Object>;
-                foreach (JsonProperty property in _value.EnumerateObject())
+                foreach (JsonProperty property in elem.EnumerateObject())
                 {
                     switch (property.Value.ValueKind)
                     {
@@ -147,6 +147,8 @@ namespace RIoT2.Core.Models
                             var lst = new List<object>();
                             foreach (var arrayProp in property.Value.EnumerateArray())
                                 lst.Add(handleElement(arrayProp));
+
+                            expandoDict.Add(property.Name, lst);
                             break;
                         case JsonValueKind.String:
                             expandoDict.Add(property.Name, property.Value.GetString());

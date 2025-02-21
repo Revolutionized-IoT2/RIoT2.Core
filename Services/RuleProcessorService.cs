@@ -82,7 +82,11 @@ namespace RIoT2.Core.Services
                 //if trigger-value is defined -> inject trigger to it
                 if (json.Contains("{trigger-value}"))
                 {
-                    json = json.Replace(@"""{trigger-value}""", triggerData.ToJson());
+                    if(triggerData.Type == ValueType.Text)
+                        json = json.Replace(@"{trigger-value}", triggerData.ToJson());
+                    else
+                        json = json.Replace(@"""{trigger-value}""", triggerData.ToJson());
+
                     json = injectAdditionalDataToModel(json);
                     return new ValueModel(json);
                 }
@@ -182,7 +186,10 @@ namespace RIoT2.Core.Services
                     var msg = messages.FirstOrDefault(x => x.Id.ToLower() == guid.ToLower());
                     if (msg != null)
                     {
-                        str = str.Replace(match.Value, msg.Value.ToJson());
+                        if (msg.Value.Type == ValueType.Text)
+                            str = str.Replace(match.Value, msg.Value.ToJson());
+                        else
+                            str = str.Replace(@"""" + match.Value + @"""", msg.Value.ToJson());
                     }
                 }
             }
