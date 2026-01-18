@@ -5,10 +5,11 @@
         public NodeOnlineMessage() 
         {
             IsOnline = true;
+            NodeType = NodeType.Device;
         }
-        public string Name { get; set; }
+        public string Name { get; set; } = "";
         public bool IsOnline { get; set; }
-        public string ConfigurationTemplateUrl { get; set; }
-        public string DeviceStateUrl { get; set; }
+        public string NodeBaseUrl { get; set; } = "";
+        public NodeType NodeType { get; set; }
     }
 }

@@ -109,4 +109,12 @@
         Running = 3, //device is configured and running normally
         Error = 4 //device has configuration and it has been attempted to run or device has failed for some reason
     }
+
+    public enum NodeType
+    {
+        Unknown = 0,
+        Device = 1,
+        Dashboard = 2,
+        Workflow = 3
+    }
 }

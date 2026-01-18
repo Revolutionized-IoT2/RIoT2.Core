@@ -77,11 +77,9 @@ namespace RIoT2.Core.Utils
 
         private async Task<IManagedMqttClient> startClient(params string[] topics)
         {
-
             var lwMsg = new NodeOnlineMessage()
             {
-                ConfigurationTemplateUrl = "",
-                DeviceStateUrl = "",
+                NodeBaseUrl = "",
                 IsOnline = false
             };
 

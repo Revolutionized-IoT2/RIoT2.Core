@@ -2,8 +2,9 @@
 {
     public class OrchestratorConfiguration
     {
-        public string Id { get; set; }
-        public string BaseUrl { get; set; }
+        public string Id { get; set; } = "";
+        public string BaseUrl { get; set; } = "";
+        public bool UseExtWorkflowEngine { get; set; } = false;
         public MqttConfiguration Mqtt { get; set; }
         public QnapConfiguration Qnap{ get; set; }
     }
