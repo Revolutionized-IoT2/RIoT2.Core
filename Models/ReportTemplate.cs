@@ -1,5 +1,6 @@
 ﻿using RIoT2.Core.Interfaces;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace RIoT2.Core.Models
 {
@@ -23,5 +24,19 @@ namespace RIoT2.Core.Models
         public string RefreshSchedule { get; set; }
         public bool MaintainHistory { get; set; }
         public object Model { get; set; }
+
+        /// <summary>
+        /// Provides default report generated from the template
+        /// </summary>
+        /// <returns>Default report</returns>
+        public Report GetAsReport() 
+        {
+            return new Report
+            {
+                Id = this.Id,
+                Filter = Filters.FirstOrDefault(),
+                Value = new ValueModel(this.Model)
+            };
+        }
     }
 }

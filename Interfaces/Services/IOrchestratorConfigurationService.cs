@@ -10,7 +10,7 @@ namespace RIoT2.Core.Interfaces.Services
         DashboardConfiguration DashboardConfiguration { get; }
         string SaveDashboardConfiguration(DashboardConfiguration dashboard);
         string SaveDashboardConfiguration(string json);
-        string FindNodeId(string commandId);
+        string FindNodeId(string id);
         IEnumerable<CommandTemplate> GetCommandTemplates();
         IEnumerable<ReportTemplate> GetReportTemplates();
         string SaveNodeConfiguration(NodeDeviceConfiguration configuration);
