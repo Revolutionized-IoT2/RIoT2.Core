@@ -2,10 +2,9 @@
 
 namespace RIoT2.Core.Models
 {
-    public class CommandTemplate : ICommand, IDeviceObject
+    public class CommandTemplate : ICommand, IDeviceObject, ITemplate
     {
         public string Id { get; set; }
-        public string NodeId { get; set; }
         public string Name { get; set; }
         public string Address { get; set; }
         public object Model { get; set; }

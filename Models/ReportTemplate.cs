@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace RIoT2.Core.Models
 {
-    public class ReportTemplate : IReport, IDeviceObject
+    public class ReportTemplate : IReport, IDeviceObject, ITemplate
     {
         public ReportTemplate() 
         {
@@ -11,6 +11,7 @@ namespace RIoT2.Core.Models
             Filters = new List<string>();
             RefreshSchedule = null;
             MaintainHistory = false;
+            Model = null;  
         }
 
         public ValueType Type { get; set; }
@@ -21,5 +22,6 @@ namespace RIoT2.Core.Models
         public IEnumerable<string> Filters { get; set; }
         public string RefreshSchedule { get; set; }
         public bool MaintainHistory { get; set; }
+        public object Model { get; set; }
     }
 }

@@ -15,7 +15,7 @@ namespace RIoT2.Core
         public static readonly string ApiConfigurationUrl = "/api/nodes/{id}/configuration";
         public static readonly string ApiConfigurationTemplateUrl = "/api/device/configuration/templates";
         public static readonly string ApiDeviceStateUrl = "/api/device/status";
-        public static readonly string ApiWorkflowUrl = "/riot/trigger/{id}";
+        public static readonly string ApiWorkflowTriggerUrl = "/riot/trigger/{id}";
 
         public static string Get(string id, MqttTopic topic)
         {

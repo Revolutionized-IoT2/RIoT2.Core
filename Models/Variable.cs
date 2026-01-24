@@ -41,7 +41,8 @@ namespace RIoT2.Core.Models
                 MaintainHistory = true,
                 Type = Model.Type,
                 Parameters = null,
-                RefreshSchedule = null
+                RefreshSchedule = null,
+                Model = Model.GetAsObject()
             };
         }
 
@@ -53,7 +54,7 @@ namespace RIoT2.Core.Models
                 Name = Name,
                 Address = "variable",
                 Type = Model.Type,
-                Model = Model
+                Model = Model.GetAsObject()
             };
         }
 
