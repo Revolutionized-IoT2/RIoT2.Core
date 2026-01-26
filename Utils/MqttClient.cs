@@ -45,8 +45,17 @@ namespace RIoT2.Core.Utils
             if (_client == null)
                 return;
 
-            if (_client.IsStarted)
+            if (_client.IsStarted) 
+            {
+                // Send Last Will Message that we are offline (Automatic lw is only sent if shutdow is ungracefull)
+                var lwMsg = new NodeOnlineMessage()
+                {
+                    NodeBaseUrl = "",
+                    IsOnline = false
+                };
+                await Publish(Constants.Get(_clientId, MqttTopic.NodeOnline), Json.Serialize(lwMsg));
                 await _client.StopAsync();
+            }
         }
 
         private void handleMqttMessageReceived(MqttApplicationMessageReceivedEventArgs e)
