@@ -5,7 +5,7 @@
         public NodeOnlineMessage() 
         {
             IsOnline = true;
-            NodeType = NodeType.Device;
+            NodeType = NodeType.Unknown;
         }
         public string Name { get; set; } = "";
         public bool IsOnline { get; set; }
