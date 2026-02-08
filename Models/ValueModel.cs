@@ -104,6 +104,25 @@ namespace RIoT2.Core.Models
             }
         }
 
+        public static object GetDefaultValueForType(ValueType valueType)
+        {
+            switch (valueType)
+            {
+                case Core.ValueType.Boolean:
+                    return false;
+                case Core.ValueType.Text:
+                    return "string";
+                case Core.ValueType.Number:
+                    return 0;
+                case Core.ValueType.Entity:
+                    return new { };
+                case Core.ValueType.TextArray:
+                    return new string[] { };
+                default:
+                    return default;
+            }
+        }
+
         /// <summary>
         /// JsonElement is converted to Expando, List, or Primitive. 
         /// Json numbers are converted either into Int or Decimal, depending if there is a dot in json-value
