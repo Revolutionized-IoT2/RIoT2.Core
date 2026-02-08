@@ -11,7 +11,6 @@ namespace RIoT2.Core.Utils
     {
         /// <summary>
         /// Converts a JSON string into a JavaScript object literal string.
-        /// Works on .NET Standard 2.0 (install System.Text.Json via NuGet).
         /// </summary>
         /// <param name="json">A valid JSON string.</param>
         /// <param name="unquotePropertyNamesWhenSafe">When true, property names that are valid JS identifiers are not quoted.</param>
