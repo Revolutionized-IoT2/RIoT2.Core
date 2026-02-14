@@ -1,6 +1,6 @@
 ﻿namespace RIoT2.Core.Models
 {
-    public class PluginManifest
+    public class PackageManifest
     {
         public string Name { get; set; }
         public string Version { get; set; }
