@@ -7,7 +7,8 @@
         public string MqttUsername { get; set; }
         public string MqttPassword { get; set; }
         public string Url { get; set; }
-        public PackageManifest InstalledPluginPackage { get; set; }
+        public PackageManifest PluginManifest { get; set; }
+        public PackageManifest NodeManifest { get; set; }
         public string GetTopic(MqttTopic topic) 
         {
             return Constants.Get(Id, topic);
