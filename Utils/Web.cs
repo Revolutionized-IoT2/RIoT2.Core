@@ -1,17 +1,46 @@
-﻿using System;
+﻿using RIoT2.Core.Models;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
-using System.Threading.Tasks;
 using System.Threading;
-using System.Linq;
+using System.Threading.Tasks;
 
 namespace RIoT2.Core.Utils
 {
     public static class Web
     {
         const int defaultTimeOutMilliseconds = 60000;
+
+        public static async Task<WebFile> DownloadFile(string url)
+        {
+            try
+            {
+                using (var httpClient = new HttpClient())
+                using (var cancel = new CancellationTokenSource(defaultTimeOutMilliseconds))
+                {
+                    var response = await httpClient.GetAsync(url, cancel.Token);
+                    response.EnsureSuccessStatusCode();
+                    var filename = response.Content.Headers.ContentDisposition != null && !String.IsNullOrEmpty(response.Content.Headers.ContentDisposition.FileName) ?
+                        response.Content.Headers.ContentDisposition.FileName.Trim('"') :
+                        url.Split('/').Last();
+
+                    var content = await response.Content.ReadAsByteArrayAsync();
+                    return new WebFile
+                    {
+                        Name = filename,
+                        Url = url,
+                        Content = content
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error in Web.DownloadFile", ex);
+            }
+        }
 
         public static async Task<HttpContentHeaders> GetUrlMetadata(string address)
         {
