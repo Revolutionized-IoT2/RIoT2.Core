@@ -7,6 +7,7 @@
         public bool UseExtWorkflowEngine { get; set; } = false;
         public MqttConfiguration Mqtt { get; set; }
         public QnapConfiguration Qnap{ get; set; }
+        public PackageManifest OrchestratorManifest { get; set; }
     }
 
     public class MqttConfiguration 
