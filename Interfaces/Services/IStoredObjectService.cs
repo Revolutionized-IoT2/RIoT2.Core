@@ -17,6 +17,19 @@ namespace RIoT2.Core.Interfaces.Services
         IEnumerable<T> GetAll<T>();
 
         /// <summary>
+        /// Gets first object of type T from store
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        T Get<T>();
+
+        /// <summary>
+        /// Delets all objects of type T from store
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        void DeleteAll<T>();
+
+        /// <summary>
         /// Delete object with defined ID
         /// </summary>
         /// <typeparam name="T"></typeparam>
