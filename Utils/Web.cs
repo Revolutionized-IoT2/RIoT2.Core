@@ -12,6 +12,24 @@ namespace RIoT2.Core.Utils
     {
         const int defaultTimeOutMilliseconds = 60000;
 
+        public static async Task<string[]> GetUrlMetadata(string address)
+        {
+            try
+            {
+                using (var httpClient = new HttpClient())
+                using (var cancel = new CancellationTokenSource(defaultTimeOutMilliseconds))
+                {
+                    var response = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, address), cancel.Token);
+                    response.EnsureSuccessStatusCode();
+                    return response.Headers.Location.Segments;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error in Web.GetHeaders", ex);
+            }
+        }
+
         public static async Task<HttpResponseMessage> GetWithBearerTokenAsync(
             string address,
             string token = null,
