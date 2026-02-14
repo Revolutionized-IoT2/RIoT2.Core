@@ -5,6 +5,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Linq;
 
 namespace RIoT2.Core.Utils
 {
@@ -12,7 +13,7 @@ namespace RIoT2.Core.Utils
     {
         const int defaultTimeOutMilliseconds = 60000;
 
-        public static async Task<string[]> GetUrlMetadata(string address)
+        public static async Task<HttpContentHeaders> GetUrlMetadata(string address)
         {
             try
             {
@@ -21,7 +22,7 @@ namespace RIoT2.Core.Utils
                 {
                     var response = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, address), cancel.Token);
                     response.EnsureSuccessStatusCode();
-                    return response.Headers.Location.Segments;
+                    return response.Content.Headers;
                 }
             }
             catch (Exception ex)
