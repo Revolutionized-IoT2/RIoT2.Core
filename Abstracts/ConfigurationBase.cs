@@ -30,13 +30,10 @@ namespace RIoT2.Core.Abstracts
                 }
                 catch (Exception e)
                 {
-                    throw new Exception($"Error loading plugin manifest: {e.Message}");
+                    throw new Exception($"Error loading manifest: {e.Message}");
                 }
             }
-            else
-            {
-                throw new Exception($"Plugin manifest not found: {manifestFilename}");
-            }
+            return null;
         }
 
         private FileInfo loadConfigurationFile(string filename)
