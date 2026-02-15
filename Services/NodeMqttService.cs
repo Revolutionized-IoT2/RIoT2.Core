@@ -1,7 +1,6 @@
 ﻿using RIoT2.Core.Interfaces.Services;
 using RIoT2.Core.Models;
 using RIoT2.Core.Utils;
-using RIoT2.Core;
 using RIoT2.Core.Interfaces;
 using System;
 using System.Threading.Tasks;
@@ -35,10 +34,10 @@ namespace RIoT2.Core.Services
         {
             try
             {
-                _client = new MqttClient(_configurationService.Configuration.Id,
-                    _configurationService.Configuration.MqttServerUrl,
-                    _configurationService.Configuration.MqttUsername,
-                    _configurationService.Configuration.MqttPassword);
+                _client = new MqttClient(_configurationService.Configuration.Mqtt.ClientId,
+                    _configurationService.Configuration.Mqtt.ServerUrl,
+                    _configurationService.Configuration.Mqtt.Username,
+                    _configurationService.Configuration.Mqtt.Password);
 
                 _configurationTopic = _configurationService.Configuration.GetTopic(MqttTopic.Configuration);
                 _commandTopic = _configurationService.Configuration.GetTopic(MqttTopic.Command);

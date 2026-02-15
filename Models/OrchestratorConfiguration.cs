@@ -1,27 +1,21 @@
-﻿namespace RIoT2.Core.Models
+﻿using RIoT2.Core.Abstracts;
+using RIoT2.Core.Interfaces.Services;
+using System.IO;
+using System.Reflection;
+
+namespace RIoT2.Core.Models
 {
-    public class OrchestratorConfiguration
+    public class OrchestratorConfiguration : ConfigurationBase, IConfiguration
     {
-        public string Id { get; set; } = "";
-        public string BaseUrl { get; set; } = "";
+        private readonly DirectoryInfo _configurationFolder;
+        public OrchestratorConfiguration()
+        {
+            _configurationFolder = new DirectoryInfo(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location));
+            Manifest = LoadManifest("Data/Manifest.json");
+        }
         public bool UseExtWorkflowEngine { get; set; } = false;
-        public MqttConfiguration Mqtt { get; set; }
-        public QnapConfiguration Qnap{ get; set; }
-        public PackageManifest OrchestratorManifest { get; set; }
-    }
+        public PackageManifest Manifest { get; set; }
 
-    public class MqttConfiguration 
-    {
-        public string ClientId { get; set; }
-        public string ServerUrl { get; set; }
-        public string Username { get; set; }
-        public string Password { get; set; }
-    }
-
-    public class QnapConfiguration
-    {
-        public string ServerUrl { get; set; }
-        public string Username { get; set; }
-        public string Password { get; set; }
+        public override string ApplicationFolder { get => _configurationFolder.FullName; }
     }
 }
