@@ -24,8 +24,6 @@ namespace RIoT2.Core.Abstracts
 
         public abstract NodeConfiguration Configuration { get; }
 
-        public abstract string ApplicationFolder { get; }
-
         public virtual NodeOnlineMessage OnlineMessage { get; set; }
 
         public virtual async Task LoadDeviceConfiguration(string json, string id)
@@ -69,7 +67,7 @@ namespace RIoT2.Core.Abstracts
                 if (file.Exists) 
                 {
                     deleteFolderContent("Plugins");
-                    ZipFile.ExtractToDirectory(file.FullName, Path.Combine(ApplicationFolder, "Plugins"));
+                    ZipFile.ExtractToDirectory(file.FullName, Path.Combine(Configuration.ApplicationFolder, "Plugins"));
                     deleteFile("Data/" + packageName); //delete package after intallation
                 }
             } 
@@ -81,7 +79,7 @@ namespace RIoT2.Core.Abstracts
 
         private string getPluginPackage()
         {
-            var dataFolder = Path.Combine(ApplicationFolder, "Data");
+            var dataFolder = Path.Combine(Configuration.ApplicationFolder, "Data");
             if (Directory.Exists(dataFolder))
             {
                 DirectoryInfo di = new DirectoryInfo(dataFolder);
@@ -96,7 +94,7 @@ namespace RIoT2.Core.Abstracts
 
         private void deleteFolderContent(string directory)
         {
-            var fullPath = Path.Combine(ApplicationFolder, directory);
+            var fullPath = Path.Combine(Configuration.ApplicationFolder, directory);
             if (Directory.Exists(fullPath))
             {
                 DirectoryInfo di = new DirectoryInfo(fullPath);
@@ -109,7 +107,7 @@ namespace RIoT2.Core.Abstracts
 
         private void deleteFile(string filename)
         {
-            var fullPath = Path.Combine(ApplicationFolder, filename);
+            var fullPath = Path.Combine(Configuration.ApplicationFolder, filename);
             if (File.Exists(fullPath))
             {
                 FileInfo fi = new FileInfo(fullPath);
@@ -119,7 +117,7 @@ namespace RIoT2.Core.Abstracts
 
         private void saveFile(string filename, byte[] content) 
         {
-            var fullPath = Path.Combine(ApplicationFolder, filename);
+            var fullPath = Path.Combine(Configuration.ApplicationFolder, filename);
             FileInfo fi = new FileInfo(fullPath);
             if (fi.Exists)
                 fi.Delete();
@@ -129,7 +127,7 @@ namespace RIoT2.Core.Abstracts
 
         private FileInfo loadFile(string filename)
         {
-            var fullPath = Path.Combine(ApplicationFolder, filename);
+            var fullPath = Path.Combine(Configuration.ApplicationFolder, filename);
             FileInfo f = new FileInfo(fullPath);
 
             if (!f.Exists)
