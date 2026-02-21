@@ -67,13 +67,13 @@ namespace RIoT2.Core.Utils
             });
         }
 
-        public static string SerializeAutoTypeNameHandling(object obj, bool autoTypeNameHandling = false)
+        public static string SerializeAutoTypeNameHandling(object obj, bool autoTypeNameHandling = false, bool includeNulls = false)
         {
             return JsonConvert.SerializeObject(obj, new JsonSerializerSettings()
             {
                 TypeNameHandling = autoTypeNameHandling ? TypeNameHandling.Auto : TypeNameHandling.None,
                 ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                NullValueHandling = NullValueHandling.Ignore
+                NullValueHandling = includeNulls ? NullValueHandling.Include : NullValueHandling.Ignore,
             });
         }
 
