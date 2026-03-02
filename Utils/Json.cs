@@ -311,7 +311,7 @@ namespace RIoT2.Core.Utils
                     case JsonToken.Integer:
                         return new ValueModel((int)jValue);
                     case JsonToken.Float:
-                        return new ValueModel((float)jValue);
+                        return new ValueModel((double)jValue);
                     case JsonToken.String:
                     default:
                         return new ValueModel(reader.Value.ToString());
