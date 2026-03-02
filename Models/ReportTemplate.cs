@@ -10,7 +10,6 @@ namespace RIoT2.Core.Models
         {
             Parameters = new Dictionary<string, string>();
             Filters = new List<string>();
-            RefreshSchedule = null;
             MaintainHistory = false;
             Model = null;  
         }
@@ -21,7 +20,6 @@ namespace RIoT2.Core.Models
         public string Address { get; set; }
         public Dictionary<string, string> Parameters { get; set; }
         public IEnumerable<string> Filters { get; set; }
-        public string RefreshSchedule { get; set; }
         public bool MaintainHistory { get; set; }
         public object Model { get; set; }
 
