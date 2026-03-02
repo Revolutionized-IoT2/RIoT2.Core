@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Quartz;
+using System;
 using System.Collections.Generic;
 
 namespace RIoT2.Core.Models
@@ -13,33 +14,22 @@ namespace RIoT2.Core.Models
         public Dictionary<string, string> DeviceParameters { get; set; }
         public string RefreshSchedule { get; set; }
         
-        /// <summary>
-        /// Returns refresh schedules for device. If device level schedule is defined, it will override report specifig schedules
-        /// </summary>
-        /// <returns>List of trigger schedules for device</returns>
-        public IEnumerable<SchedulerTrigger> GetRefreshSchedules() 
+        public SchedulerTrigger GetDeviceRefreshSchedule() 
         {
             if (!String.IsNullOrEmpty(RefreshSchedule)) 
             {
-                yield return new SchedulerTrigger()
+                if (CronExpression.IsValidExpression(RefreshSchedule))
                 {
-                    CronSchedule = RefreshSchedule,
-                    Group = Id,
-                    Name = Id
-                };
-                yield break;
-            }
-
-            foreach (var reportTemplate in ReportTemplates) 
-            {
-                if(!String.IsNullOrEmpty(reportTemplate.RefreshSchedule))
-                    yield return new SchedulerTrigger() 
+                    return new SchedulerTrigger()
                     {
-                        CronSchedule = reportTemplate.RefreshSchedule,
+                        CronSchedule = RefreshSchedule,
                         Group = Id,
-                        Name = reportTemplate.Id
+                        Name = Id
                     };
+                } 
             }
+            return null;
         }
+
     }
 }

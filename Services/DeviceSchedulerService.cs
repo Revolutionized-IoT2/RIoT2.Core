@@ -64,10 +64,11 @@ namespace RIoT2.Core.Services
                 if (!(device is IRefreshableReportDevice))
                     continue;
 
-                var deviceTriggers = device.Configuration?.GetRefreshSchedules();
-                if (deviceTriggers != null && deviceTriggers.Count() > 0)
+                var deviceTrigger = device.Configuration?.GetDeviceRefreshSchedule();
+                if (deviceTrigger != null)
                 {
-                    allTriggers.AddRange(deviceTriggers);
+                    _logger.LogInformation($"Adding scheduler trigger for device {device.Configuration.Name} with schedule {deviceTrigger.CronSchedule}");
+                    allTriggers.Add(deviceTrigger);
                     SchedulerEvent += (device as IRefreshableReportDevice).RefreshReport;
                 }
             }
