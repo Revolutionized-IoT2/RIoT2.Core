@@ -25,12 +25,12 @@ namespace RIoT2.Core.Abstracts
 
         public virtual ICommandDevice GetDeviceByCommandId(string commandId)
         {
-            return Devices.FirstOrDefault(x => (x is ICommandDevice) && (x as ICommandDevice).CommandTemplates.Any(c => c.Id == commandId)) as ICommandDevice;
+            return Devices.FirstOrDefault(x => (x is ICommandDevice) && (x as ICommandDevice).CommandTemplates != null && (x as ICommandDevice).CommandTemplates.Any(c => c.Id == commandId)) as ICommandDevice;
         }
 
         public virtual IDevice GetDeviceByReportId(string reportId)
         {
-            return Devices.FirstOrDefault(x => x.ReportTemplates.Any(c => c.Id == reportId));
+            return Devices.FirstOrDefault(x => x.ReportTemplates != null && x.ReportTemplates.Any(c => c.Id == reportId));
         }
 
         public virtual void StartAllDevices(bool restartDevicesInErrorState = false)

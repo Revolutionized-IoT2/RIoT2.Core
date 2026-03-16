@@ -14,8 +14,8 @@ namespace RIoT2.Core.Abstracts
         public DeviceBase(ILogger logger)
         {
             Logger = logger;
-            CommandTemplates = new List<CommandTemplate>();
-            ReportTemplates = new List<ReportTemplate>();
+            CommandTemplates = null;
+            ReportTemplates = null;
             _previousReports = new List<Report>();
             _numericTrends = new Dictionary<string, int>();
             State = DeviceState.Unknown;
