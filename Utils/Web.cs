@@ -166,9 +166,13 @@ namespace RIoT2.Core.Utils
                     httpClient.DefaultRequestHeaders.Authorization = authHeader;
                     httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
+                    StringContent content = null;
+                    if (postBody != null)
+                        content = new StringContent(postBody, Encoding.UTF8, "application/json");
+
                     return await httpClient.PostAsync(
                         address,
-                        new StringContent(postBody, Encoding.UTF8, "application/json"),
+                        content,
                         cancel.Token);
                 }
             }
@@ -259,7 +263,10 @@ namespace RIoT2.Core.Utils
                 using (var httpClient = new InsecureHttpClient().Client)
                 using (var cancel = new CancellationTokenSource(timeOutMilliseconds))
                 {
-                    var httpContent = new StringContent(body, Encoding.UTF8, "application/json");
+                    StringContent httpContent = null;
+                    if (body != null)
+                        httpContent = new StringContent(body, Encoding.UTF8, "application/json");
+
                     if (headers != null)
                     {
                         foreach (var header in headers)
