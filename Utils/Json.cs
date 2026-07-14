@@ -52,13 +52,13 @@ namespace RIoT2.Core.Utils
             var JObjectKeys = (from r in result
                                let key = r.Key
                                let value = r.Value
-                               where value.GetType() == typeof(JObject)
+                               where value != null && value.GetType() == typeof(JObject)
                                select key).ToList();
 
             var JArrayKeys = (from r in result
                               let key = r.Key
                               let value = r.Value
-                              where value.GetType() == typeof(JArray)
+                              where value != null && value.GetType() == typeof(JArray)
                               select key).ToList();
 
             JArrayKeys.ForEach(key => result[key] = ((JArray)result[key]).Values().Select(x => ((JValue)x).Value).ToArray());
@@ -363,13 +363,13 @@ namespace RIoT2.Core.Utils
         /// <returns>The updated JSON string, or the original JSON if the path was not found.</returns>
         public static string SetValue(string json, string path, object value)
         {
-            var j = JObject.Parse(json).SelectToken(path);
-            if (j == null)
+            var root = JObject.Parse(json);
+            var token = root.SelectToken(path);
+            if (token == null)
                 return json;
 
-            (j as JProperty).Value = JToken.FromObject(value);
-
-            return j.ToString();
+            token.Replace(JToken.FromObject(value));
+            return root.ToString();
         }
 
         /// <summary>
