@@ -255,7 +255,7 @@ namespace RIoT2.Core.Utils
             var keys = new List<string>();
             foreach (var e in jObject)
             {
-                if (e.Value.ToString().ToLower() == placeholder.ToLower())
+                if (string.Equals(e.Value.ToString(), placeholder, StringComparison.OrdinalIgnoreCase))
                     keys.Add(e.Key);
             }
 
@@ -297,7 +297,7 @@ namespace RIoT2.Core.Utils
                 return ValueType.Boolean;
             }
 
-            if (float.TryParse(data, out var floatValue))
+            if (float.TryParse(data, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var floatValue))
             {
                 value = floatValue;
                 return ValueType.Number;
@@ -777,7 +777,7 @@ namespace RIoT2.Core.Utils
         {
             foreach (var e in _jobj)
             {
-                if (e.Key.ToLower() == property.ToLower())
+                if (string.Equals(e.Key, property, StringComparison.OrdinalIgnoreCase))
                     return true;
             }
             return false;
@@ -787,7 +787,7 @@ namespace RIoT2.Core.Utils
         {
             foreach (var e in _jobj)
             {
-                if (e.Key.ToLower() == property.ToLower())
+                if (string.Equals(e.Key, property, StringComparison.OrdinalIgnoreCase))
                     return e.Key;
             }
             return null;
@@ -956,19 +956,25 @@ namespace RIoT2.Core.Utils
                         if (ta is JObject)
                             traverseJObject(placeholder, value, ta as JObject);
 
-                        if (ta.ToString().ToLower() == placeholder.ToLower())
+                        if (string.Equals(ta.ToString(), placeholder, StringComparison.OrdinalIgnoreCase))
                             (e.Value as JArray)[i] = new JValue(value);
                     }
                 }
-                else if (e.Value is JObject)
+                else if (e.Value is JObject childObj)
                 {
-                    foreach (var to in (e.Value as JObject))
-                        traverseJObject(placeholder, value, e.Value as JObject);
+                    traverseJObject(placeholder, value, childObj);
                 }
-
-                if (e.Value.ToString().ToLower() == placeholder.ToLower())
-                    parent[e.Key] = new JValue(value);
             }
+
+            //Apply top-level replacements after enumeration to avoid modifying the collection while iterating
+            var keysToReplace = new List<string>();
+            foreach (var e in parent)
+            {
+                if (string.Equals(e.Value.ToString(), placeholder, StringComparison.OrdinalIgnoreCase))
+                    keysToReplace.Add(e.Key);
+            }
+            foreach (var key in keysToReplace)
+                parent[key] = new JValue(value);
         }
     }
 

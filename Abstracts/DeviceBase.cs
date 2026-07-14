@@ -164,7 +164,7 @@ namespace RIoT2.Core.Abstracts
             if(State != DeviceState.Running)
                 Logger.LogWarning($"Could not send report. Device {Name} is not running");
             else 
-                ReportUpdated(device, report);
+                ReportUpdated?.Invoke(device, report);
         }
 
         /// <summary>
@@ -188,7 +188,7 @@ namespace RIoT2.Core.Abstracts
                 if (prevReport == null)
                 {
                     _previousReports.Add(report);
-                    ReportUpdated(device, report);
+                    ReportUpdated?.Invoke(device, report);
                     return;
                 }
 
@@ -223,7 +223,7 @@ namespace RIoT2.Core.Abstracts
                 _previousReports.Add(report);
 
                 //and send report
-                ReportUpdated(device, report);
+                ReportUpdated?.Invoke(device, report);
             }
         }
 
@@ -254,7 +254,8 @@ namespace RIoT2.Core.Abstracts
 
         private bool thresholdOrTrendExeeded(string reportId, double prevValue, double newValue, double? threshold)
         {
-            if ((prevValue + threshold) < newValue || (prevValue - threshold) > newValue)
+            double effectiveThreshold = threshold ?? 0;
+            if ((prevValue + effectiveThreshold) < newValue || (prevValue - effectiveThreshold) > newValue)
                 return true;
 
             if (!_numericTrends.ContainsKey(reportId))
@@ -270,12 +271,13 @@ namespace RIoT2.Core.Abstracts
             if (newValue < prevValue)
                 currentTrendValue--;
 
-            if (currentTrendValue > 3 || currentTrendValue < 3)
+            if (currentTrendValue >= 3 || currentTrendValue <= -3)
             {
                 _numericTrends[reportId] = 0;
                 return true;
             }
 
+            _numericTrends[reportId] = currentTrendValue;
             return false;
         }
     }

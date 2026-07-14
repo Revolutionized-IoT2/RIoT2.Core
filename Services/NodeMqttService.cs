@@ -83,7 +83,14 @@ namespace RIoT2.Core.Services
 
         private async void _reportService_ReportUpdated(IDevice sender, IReport report)
         {
-            await _client.Publish(_reportTopic, Json.SerializeIgnoreNulls(report as Report));
+            try
+            {
+                await _client.Publish(_reportTopic, Json.SerializeIgnoreNulls(report as Report));
+            }
+            catch (Exception x)
+            {
+                _logger.LogError(x, $"Failed to publish report to topic {_reportTopic}");
+            }
         }
 
         public async Task Stop()

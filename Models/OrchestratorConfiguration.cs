@@ -1,5 +1,6 @@
 ﻿using RIoT2.Core.Abstracts;
 using RIoT2.Core.Interfaces.Services;
+using System;
 using System.IO;
 using System.Reflection;
 
@@ -10,7 +11,12 @@ namespace RIoT2.Core.Models
         private readonly DirectoryInfo _configurationFolder;
         public OrchestratorConfiguration()
         {
-            _configurationFolder = new DirectoryInfo(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location));
+            var entryAssembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
+            var assemblyLocation = Path.GetDirectoryName(entryAssembly.Location);
+            if (string.IsNullOrEmpty(assemblyLocation))
+                assemblyLocation = AppContext.BaseDirectory;
+
+            _configurationFolder = new DirectoryInfo(assemblyLocation);
             Manifest = LoadManifest("Data/Manifest.json");
         }
         public bool UseExtWorkflowEngine { get; set; } = false;

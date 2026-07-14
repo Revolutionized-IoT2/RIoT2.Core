@@ -103,25 +103,31 @@ namespace RIoT2.Core.Utils
                     .Build();
 
             var mqttClient = new MqttFactory().CreateManagedMqttClient();
+            await mqttClient.StartAsync(options);
+
             var topicFilters = new List<MqttTopicFilter>();
             foreach (var t in topics)
                 topicFilters.Add(new MqttTopicFilterBuilder().WithTopic(t).Build());
 
             await mqttClient.SubscribeAsync(topicFilters);
-            await mqttClient.StartAsync(options);
-
             return mqttClient;
         }
 
-        public async void Dispose()
+        public void Dispose()
         {
             if (_client == null)
                 return;
 
-            if (_client.IsStarted)
-                await Stop();
-
-            _client?.Dispose();
+            try
+            {
+                if (_client.IsStarted)
+                    Stop().GetAwaiter().GetResult();
+            }
+            finally
+            {
+                _client.Dispose();
+                _client = null;
+            }
         }
 
         public static bool IsMatch(string topic, string topicFilter)
