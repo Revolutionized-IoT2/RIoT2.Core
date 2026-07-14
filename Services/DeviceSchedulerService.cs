@@ -15,6 +15,10 @@ using RIoT2.Core;
 
 namespace RIoT2.Core.Services
 {
+    /// <summary>
+    /// Hosted service that schedules periodic report refreshes for refreshable devices using Quartz
+    /// cron triggers.
+    /// </summary>
     public class DeviceSchedulerService : IHostedService
     {
         private readonly ILogger<DeviceSchedulerService> _logger;
@@ -23,13 +27,27 @@ namespace RIoT2.Core.Services
         private readonly INodeConfigurationService _configuration;
         private CancellationToken _cancellationToken;
 
+        /// <summary>
+        /// Occurs when a scheduled trigger fires, identifying the trigger by group and name.
+        /// </summary>
         public static event SchedulerEventHandler SchedulerEvent;
 
+        /// <summary>
+        /// Raises the <see cref="SchedulerEvent"/> for the specified trigger group and name.
+        /// </summary>
+        /// <param name="group">The group of the trigger that fired.</param>
+        /// <param name="name">The name of the trigger that fired.</param>
         public static void TriggerSchedulerEvent(string group, string name) 
         {
             SchedulerEvent(group, name);
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DeviceSchedulerService"/> class.
+        /// </summary>
+        /// <param name="logger">The logger used to record scheduler activity.</param>
+        /// <param name="deviceService">The device service providing the devices to schedule.</param>
+        /// <param name="configuration">The node configuration service.</param>
         public DeviceSchedulerService(ILogger<DeviceSchedulerService> logger, IDeviceService deviceService, INodeConfigurationService configuration)
         {
             _logger = logger;
@@ -37,6 +55,10 @@ namespace RIoT2.Core.Services
             _deviceService = deviceService;
         }
 
+        /// <summary>
+        /// Starts the hosted service and begins listening for device updates in order to configure triggers.
+        /// </summary>
+        /// <param name="cancellationToken">A token that signals the start operation should be aborted.</param>
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             _cancellationToken = cancellationToken;
@@ -86,6 +108,10 @@ namespace RIoT2.Core.Services
             }
         }
 
+        /// <summary>
+        /// Stops the hosted service and shuts down the scheduler.
+        /// </summary>
+        /// <param name="stoppingToken">A token that signals the stop operation should be aborted.</param>
         public async Task StopAsync(CancellationToken stoppingToken)
         {
             _deviceService.DevicesUpdated -= _deviceService_DevicesUpdated;

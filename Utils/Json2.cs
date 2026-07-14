@@ -51,6 +51,14 @@ namespace RIoT2.Core.Utils
         /// <summary>
         /// Safe try-version that won't throw. On error, returns false and sets error message.
         /// </summary>
+        /// <param name="json">A valid JSON string to convert.</param>
+        /// <param name="js">When this method returns <c>true</c>, contains the JavaScript object literal text; otherwise, <c>null</c>.</param>
+        /// <param name="error">When this method returns <c>false</c>, contains the error message; otherwise, <c>null</c>.</param>
+        /// <param name="unquotePropertyNamesWhenSafe">When true, property names that are valid JS identifiers are not quoted.</param>
+        /// <param name="prettyPrint">When true, formats with indentation and newlines.</param>
+        /// <param name="indentSize">Number of spaces per indent level when prettyPrint is true.</param>
+        /// <param name="useSingleQuotesForStrings">When true, uses single quotes for strings; otherwise double quotes.</param>
+        /// <returns><c>true</c> if the conversion succeeded; otherwise, <c>false</c>.</returns>
         public static bool TryJsonToJsObjectLiteral(
             string json,
             out string js,

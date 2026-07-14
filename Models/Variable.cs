@@ -31,6 +31,10 @@ namespace RIoT2.Core.Models
             set { _value = new ValueModel(value); }
         }
 
+        /// <summary>
+        /// Creates a report template representing this variable.
+        /// </summary>
+        /// <returns>A <see cref="ReportTemplate"/> that describes the variable's value.</returns>
         public ReportTemplate GetAsReportTemplate() 
         {
             return new ReportTemplate()
@@ -45,6 +49,10 @@ namespace RIoT2.Core.Models
             };
         }
 
+        /// <summary>
+        /// Creates a command template representing this variable.
+        /// </summary>
+        /// <returns>A <see cref="CommandTemplate"/> that describes the variable's value.</returns>
         public CommandTemplate GetAsCommandTemplate()
         {
             return new CommandTemplate()
@@ -57,6 +65,10 @@ namespace RIoT2.Core.Models
             };
         }
 
+        /// <summary>
+        /// Creates a report carrying the variable's current value and the current timestamp.
+        /// </summary>
+        /// <returns>A <see cref="Report"/> for this variable.</returns>
         public Report CreateReport() 
         {
             return new Report()

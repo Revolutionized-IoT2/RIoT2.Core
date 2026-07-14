@@ -6,11 +6,22 @@ using System.IO;
 
 namespace RIoT2.Core.Abstracts
 {
+    /// <summary>
+    /// Provides a base implementation of <see cref="IConfiguration"/> shared by node and
+    /// orchestrator configurations, including manifest loading from the application folder.
+    /// </summary>
     public abstract class ConfigurationBase : IConfiguration
     {
+        /// <inheritdoc/>
         public virtual string Id { get; set; }
+
+        /// <inheritdoc/>
         public virtual string Url { get; set; }
+
+        /// <inheritdoc/>
         public virtual MqttConfiguration Mqtt { get; set; }
+
+        /// <inheritdoc/>
         public abstract string ApplicationFolder { get; }
 
         internal PackageManifest LoadManifest(string manifestFilename)

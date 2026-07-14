@@ -8,13 +8,27 @@ using System.Linq;
 
 namespace RIoT2.Core.Utils
 {
+    /// <summary>
+    /// Provides static helper methods for JSON serialization, deserialization, and manipulation
+    /// used across the RIoT2 solution.
+    /// </summary>
     public static class Json
     {
+        /// <summary>
+        /// Converts a JSON string into a nested dictionary.
+        /// </summary>
+        /// <param name="json">The JSON string to convert.</param>
+        /// <returns>A dictionary representing the JSON object, with nested objects and arrays materialized.</returns>
         public static IDictionary<string, object> ToDictionary(string json)
         {
             return ToDictionary(JObject.Parse(json));
         }
 
+        /// <summary>
+        /// Converts an object into a nested dictionary via its JSON representation.
+        /// </summary>
+        /// <param name="obj">The object to convert.</param>
+        /// <returns>A dictionary representing the object.</returns>
         public static IDictionary<string, object> ToDictionary(object obj)
         {
             if (obj is JObject)
@@ -23,6 +37,11 @@ namespace RIoT2.Core.Utils
                 return ToDictionary(JObject.FromObject(obj));
         }
 
+        /// <summary>
+        /// Converts a <see cref="JObject"/> into a nested dictionary.
+        /// </summary>
+        /// <param name="jObject">The JSON object to convert.</param>
+        /// <returns>A dictionary representing the JSON object, or <c>null</c> if <paramref name="jObject"/> is <c>null</c>.</returns>
         public static IDictionary<string, object> ToDictionary(JObject jObject)
         {
             if (jObject == null)
@@ -48,6 +67,12 @@ namespace RIoT2.Core.Utils
             return result;
         }
 
+        /// <summary>
+        /// Deserializes a JSON string into an object of the specified type.
+        /// </summary>
+        /// <param name="json">The JSON string to deserialize.</param>
+        /// <param name="toType">The target type.</param>
+        /// <returns>The deserialized object, or <c>null</c> if <paramref name="json"/> is null or empty.</returns>
         public static object Deserialize(string json, System.Type toType)
         {
             if (string.IsNullOrEmpty(json))
@@ -56,6 +81,12 @@ namespace RIoT2.Core.Utils
             return JsonConvert.DeserializeObject(json, toType);
         }
 
+        /// <summary>
+        /// Deserializes a JSON string with automatic type-name handling, allowing polymorphic types to be resolved.
+        /// </summary>
+        /// <typeparam name="T">The target type.</typeparam>
+        /// <param name="json">The JSON string to deserialize.</param>
+        /// <returns>The deserialized object, or the default of <typeparamref name="T"/> if <paramref name="json"/> is null or empty.</returns>
         public static T DeserializeAutoTypeNameHandling<T>(string json)
         {
             if (string.IsNullOrEmpty(json))
@@ -67,6 +98,13 @@ namespace RIoT2.Core.Utils
             });
         }
 
+        /// <summary>
+        /// Serializes an object to JSON using camelCase property names, optionally emitting type information and nulls.
+        /// </summary>
+        /// <param name="obj">The object to serialize.</param>
+        /// <param name="autoTypeNameHandling">If <c>true</c>, embeds type information to support polymorphic deserialization.</param>
+        /// <param name="includeNulls">If <c>true</c>, includes properties with null values.</param>
+        /// <returns>The JSON representation of the object.</returns>
         public static string SerializeAutoTypeNameHandling(object obj, bool autoTypeNameHandling = false, bool includeNulls = false)
         {
             return JsonConvert.SerializeObject(obj, new JsonSerializerSettings()
@@ -77,6 +115,12 @@ namespace RIoT2.Core.Utils
             });
         }
 
+        /// <summary>
+        /// Deserializes a JSON string into an object of the specified type, honoring <see cref="ValueModel"/> conversion.
+        /// </summary>
+        /// <typeparam name="T">The target type.</typeparam>
+        /// <param name="json">The JSON string to deserialize.</param>
+        /// <returns>The deserialized object, or the default of <typeparamref name="T"/> if <paramref name="json"/> is null or empty.</returns>
         public static T Deserialize<T>(string json)
         {
             if (string.IsNullOrEmpty(json))
@@ -85,6 +129,12 @@ namespace RIoT2.Core.Utils
             return JsonConvert.DeserializeObject<T>(json, new ValueModelConverter());
         }
 
+        /// <summary>
+        /// Deserializes a JSON string into an object of the specified type using PascalCase property naming.
+        /// </summary>
+        /// <typeparam name="T">The target type.</typeparam>
+        /// <param name="json">The JSON string to deserialize.</param>
+        /// <returns>The deserialized object, or the default of <typeparamref name="T"/> if <paramref name="json"/> is null or empty.</returns>
         public static T DeserializePascal<T>(string json)
         {
             if (string.IsNullOrEmpty(json))
@@ -101,6 +151,11 @@ namespace RIoT2.Core.Utils
             return JsonConvert.DeserializeObject<T>(json, settings);
         }
 
+        /// <summary>
+        /// Deserializes a JSON string into a loosely typed object using PascalCase property naming.
+        /// </summary>
+        /// <param name="json">The JSON string to deserialize.</param>
+        /// <returns>The deserialized object, the original string if deserialization fails, or <c>null</c> if <paramref name="json"/> is null or empty.</returns>
         public static object Deserialize(string json)
         {
             if (string.IsNullOrEmpty(json))
@@ -124,6 +179,11 @@ namespace RIoT2.Core.Utils
             }
         }
 
+        /// <summary>
+        /// Serializes an object to camelCase JSON, ignoring properties with null values.
+        /// </summary>
+        /// <param name="value">The object to serialize.</param>
+        /// <returns>The JSON representation, or <c>null</c> if serialization fails.</returns>
         public static string SerializeIgnoreNulls(object value)
         {
             try
@@ -142,6 +202,11 @@ namespace RIoT2.Core.Utils
             }
         }
 
+        /// <summary>
+        /// Serializes an object to camelCase JSON.
+        /// </summary>
+        /// <param name="value">The object to serialize.</param>
+        /// <returns>The JSON representation of the object.</returns>
         public static string Serialize(object value)
         {
             var settings = new JsonSerializerSettings
@@ -153,6 +218,13 @@ namespace RIoT2.Core.Utils
             return JsonConvert.SerializeObject(value, settings);
         }
 
+        /// <summary>
+        /// Adds a top-level attribute to a JSON object.
+        /// </summary>
+        /// <param name="json">The JSON string to modify.</param>
+        /// <param name="attributeName">The name of the attribute to add.</param>
+        /// <param name="attributeValue">The value of the attribute to add.</param>
+        /// <returns>The updated JSON string, or the original string if it is not valid JSON.</returns>
         public static string InjectAttributeToJson(string json, string attributeName, string attributeValue)
         {
             try
@@ -168,6 +240,13 @@ namespace RIoT2.Core.Utils
             return json;
         }
 
+        /// <summary>
+        /// Replaces every top-level property whose value matches the specified placeholder with the given value.
+        /// </summary>
+        /// <param name="json">The JSON string to modify.</param>
+        /// <param name="placeholder">The placeholder value to match (case-insensitive).</param>
+        /// <param name="value">The replacement value.</param>
+        /// <returns>The updated JSON string.</returns>
         public static string InjectValueToJson(string json, string placeholder, string value)
         {
             JObject jObject = JObject.Parse(json);
@@ -186,6 +265,13 @@ namespace RIoT2.Core.Utils
             return jObject.ToString();
         }
 
+        /// <summary>
+        /// Replaces placeholders within a text template using values from a JSON payload.
+        /// </summary>
+        /// <param name="jsonData">The JSON data providing replacement values.</param>
+        /// <param name="text">The text template containing placeholders.</param>
+        /// <param name="placeholder">The base placeholder token; object properties are matched as <c>placeholder.property</c>.</param>
+        /// <returns>The text with placeholders replaced.</returns>
         public static string InjectDataToText(string jsonData, string text, string placeholder)
         {
             var valueType = getDataType(jsonData, out object value);
@@ -236,6 +322,12 @@ namespace RIoT2.Core.Utils
             return new JValue(typedValue);
         }
 
+        /// <summary>
+        /// Gets the string value of a top-level attribute.
+        /// </summary>
+        /// <param name="json">The JSON string to read.</param>
+        /// <param name="attribute">The name of the attribute to read.</param>
+        /// <returns>The attribute value, or <c>null</c> if it is missing or the JSON is invalid.</returns>
         public static string GetValue(string json, string attribute)
         {
             try
@@ -251,11 +343,24 @@ namespace RIoT2.Core.Utils
             return null;
         }
 
+        /// <summary>
+        /// Finds a value in a JSON document using a JSONPath expression.
+        /// </summary>
+        /// <param name="json">The JSON string to search.</param>
+        /// <param name="path">The JSONPath expression identifying the value.</param>
+        /// <returns>The matched value as a string, or <c>null</c> if not found.</returns>
         public static string FindValue(string json, string path)
         {
             return (string)JObject.Parse(json).SelectToken(path);
         }
 
+        /// <summary>
+        /// Sets a value in a JSON document at the location identified by a JSONPath expression.
+        /// </summary>
+        /// <param name="json">The JSON string to modify.</param>
+        /// <param name="path">The JSONPath expression identifying the target.</param>
+        /// <param name="value">The value to set.</param>
+        /// <returns>The updated JSON string, or the original JSON if the path was not found.</returns>
         public static string SetValue(string json, string path, object value)
         {
             var j = JObject.Parse(json).SelectToken(path);
@@ -267,6 +372,11 @@ namespace RIoT2.Core.Utils
             return j.ToString();
         }
 
+        /// <summary>
+        /// Determines whether the specified string is a valid JSON object or array.
+        /// </summary>
+        /// <param name="str">The string to test.</param>
+        /// <returns><c>true</c> if the string is valid JSON; otherwise, <c>false</c>.</returns>
         public static bool IsJson(string str)
         {
             if (string.IsNullOrWhiteSpace(str)) { return false; }
@@ -321,24 +431,41 @@ namespace RIoT2.Core.Utils
         }
     }
 
+    /// <summary>
+    /// Wraps a mutable JSON object and provides convenience operations for reading, merging, and
+    /// modifying its properties.
+    /// </summary>
     public class JsonEntity
     {
         private JObject _jobj;
 
         internal JObject JsonObject { get { return _jobj; } }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JsonEntity"/> class from a JSON string.
+        /// </summary>
+        /// <param name="json">The JSON string to parse.</param>
         public JsonEntity(string json)
         {
             _jobj = JObject.Parse(json);
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JsonEntity"/> class from an existing <see cref="JObject"/>.
+        /// </summary>
+        /// <param name="jobject">The JSON object to wrap.</param>
         public JsonEntity(JObject jobject)
         {
             _jobj = jobject;
         }
 
+        /// <summary>
+        /// Merges the properties of another <see cref="JsonEntity"/> into this one, unioning arrays
+        /// and matching property names case-insensitively.
+        /// </summary>
+        /// <param name="from">The entity whose properties are merged into this instance.</param>
         public void Merge(JsonEntity from)
         {
-
             _jobj.Merge(from.JsonObject, new JsonMergeSettings
             {
                 MergeArrayHandling = MergeArrayHandling.Union,
@@ -346,22 +473,40 @@ namespace RIoT2.Core.Utils
             });
         }
 
+        /// <summary>
+        /// Returns the JSON representation of the entity.
+        /// </summary>
+        /// <returns>The JSON string.</returns>
         public override string ToString()
         {
             return _jobj.ToString();
         }
 
+        /// <summary>
+        /// Deserializes the entity into an object of the specified type.
+        /// </summary>
+        /// <typeparam name="T">The target type.</typeparam>
+        /// <returns>The deserialized object.</returns>
         public T ToObject<T>()
         {
             return _jobj.ToObject<T>();
         }
 
+        /// <summary>
+        /// Removes the specified top-level properties from the entity.
+        /// </summary>
+        /// <param name="properties">The names of the properties to remove.</param>
         public void RemoveProperties(List<string> properties)
         {
             foreach (var k in properties)
                 _jobj.Remove(k);
         }
 
+        /// <summary>
+        /// Determines whether the entity contains a top-level property with the specified name, ignoring case.
+        /// </summary>
+        /// <param name="property">The property name to look for.</param>
+        /// <returns><c>true</c> if the property exists; otherwise, <c>false</c>.</returns>
         public bool ContainsPropertyIgnoreCase(string property)
         {
             foreach (var e in _jobj)
@@ -382,12 +527,22 @@ namespace RIoT2.Core.Utils
             return null;
         }
 
+        /// <summary>
+        /// Gets the names of all top-level properties in the entity.
+        /// </summary>
+        /// <returns>The property names.</returns>
         public IEnumerable<string> GetProperties()
         {
             foreach (var e in _jobj)
                 yield return e.Key;
         }
 
+        /// <summary>
+        /// Finds a value using a JSONPath expression and converts it to the specified type.
+        /// </summary>
+        /// <typeparam name="T">The type to convert the value to.</typeparam>
+        /// <param name="path">The JSONPath expression identifying the value.</param>
+        /// <returns>The converted value, or the default of <typeparamref name="T"/> if not found.</returns>
         public T FindValue<T>(string path)
         {
             var token = _jobj.SelectToken(path);
@@ -402,6 +557,11 @@ namespace RIoT2.Core.Utils
             return default(T);
         }
 
+        /// <summary>
+        /// Gets the JSON representation of a top-level property.
+        /// </summary>
+        /// <param name="property">The property name (matched case-insensitively).</param>
+        /// <returns>The property's JSON, or <c>null</c> if it is missing.</returns>
         public string GetValueAsJson(string property)
         {
             try
@@ -419,6 +579,11 @@ namespace RIoT2.Core.Utils
             return null;
         }
 
+        /// <summary>
+        /// Gets the value of a top-level property, converted to its natural CLR type.
+        /// </summary>
+        /// <param name="property">The property name (matched case-insensitively).</param>
+        /// <returns>The property value as a <see cref="bool"/>, <see cref="decimal"/>, <see cref="DateTime"/>, <see cref="int"/>, or string; or <c>null</c> if missing.</returns>
         public object GetValue(string property)
         {
             try
@@ -443,6 +608,12 @@ namespace RIoT2.Core.Utils
             return null;
         }
 
+        /// <summary>
+        /// Sets a value at the location identified by a JSONPath expression, creating intermediate
+        /// nodes when the path does not yet exist.
+        /// </summary>
+        /// <param name="path">The JSONPath expression identifying the target.</param>
+        /// <param name="value">The value to set.</param>
         public void SetValue(string path, object value)
         {
             try
@@ -463,6 +634,10 @@ namespace RIoT2.Core.Utils
             }
         }
 
+        /// <summary>
+        /// Removes the specified top-level property, if present.
+        /// </summary>
+        /// <param name="property">The name of the property to remove.</param>
         public void Remove(string property)
         {
             if (_jobj.ContainsKey(property))
@@ -471,6 +646,11 @@ namespace RIoT2.Core.Utils
             }
         }
 
+        /// <summary>
+        /// Recursively replaces every value that matches the specified placeholder with the given value.
+        /// </summary>
+        /// <param name="placeholder">The placeholder value to match (case-insensitive).</param>
+        /// <param name="value">The replacement value.</param>
         public void ReplacePlaceHolderWithValue(string placeholder, object value)
         {
             traverseJObject(placeholder, value, _jobj);

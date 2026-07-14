@@ -5,6 +5,10 @@ using System.Linq;
 
 namespace RIoT2.Core.Services
 {
+    /// <summary>
+    /// Default <see cref="IMessageStateService"/> implementation that keeps the latest report and
+    /// command states in memory and maintains a bounded history per report.
+    /// </summary>
     public class MessageStateService : IMessageStateService
     {
         private List<Command> _commands;
@@ -12,14 +16,21 @@ namespace RIoT2.Core.Services
         private static readonly int _maxHistory = 25;
         Dictionary<string, List<Report>> _history;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MessageStateService"/> class with empty state and history.
+        /// </summary>
         public MessageStateService() 
         {
             Reset(true);
         }
 
+        /// <inheritdoc/>
         public IEnumerable<Command> Commands { get { return _commands; } }
+
+        /// <inheritdoc/>
         public IEnumerable<Report> Reports { get { return _reports; } }
 
+        /// <inheritdoc/>
         public IEnumerable<Report> GetHistory(string reportId, int? count = null)
         {
             if (_history.ContainsKey(reportId)) 
@@ -50,6 +61,7 @@ namespace RIoT2.Core.Services
 
         }
 
+        /// <inheritdoc/>
         public void SetState(Report report, bool maintainHistory = false)
         {
             var existingReport = _reports.FirstOrDefault(x => x.Id == report.Id);
@@ -62,6 +74,7 @@ namespace RIoT2.Core.Services
                 addToHistory(report);
         }
 
+        /// <inheritdoc/>
         public void SetState(Command command)
         {
             var existingCommand = _commands.FirstOrDefault(x => x.Id == command.Id);
@@ -71,6 +84,7 @@ namespace RIoT2.Core.Services
             _commands.Add(command);
         }
 
+        /// <inheritdoc/>
         public void Reset(bool includeState = false)
         {
             if (includeState) 

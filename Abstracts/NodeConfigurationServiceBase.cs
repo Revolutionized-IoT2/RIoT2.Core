@@ -9,23 +9,36 @@ using System.Threading.Tasks;
 
 namespace RIoT2.Core.Abstracts
 {
+    /// <summary>
+    /// Provides a base implementation of <see cref="INodeConfigurationService"/> that handles
+    /// loading device configuration and downloading and installing plugin packages.
+    /// </summary>
     public abstract class NodeConfigurationServiceBase : INodeConfigurationService
     {
-
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NodeConfigurationServiceBase"/> class with no device configuration loaded.
+        /// </summary>
         public NodeConfigurationServiceBase() 
         {
             DeviceConfigurationLoaded = false;
         }
 
+        /// <inheritdoc/>
         public virtual event DeviceConfigurationUpdatedHandler DeviceConfigurationUpdated;
+
+        /// <inheritdoc/>
         public virtual bool DeviceConfigurationLoaded { get; private set; }
 
+        /// <inheritdoc/>
         public virtual NodeDeviceConfiguration DeviceConfiguration { get; private set; }
 
+        /// <inheritdoc/>
         public abstract NodeConfiguration Configuration { get; }
 
+        /// <inheritdoc/>
         public virtual NodeOnlineMessage OnlineMessage { get; set; }
 
+        /// <inheritdoc/>
         public virtual async Task LoadDeviceConfiguration(string json, string id)
         {
             DeviceConfigurationLoaded = false;
@@ -39,6 +52,10 @@ namespace RIoT2.Core.Abstracts
             }
         }
 
+        /// <summary>
+        /// Sets the current device configuration, marks it as loaded, and raises <see cref="DeviceConfigurationUpdated"/>.
+        /// </summary>
+        /// <param name="configuration">The device configuration to apply.</param>
         public void SetDeviceConfiguration(NodeDeviceConfiguration configuration) 
         {
             DeviceConfiguration = configuration;
@@ -46,6 +63,7 @@ namespace RIoT2.Core.Abstracts
             DeviceConfigurationUpdated?.Invoke();
         }
 
+        /// <inheritdoc/>
         public virtual void DownloadPluginPackage(string url)
         {
             var file = Utils.Web.DownloadFile(url).Result;
@@ -55,6 +73,7 @@ namespace RIoT2.Core.Abstracts
             }
         }
 
+        /// <inheritdoc/>
         public virtual void InstallPluginPackage()
         {
             try 

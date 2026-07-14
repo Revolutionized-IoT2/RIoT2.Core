@@ -14,6 +14,10 @@ namespace RIoT2.Core.Models
         public Dictionary<string, string> DeviceParameters { get; set; }
         public string RefreshSchedule { get; set; }
         
+        /// <summary>
+        /// Builds a scheduler trigger from the configured refresh schedule.
+        /// </summary>
+        /// <returns>A <see cref="SchedulerTrigger"/> when <c>RefreshSchedule</c> is a valid cron expression; otherwise, <c>null</c>.</returns>
         public SchedulerTrigger GetDeviceRefreshSchedule() 
         {
             if (!String.IsNullOrEmpty(RefreshSchedule)) 

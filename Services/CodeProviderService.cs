@@ -6,15 +6,23 @@ using System.Linq;
 
 namespace RIoT2.Core.Services
 {
+    /// <summary>
+    /// In-memory <see cref="ICodeProviderService"/> implementation that issues and validates
+    /// time- and usage-limited codes.
+    /// </summary>
     public class CodeProviderService : ICodeProviderService
     {
         private List<DeviceCode> _codes;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CodeProviderService"/> class.
+        /// </summary>
         public CodeProviderService() 
         {
             _codes = new List<DeviceCode>();
         }
 
+        /// <inheritdoc/>
         public string CreateCode(int? timesValid = null, DateTime? from = null, DateTime? to = null)
         {
             var newCode = Guid.NewGuid().ToString().ToLower();
@@ -29,6 +37,7 @@ namespace RIoT2.Core.Services
             return newCode;
         }
 
+        /// <inheritdoc/>
         public bool UseCode(string code)
         {
             var c = _codes.FirstOrDefault(x => x.Code == code.ToLower());

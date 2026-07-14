@@ -86,6 +86,10 @@ namespace RIoT2.Core.Models
             }
         }*/
 
+        /// <summary>
+        /// Validates that the required output fields are present.
+        /// </summary>
+        /// <returns>A sequence of validation error messages; empty when the output is valid.</returns>
         public IEnumerable<string> Validate()
         {
             if (string.IsNullOrEmpty(CommandId))
