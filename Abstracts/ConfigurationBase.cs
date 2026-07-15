@@ -31,17 +31,12 @@ namespace RIoT2.Core.Abstracts
             {
                 try
                 {
-                    byte[] result;
-                    using (FileStream SourceStream = System.IO.File.Open(manifest.FullName, FileMode.Open))
-                    {
-                        result = new byte[SourceStream.Length];
-                        SourceStream.ReadAsync(result, 0, (int)SourceStream.Length).Wait();
-                    }
+                    byte[] result = System.IO.File.ReadAllBytes(manifest.FullName);
                     return Json.DeserializeAutoTypeNameHandling<PackageManifest>(System.Text.Encoding.UTF8.GetString(result));
                 }
                 catch (Exception e)
                 {
-                    throw new Exception($"Error loading manifest: {e.Message}");
+                    throw new Exception($"Error loading manifest: {e.Message}", e);
                 }
             }
             return null;

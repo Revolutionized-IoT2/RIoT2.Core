@@ -14,18 +14,27 @@ namespace RIoT2.Core.Utils
     {
         const int defaultTimeOutMilliseconds = 60000;
 
+        // Shared HttpClient instances to avoid socket exhaustion (SocketException) caused by
+        // creating/disposing an HttpClient per request. Per-request timeouts are applied via
+        // CancellationTokenSource so the shared instance's Timeout is never mutated.
+        private static readonly HttpClient _httpClient = new HttpClient();
+
+        private static readonly HttpClient _insecureHttpClient = new HttpClient(new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+        });
+
         public static async Task<WebFile> DownloadFile(string url)
         {
             try
             {
-                using (var httpClient = new HttpClient())
                 using (var cancel = new CancellationTokenSource(defaultTimeOutMilliseconds))
                 {
-                    var response = await httpClient.GetAsync(url, cancel.Token);
+                    var response = await _httpClient.GetAsync(url, cancel.Token);
                     response.EnsureSuccessStatusCode();
                     var filename = response.Content.Headers.ContentDisposition != null && !String.IsNullOrEmpty(response.Content.Headers.ContentDisposition.FileName) ?
                         response.Content.Headers.ContentDisposition.FileName.Trim('"') :
-                        url.Split('/').Last();
+                        GetFileNameFromUrl(url);
 
                     var content = await response.Content.ReadAsByteArrayAsync();
                     return new WebFile
@@ -46,10 +55,9 @@ namespace RIoT2.Core.Utils
         {
             try
             {
-                using (var httpClient = new HttpClient())
                 using (var cancel = new CancellationTokenSource(defaultTimeOutMilliseconds))
                 {
-                    var response = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, address), cancel.Token);
+                    var response = await _httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, address), cancel.Token);
                     response.EnsureSuccessStatusCode();
                     return response.Content.Headers;
                 }
@@ -67,7 +75,7 @@ namespace RIoT2.Core.Utils
         {
             return await GetAsync(
                 address,
-                new AuthenticationHeaderValue("Bearer", token),
+                CreateBearerHeader(token),
                 timeOutMilliseconds);
         }
 
@@ -80,7 +88,7 @@ namespace RIoT2.Core.Utils
             return await PostAsync(
                 address,
                 postBody,
-                new AuthenticationHeaderValue("Bearer", token),
+                CreateBearerHeader(token),
                 timeOutMilliseconds);
         }
 
@@ -91,13 +99,13 @@ namespace RIoT2.Core.Utils
         {
             try
             {
-                using (var httpClient = new HttpClient())
+                using (var request = new HttpRequestMessage(HttpMethod.Get, address))
                 using (var cancel = new CancellationTokenSource(timeOutMilliseconds))
                 {
                     if (authHeader != null)
-                        httpClient.DefaultRequestHeaders.Authorization = authHeader;
+                        request.Headers.Authorization = authHeader;
 
-                    return await httpClient.GetAsync(address, cancel.Token);
+                    return await _httpClient.SendAsync(request, cancel.Token);
                 }
             }
             catch (Exception ex)
@@ -111,10 +119,9 @@ namespace RIoT2.Core.Utils
         {
             try
             {
-                using (var httpClient = new HttpClient())
                 using (var cancel = new CancellationTokenSource(defaultTimeOutMilliseconds))
                 {
-                    return await httpClient.GetAsync(address, cancel.Token);
+                    return await _httpClient.GetAsync(address, cancel.Token);
                 }
             }
             catch (Exception ex)
@@ -129,21 +136,16 @@ namespace RIoT2.Core.Utils
         {
             try
             {
-                using (var httpClient = new InsecureHttpClient().Client)
+                using (var request = new HttpRequestMessage(HttpMethod.Get, address))
                 using (var cancel = new CancellationTokenSource(defaultTimeOutMilliseconds))
                 {
                     if (headers != null)
                     {
                         foreach (var header in headers)
-                        {
-                            if (httpClient.DefaultRequestHeaders.Contains(header.Key))
-                                httpClient.DefaultRequestHeaders.Remove(header.Key);
-
-                            httpClient.DefaultRequestHeaders.Add(header.Key, header.Value);
-                        }
+                            request.Headers.TryAddWithoutValidation(header.Key, header.Value);
                     }
 
-                    return await httpClient.GetAsync(address, cancel.Token);
+                    return await _insecureHttpClient.SendAsync(request, cancel.Token);
                 }
             }
             catch (Exception ex)
@@ -160,20 +162,17 @@ namespace RIoT2.Core.Utils
         {
             try
             {
-                using (var httpClient = new HttpClient())
+                using (var request = new HttpRequestMessage(HttpMethod.Post, address))
                 using (var cancel = new CancellationTokenSource(timeOutMilliseconds))
                 {
-                    httpClient.DefaultRequestHeaders.Authorization = authHeader;
-                    httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                    if (authHeader != null)
+                        request.Headers.Authorization = authHeader;
+                    request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-                    StringContent content = null;
                     if (postBody != null)
-                        content = new StringContent(postBody, Encoding.UTF8, "application/json");
+                        request.Content = new StringContent(postBody, Encoding.UTF8, "application/json");
 
-                    return await httpClient.PostAsync(
-                        address,
-                        content,
-                        cancel.Token);
+                    return await _httpClient.SendAsync(request, cancel.Token);
                 }
             }
             catch (Exception ex)
@@ -190,35 +189,25 @@ namespace RIoT2.Core.Utils
         {
             try
             {
-                using (var httpClient = new HttpClient())
+                using (var request = new HttpRequestMessage(HttpMethod.Post, address))
                 using (var cancel = new CancellationTokenSource(timeOutMilliseconds))
                 {
-                    StringContent httpContent = null;
+                    string contentType = "application/json";
                     if (headers != null && headers.ContainsKey("content-type"))
                     {
-                        httpContent = new StringContent(postBody, Encoding.UTF8, headers["content-type"]);
+                        contentType = headers["content-type"];
                         headers.Remove("content-type");
                     }
-                    else
-                    {
-                        httpContent = new StringContent(postBody, Encoding.UTF8, "application/json");
-                    }
+
+                    request.Content = new StringContent(postBody, Encoding.UTF8, contentType);
 
                     if (headers != null)
                     {
                         foreach (var header in headers)
-                        {
-                            if (httpClient.DefaultRequestHeaders.Contains(header.Key))
-                                httpClient.DefaultRequestHeaders.Remove(header.Key);
-
-                            httpClient.DefaultRequestHeaders.Add(header.Key, header.Value);
-                        }
+                            request.Headers.TryAddWithoutValidation(header.Key, header.Value);
                     }
 
-                    return await httpClient.PostAsync(
-                        address,
-                        httpContent,
-                        cancel.Token);
+                    return await _httpClient.SendAsync(request, cancel.Token);
                 }
             }
             catch (Exception ex)
@@ -234,16 +223,14 @@ namespace RIoT2.Core.Utils
         {
             try
             {
-                using (var httpClient = new HttpClient())
+                using (var form = new MultipartFormDataContent())
+                using (var request = new HttpRequestMessage(HttpMethod.Post, address))
                 using (var cancel = new CancellationTokenSource(timeOutMilliseconds))
                 {
-                    MultipartFormDataContent form = new MultipartFormDataContent();
                     form.Add(new ByteArrayContent(data, 0, data.Length));
+                    request.Content = form;
 
-                    return await httpClient.PostAsync(
-                        address,
-                        form,
-                        cancel.Token);
+                    return await _httpClient.SendAsync(request, cancel.Token);
                 }
             }
             catch (Exception ex)
@@ -260,30 +247,19 @@ namespace RIoT2.Core.Utils
         {
             try
             {
-                using (var httpClient = new InsecureHttpClient().Client)
+                using (var request = new HttpRequestMessage(HttpMethod.Put, address))
                 using (var cancel = new CancellationTokenSource(timeOutMilliseconds))
                 {
-                    StringContent httpContent = null;
                     if (body != null)
-                        httpContent = new StringContent(body, Encoding.UTF8, "application/json");
+                        request.Content = new StringContent(body, Encoding.UTF8, "application/json");
 
                     if (headers != null)
                     {
                         foreach (var header in headers)
-                        {
-                            if (httpClient.DefaultRequestHeaders.Contains(header.Key))
-                                httpClient.DefaultRequestHeaders.Remove(header.Key);
-
-                            httpClient.DefaultRequestHeaders.Add(header.Key, header.Value);
-                        }
+                            request.Headers.TryAddWithoutValidation(header.Key, header.Value);
                     }
 
-                    var response = await httpClient.PutAsync(
-                        address,
-                        httpContent,
-                        cancel.Token);
-
-                    return response;
+                    return await _insecureHttpClient.SendAsync(request, cancel.Token);
                 }
             }
             catch (Exception ex)
@@ -296,9 +272,9 @@ namespace RIoT2.Core.Utils
         {
             try
             {
-                using (var httpClient = new HttpClient())
+                using (var request = new HttpRequestMessage(method, uri))
+                using (var cancel = new CancellationTokenSource(defaultTimeOutMilliseconds))
                 {
-                    var request = new HttpRequestMessage(method, uri);
                     if (userName != null && password != null)
                     {
                         string encodedAuth = Convert.ToBase64String(Encoding.GetEncoding("ISO-8859-1").GetBytes(userName + ":" + password));
@@ -308,7 +284,7 @@ namespace RIoT2.Core.Utils
                     request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
                     request.Content.Headers.ContentLength = 0;
 
-                    var response = await httpClient.SendAsync(request);
+                    var response = await _httpClient.SendAsync(request, cancel.Token);
                     return await response.Content.ReadAsStringAsync();
                 }
             }
@@ -322,18 +298,40 @@ namespace RIoT2.Core.Utils
         {
             try
             {
-                using (var httpClient = new HttpClient())
+                using (var request = new HttpRequestMessage(HttpMethod.Get, uri))
                 using (var cancel = new CancellationTokenSource(timeOutMilliseconds))
                 {
                     if (!String.IsNullOrEmpty(token))
-                        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                    return await httpClient.GetAsync(uri, cancel.Token);
+                    return await _httpClient.SendAsync(request, cancel.Token);
                 }
             }
             catch (Exception ex)
             {
                 throw new Exception("Error in Web.GetResponseAsync", ex);
+            }
+        }
+
+        // Fix #9: avoid emitting a malformed "Authorization: Bearer" header when the token is null/empty.
+        private static AuthenticationHeaderValue CreateBearerHeader(string token)
+        {
+            return String.IsNullOrEmpty(token) ? null : new AuthenticationHeaderValue("Bearer", token);
+        }
+
+        // Fix #10: derive a safe filename that ignores query strings and trailing slashes.
+        private static string GetFileNameFromUrl(string url)
+        {
+            try
+            {
+                var uri = new Uri(url, UriKind.RelativeOrAbsolute);
+                var path = uri.IsAbsoluteUri ? uri.AbsolutePath : url;
+                var name = path.TrimEnd('/').Split('/').Last();
+                return String.IsNullOrEmpty(name) ? "download" : Uri.UnescapeDataString(name);
+            }
+            catch
+            {
+                return "download";
             }
         }
     }

@@ -63,10 +63,25 @@ namespace RIoT2.Core.Utils
                               where value != null && value.GetType() == typeof(JArray)
                               select key).ToList();
 
-            JArrayKeys.ForEach(key => result[key] = ((JArray)result[key]).Values().Select(x => ((JValue)x).Value).ToArray());
+            JArrayKeys.ForEach(key => result[key] = ((JArray)result[key]).Select(ConvertToken).ToArray());
             JObjectKeys.ForEach(key => result[key] = ToDictionary((result[key] as JObject).ToString()));
 
             return result;
+        }
+
+        private static object ConvertToken(JToken token)
+        {
+            switch (token)
+            {
+                case JObject obj:
+                    return ToDictionary(obj);
+                case JArray arr:
+                    return arr.Select(ConvertToken).ToArray();
+                case JValue val:
+                    return val.Value;
+                default:
+                    return token?.ToString();
+            }
         }
 
         /// <summary>
@@ -297,9 +312,17 @@ namespace RIoT2.Core.Utils
                 return ValueType.Boolean;
             }
 
-            if (float.TryParse(data, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var floatValue))
+            // Prefer higher-precision numeric types over float to avoid precision loss.
+            // Integers that fit in a long stay integral; fractional/large values use decimal.
+            if (long.TryParse(data, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var longValue))
             {
-                value = floatValue;
+                value = longValue;
+                return ValueType.Number;
+            }
+
+            if (decimal.TryParse(data, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var decimalValue))
+            {
+                value = decimalValue;
                 return ValueType.Number;
             }
 
@@ -353,7 +376,21 @@ namespace RIoT2.Core.Utils
         /// <returns>The matched value as a string, or <c>null</c> if not found.</returns>
         public static string FindValue(string json, string path)
         {
-            return (string)JObject.Parse(json).SelectToken(path);
+            var token = JObject.Parse(json).SelectToken(path);
+            if (token == null)
+                return null;
+
+            switch (token.Type)
+            {
+                case JTokenType.Null:
+                    return null;
+                case JTokenType.Object:
+                case JTokenType.Array:
+                    // Return the JSON representation instead of a null cast result.
+                    return token.ToString(Newtonsoft.Json.Formatting.None);
+                default:
+                    return token.ToString();
+            }
         }
 
         /// <summary>
@@ -690,7 +727,9 @@ namespace RIoT2.Core.Utils
                         return new ValueModel((double)jValue);
                     case JsonToken.String:
                     default:
-                        return new ValueModel(reader.Value.ToString());
+                        // reader.Value can be null for token types such as Null/StartArray/EndArray;
+                        // guard against a NullReferenceException.
+                        return reader.Value == null ? null : new ValueModel(reader.Value.ToString());
                 }
             }
             return null;
@@ -930,14 +969,19 @@ namespace RIoT2.Core.Utils
             {
                 var pathPart = pathParts[i];
                 var partNode = node.SelectToken(pathPart);
+
+                // Only JObject nodes can have properties added to them.
+                if (!(node is JObject objectNode))
+                    return;
+
                 if (partNode == null && i < pathParts.Length - 1)
                 {
-                    ((JObject)node).Add(pathPart, new JObject());
+                    objectNode.Add(pathPart, new JObject());
                     partNode = node.SelectToken(pathPart);
                 }
                 else if (partNode == null && i == pathParts.Length - 1)
                 {
-                    ((JObject)node).Add(pathPart, JToken.FromObject(valueToAdd));
+                    objectNode.Add(pathPart, JToken.FromObject(valueToAdd));
                     partNode = node.SelectToken(pathPart);
                 }
                 node = partNode;
@@ -947,18 +991,9 @@ namespace RIoT2.Core.Utils
         {
             foreach (var e in parent)
             {
-                if (e.Value is JArray)
+                if (e.Value is JArray arr)
                 {
-                    var lst = (e.Value as JArray);
-                    for (int i = 0; i < lst.Count; i++)
-                    {
-                        var ta = lst[i];
-                        if (ta is JObject)
-                            traverseJObject(placeholder, value, ta as JObject);
-
-                        if (string.Equals(ta.ToString(), placeholder, StringComparison.OrdinalIgnoreCase))
-                            (e.Value as JArray)[i] = new JValue(value);
-                    }
+                    traverseJArray(placeholder, value, arr);
                 }
                 else if (e.Value is JObject childObj)
                 {
@@ -975,6 +1010,26 @@ namespace RIoT2.Core.Utils
             }
             foreach (var key in keysToReplace)
                 parent[key] = new JValue(value);
+        }
+
+        private void traverseJArray(string placeholder, object value, JArray array)
+        {
+            for (int i = 0; i < array.Count; i++)
+            {
+                var element = array[i];
+                if (element is JObject childObj)
+                {
+                    traverseJObject(placeholder, value, childObj);
+                }
+                else if (element is JArray childArr)
+                {
+                    traverseJArray(placeholder, value, childArr);
+                }
+                else if (string.Equals(element.ToString(), placeholder, StringComparison.OrdinalIgnoreCase))
+                {
+                    array[i] = new JValue(value);
+                }
+            }
         }
     }
 

@@ -66,7 +66,14 @@ namespace RIoT2.Core.Abstracts
         /// <inheritdoc/>
         public virtual void DownloadPluginPackage(string url)
         {
-            var file = Utils.Web.DownloadFile(url).Result;
+            //Kept for backward compatibility; prefer DownloadPluginPackageAsync to avoid blocking.
+            DownloadPluginPackageAsync(url).GetAwaiter().GetResult();
+        }
+
+        /// <inheritdoc/>
+        public virtual async Task DownloadPluginPackageAsync(string url)
+        {
+            var file = await Utils.Web.DownloadFile(url);
             if (file != null)
             {
                 saveFile("Data/" + file.Name, file.Content);
@@ -83,7 +90,7 @@ namespace RIoT2.Core.Abstracts
                     return; 
 
                 var file = loadFile("Data/" + packageName);
-                if (file.Exists) 
+                if (file != null && file.Exists) 
                 {
                     deleteFolderContent("Plugins");
                     ZipFile.ExtractToDirectory(file.FullName, Path.Combine(Configuration.ApplicationFolder, "Plugins"));

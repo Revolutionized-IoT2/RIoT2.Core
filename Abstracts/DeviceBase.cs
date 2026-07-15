@@ -5,6 +5,7 @@ using RIoT2.Core.Utils;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 
 namespace RIoT2.Core.Abstracts
@@ -129,7 +130,7 @@ namespace RIoT2.Core.Abstracts
             switch (type)
             {
                 case ValueType.Number:
-                    float.TryParse(value, out var number);
+                    float.TryParse(value, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var number);
                     return number;
                 case ValueType.Boolean:
                     bool.TryParse(value, out var boolValue);
@@ -187,19 +188,18 @@ namespace RIoT2.Core.Abstracts
 
                 if (prevReport == null)
                 {
-                    _previousReports.Add(report);
+                    storePreviousReport(report);
                     ReportUpdated?.Invoke(device, report);
                     return;
                 }
 
-                ValueType reportType = GetObjectValueType(report.Value);
-                if (reportType == ValueType.Number)
+                if (report.Value != null && report.Value.Type == ValueType.Number)
                 {
                     bool noOperation = true;
                     try
                     {
-                        double prevValue = Convert.ToDouble(prevReport.Value);
-                        double currentValue = Convert.ToDouble(report.Value);
+                        double prevValue = prevReport.Value.GetValue<double>();
+                        double currentValue = report.Value.GetValue<double>();
                         noOperation = !thresholdOrTrendExeeded(report.Id, prevValue, currentValue, threshold);
                     }
                     catch (Exception ex)
@@ -212,19 +212,30 @@ namespace RIoT2.Core.Abstracts
                 }
                 else
                 {
-                    var prevReportValueAsJson = prevReport.Value.ToJson();
-                    var reportValueAsString = report.Value.ToJson();
+                    var prevReportValueAsJson = prevReport.Value?.ToJson();
+                    var reportValueAsString = report.Value?.ToJson();
                     if (prevReportValueAsJson == reportValueAsString)
                         return;
                 }
 
-                //Update previous reports
+                //Update previous reports (store a snapshot so later caller mutations don't affect comparisons)
                 _previousReports.Remove(prevReport);
-                _previousReports.Add(report);
+                storePreviousReport(report);
 
                 //and send report
                 ReportUpdated?.Invoke(device, report);
             }
+        }
+
+        private void storePreviousReport(Report report)
+        {
+            _previousReports.Add(new Report
+            {
+                Id = report.Id,
+                TimeStamp = report.TimeStamp,
+                Filter = report.Filter,
+                Value = report.Value?.Copy()
+            });
         }
 
         public void RefreshReport(string group, string name)
@@ -254,10 +265,15 @@ namespace RIoT2.Core.Abstracts
 
         private bool thresholdOrTrendExeeded(string reportId, double prevValue, double newValue, double? threshold)
         {
-            double effectiveThreshold = threshold ?? 0;
+            //No threshold configured -> report on any change.
+            if (!threshold.HasValue)
+                return prevValue != newValue;
+
+            double effectiveThreshold = threshold.Value;
             if ((prevValue + effectiveThreshold) < newValue || (prevValue - effectiveThreshold) > newValue)
                 return true;
 
+            //Within threshold: track directional trend so slow drifts are eventually reported.
             if (!_numericTrends.ContainsKey(reportId))
             {
                 _numericTrends.Add(reportId, 0);

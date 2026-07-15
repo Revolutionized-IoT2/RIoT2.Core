@@ -43,6 +43,8 @@ namespace RIoT2.Core.Models
                 var jsonDocument = isJson(json);
                 if (jsonDocument != null)
                     _value = jsonDocument.RootElement;
+                else
+                    _value = System.Text.Json.JsonSerializer.SerializeToElement(value, getOptions());
 
                 return;
             }
@@ -405,7 +407,12 @@ namespace RIoT2.Core.Models
                 case ValueType.Text:
                 case ValueType.Boolean:
                 case ValueType.Number:
-                    return findNode(source.Node, _value.EnumerateObject().First().Value.ToString()).ToString();
+                    var firstProperty = _value.EnumerateObject().FirstOrDefault();
+                    if (firstProperty.Value.ValueKind == JsonValueKind.Undefined)
+                        return null;
+
+                    var mappedNode = findNode(source.Node, firstProperty.Value.ToString());
+                    return mappedNode?.ToString();
                 case ValueType.TextArray:
                     var a = new JsonArray();
                     foreach (var map in _value.EnumerateObject()) //loop thru mapping
@@ -494,6 +501,9 @@ namespace RIoT2.Core.Models
                     else //else add new
                     {
                         var nodeToAdd = findNodePath(root, path, true);
+                        if (nodeToAdd == null || nodeToAdd.GetValueKind() != JsonValueKind.Object)
+                            return value; //cannot add: parent path is missing or not an object
+
                         nodeToAdd.AsObject().Add(pathParts(path).Last(), value.Node);
                     }
                     return new ValueModel(root.ToJsonString());

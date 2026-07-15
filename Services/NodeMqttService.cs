@@ -34,6 +34,12 @@ namespace RIoT2.Core.Services
         {
             try
             {
+                if (_client != null)
+                {
+                    _logger.LogWarning("MQTT service is already started; ignoring duplicate Start call.");
+                    return;
+                }
+
                 _client = new MqttClient(_configurationService.Configuration.Mqtt.ClientId,
                     _configurationService.Configuration.Mqtt.ServerUrl,
                     _configurationService.Configuration.Mqtt.Username,
@@ -58,6 +64,9 @@ namespace RIoT2.Core.Services
 
         public async Task SendCommand(string topic, string value)
         {
+            if (_client == null)
+                throw new InvalidOperationException("Cannot send command before the MQTT service is started.");
+
             await _client.Publish(topic, value);
         }
 
@@ -85,7 +94,20 @@ namespace RIoT2.Core.Services
         {
             try
             {
-                await _client.Publish(_reportTopic, Json.SerializeIgnoreNulls(report as Report));
+                var typedReport = report as Report;
+                if (typedReport == null)
+                {
+                    _logger.LogWarning("ReportUpdated received an unexpected report type; publish skipped.");
+                    return;
+                }
+
+                if (_client == null)
+                {
+                    _logger.LogWarning("ReportUpdated received before the MQTT service was started; publish skipped.");
+                    return;
+                }
+
+                await _client.Publish(_reportTopic, Json.SerializeIgnoreNulls(typedReport));
             }
             catch (Exception x)
             {
@@ -95,7 +117,14 @@ namespace RIoT2.Core.Services
 
         public async Task Stop()
         {
+            if (_client == null)
+                return;
+
+            _client.MessageReceived -= _client_MessageReceived;
+            _reportService.ReportUpdated -= _reportService_ReportUpdated;
+
             await _client.Stop();
+            _client = null;
         }
 
         public async Task SendNodeOnlineMessage(NodeOnlineMessage msg)
@@ -105,7 +134,7 @@ namespace RIoT2.Core.Services
 
         public bool IsConnected()
         {
-            return _client.IsConnected();
+            return _client != null && _client.IsConnected();
         }
     }
 }

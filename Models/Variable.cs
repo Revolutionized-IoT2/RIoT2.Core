@@ -4,7 +4,7 @@ namespace RIoT2.Core.Models
 {
     public class Variable
     {
-        private ValueModel _value;
+        private ValueModel _value = new ValueModel(null);
         public string Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }

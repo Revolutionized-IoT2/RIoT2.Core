@@ -12,7 +12,8 @@ namespace RIoT2.Core.Services
     /// </summary>
     public class CodeProviderService : ICodeProviderService
     {
-        private List<DeviceCode> _codes;
+        private readonly List<DeviceCode> _codes;
+        private readonly object _lock = new object();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CodeProviderService"/> class.
@@ -26,34 +27,45 @@ namespace RIoT2.Core.Services
         public string CreateCode(int? timesValid = null, DateTime? from = null, DateTime? to = null)
         {
             var newCode = Guid.NewGuid().ToString().ToLower();
-            _codes.Add(new DeviceCode()
+            lock (_lock)
             {
-                From = from,
-                TimesUsed = 0,
-                TimesValid = timesValid,
-                To = to,
-                Code = newCode
-            });
+                _codes.Add(new DeviceCode()
+                {
+                    From = from,
+                    TimesUsed = 0,
+                    TimesValid = timesValid,
+                    To = to,
+                    Code = newCode
+                });
+            }
             return newCode;
         }
 
         /// <inheritdoc/>
         public bool UseCode(string code)
         {
-            var c = _codes.FirstOrDefault(x => x.Code == code.ToLower());
-            if (c == null)
+            if (string.IsNullOrEmpty(code))
                 return false;
 
-            if (c.IsValid)
+            var normalizedCode = code.ToLower();
+
+            lock (_lock)
             {
-                c.TimesUsed++;
-                return true;
+                var c = _codes.FirstOrDefault(x => x.Code == normalizedCode);
+                if (c == null)
+                    return false;
+
+                if (c.IsValid)
+                {
+                    c.TimesUsed++;
+                    return true;
+                }
+                else // code is not valid anymore -> remove it from list
+                {
+                    _codes.Remove(c);
+                }
+                return false;
             }
-            else // code is not valid anymore -> remove it from list
-            {
-                _codes.Remove(c);
-            }
-            return false;
         }
     }
 }

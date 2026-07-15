@@ -57,9 +57,9 @@ namespace RIoT2.Core.Abstracts
         }
         protected bool ContainsAllExpectedParameters(IEnumerable<Parameter> parameters)
         {
-            foreach (var p in parameters)
+            foreach (var expected in ExpectedParameters.Where(x => !x.IsOptional))
             {
-                if (ExpectedParameters.Where(x => !x.IsOptional).FirstOrDefault(x => x.Name == p.Name) == null)
+                if (parameters.FirstOrDefault(p => p.Name == expected.Name) == null)
                     return false;
             }
             return true;
@@ -73,7 +73,7 @@ namespace RIoT2.Core.Abstracts
             }
             else 
             {
-                model = new ValueModel(value.ToString());
+                model = new ValueModel(value.ToJson());
             }
         }
     }
