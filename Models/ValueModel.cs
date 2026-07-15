@@ -18,9 +18,17 @@ namespace RIoT2.Core.Models
         #region Ctor
         public ValueModel(object value)
         {
-            if (value is ValueModel) 
+            if (value == null)
             {
-                _value = (value as ValueModel)._value.Clone();
+                _value = JsonSerializer.SerializeToElement<object>(null);
+                return;
+            }
+
+            if (value is ValueModel valueModel) 
+            {
+                _value = valueModel._value.Clone();
+                _objectType = valueModel._objectType;
+                return;
             }
 
             if (value is JsonElement) 
@@ -173,11 +181,12 @@ namespace RIoT2.Core.Models
                             expandoDict.Add(property.Name, property.Value.GetString());
                             break;
                         case JsonValueKind.Number:
-                            var numStr = property.Value.ToString();
-                            if (numStr.Contains("."))
-                                expandoDict.Add(property.Name, property.Value.GetDecimal());
+                            if (property.Value.TryGetInt32(out var propInt))
+                                expandoDict.Add(property.Name, propInt);
+                            else if (property.Value.TryGetInt64(out var propLong))
+                                expandoDict.Add(property.Name, propLong);
                             else
-                                expandoDict.Add(property.Name, property.Value.GetInt32());
+                                expandoDict.Add(property.Name, property.Value.GetDecimal());
                             break;
                         case JsonValueKind.True:
                         case JsonValueKind.False:
@@ -206,11 +215,11 @@ namespace RIoT2.Core.Models
             }
             else if (elem.ValueKind == JsonValueKind.Number)
             {
-                var numStr = elem.ToString();
-                if (numStr.Contains("."))
-                    return elem.GetDecimal();
-                else
-                    return elem.GetInt32();
+                if (elem.TryGetInt32(out var intVal))
+                    return intVal;
+                if (elem.TryGetInt64(out var longVal))
+                    return longVal;
+                return elem.GetDecimal();
             }
             else if (elem.ValueKind == JsonValueKind.False || elem.ValueKind == JsonValueKind.True) 
             {
@@ -248,7 +257,12 @@ namespace RIoT2.Core.Models
             if (Type == ValueType.TextArray) 
             {
                 foreach (var v in _value.EnumerateArray()) 
-                    yield return v.GetString();
+                {
+                    if (v.ValueKind == JsonValueKind.String)
+                        yield return v.GetString();
+                    else
+                        yield return v.GetRawText();
+                }
             }
         }
 
@@ -256,66 +270,63 @@ namespace RIoT2.Core.Models
         {
             if (Type == ValueType.Entity)
             {
-                if (string.IsNullOrEmpty(path)) 
+                if (string.IsNullOrEmpty(path))
                 {
                     if (typeof(T) == typeof(string))
                         return (T)(object)_value.GetRawText();
 
-                    return _value.Deserialize<T>(new JsonSerializerOptions() { 
+                    return _value.Deserialize<T>(new JsonSerializerOptions()
+                    {
                         AllowTrailingCommas = true,
                         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                    } );
+                    });
                 }
-                else //fetch requested path -> return only it 
-                {
-                    JsonNode node = findNodePath(Node, path);
-                   
-                    if (node != null) 
-                    {
-                        if (node.GetValueKind() == JsonValueKind.Number && typeof(T) == typeof(int)) 
-                        {
-                            var dec = node.Deserialize<decimal>();
-                            return (T)(object) Convert.ToInt32(dec);
-                        }
 
-                        if (typeof(T) == typeof(string))
-                            return (T)(object)node.ToString();
+                //fetch requested path -> return only it
+                JsonNode node = findNodePath(Node, path);
+                if (node == null)
+                    return default(T);
 
-                        return node.GetValue<T>();
-                    }
-                }
-                return default(T);
+                if (typeof(T) == typeof(string))
+                    return (T)(object)node.ToString();
+
+                if (node.GetValueKind() == JsonValueKind.Number)
+                    return convertNumber<T>(node.Deserialize<decimal>());
+
+                return node.GetValue<T>();
             }
 
-            if (typeof(T) == typeof(int))
-            {
-                if (_value.TryGetInt32(out int intVal))
-                    return (T)(object)intVal; //TODO Better way to do this?
-            }
-
-            if (typeof(T) == typeof(double))
-            {
-                if (_value.TryGetDouble(out double doubleVal))
-                    return (T)(object)doubleVal; 
-            }
-
-            if (typeof(T) == typeof(decimal))
-            {
-                if (_value.TryGetDecimal(out decimal decimalVal))
-                    return (T)(object)decimalVal;
-            }
+            if (_value.ValueKind == JsonValueKind.Number)
+                return convertNumber<T>(_value.GetDecimal());
 
             if (typeof(T) == typeof(string))
-            {
                 return (T)(object)_value.ToString();
-            }
 
             if (typeof(T) == typeof(bool))
-            {
                 return (T)(object)_value.GetBoolean();
-            }
 
-            return (T)_value.Deserialize<T>();
+            return _value.Deserialize<T>();
+        }
+
+        /// <summary>
+        /// Converts a JSON numeric value (held as <see cref="decimal"/> to preserve precision) into the
+        /// requested numeric target type <typeparamref name="T"/>. Falls back to <c>default</c> for
+        /// unsupported types.
+        /// </summary>
+        private static T convertNumber<T>(decimal number)
+        {
+            var target = typeof(T);
+
+            if (target == typeof(int)) return (T)(object)Convert.ToInt32(number);
+            if (target == typeof(long)) return (T)(object)Convert.ToInt64(number);
+            if (target == typeof(double)) return (T)(object)Convert.ToDouble(number);
+            if (target == typeof(decimal)) return (T)(object)number;
+            if (target == typeof(float)) return (T)(object)Convert.ToSingle(number);
+            if (target == typeof(short)) return (T)(object)Convert.ToInt16(number);
+            if (target == typeof(byte)) return (T)(object)Convert.ToByte(number);
+            if (target == typeof(string)) return (T)(object)number.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+            return default(T);
         }
 
         private JsonNode findNodePath(JsonNode node, string path = null, bool returnParent = false) 
@@ -356,11 +367,15 @@ namespace RIoT2.Core.Models
             {
                 foreach (var child in node.AsObject().AsEnumerable()) 
                 {
-                    if(child.Key == property)
+                    if (child.Key == property)
                         return child.Value;
 
-                    if(child.Value.GetValueKind() == JsonValueKind.Object)
-                        return findNode(child.Value, property);
+                    if (child.Value != null && child.Value.GetValueKind() == JsonValueKind.Object)
+                    {
+                        var found = findNode(child.Value, property);
+                        if (found != null)
+                            return found;
+                    }
                 }
             }
             return null;
@@ -513,20 +528,26 @@ namespace RIoT2.Core.Models
             return new ValueModel(mergedValue.ToString());
         }
 
-        //TODO refactor!!
+        /// <summary>
+        /// Returns a new <see cref="ValueModel"/> in which every value matching <paramref name="placeholder"/>
+        /// has been replaced with <paramref name="value"/>. For entity values the replacement is applied
+        /// recursively to all properties; for scalar values the whole value is replaced when it matches.
+        /// </summary>
+        /// <param name="placeholder">The placeholder token to match (case-insensitive).</param>
+        /// <param name="value">The replacement value.</param>
+        /// <returns>A new <see cref="ValueModel"/> with replacements applied, or the current instance when nothing matched.</returns>
         public ValueModel ReplaceAllPlaceholdersWithValue(string placeholder, ValueModel value)
         {
-            if (Type == ValueType.Entity) 
+            if (Type == ValueType.Entity)
             {
                 var jsonEntity = new JsonEntity(ToJson());
                 jsonEntity.ReplacePlaceHolderWithValue(placeholder, value.GetAsObject());
                 return new ValueModel(jsonEntity.ToString());
             }
-            else
-            {
-                if (_value.ToString().ToLower() == placeholder.ToLower())
-                    return new ValueModel(_value);
-            }
+
+            if (string.Equals(_value.ToString(), placeholder, StringComparison.OrdinalIgnoreCase))
+                return value.Copy();
+
             return this;
         }
 
