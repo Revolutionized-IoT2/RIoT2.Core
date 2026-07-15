@@ -719,6 +719,10 @@ namespace RIoT2.Core.Utils
                 {
                     case JsonToken.StartObject:
                         return new ValueModel(JObject.Load(reader).ToString());
+                    case JsonToken.StartArray:
+                        // Arrays have no scalar reader.Value; load the full array token
+                        // and construct the ValueModel from its JSON representation.
+                        return new ValueModel(JArray.Load(reader).ToString());
                     case JsonToken.Boolean:
                         return new ValueModel((bool)jValue);
                     case JsonToken.Integer:
