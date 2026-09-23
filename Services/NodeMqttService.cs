@@ -6,6 +6,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using System.Threading;
+using System.Collections.Generic;
 
 namespace RIoT2.Core.Services
 {
@@ -23,13 +24,30 @@ namespace RIoT2.Core.Services
         //private ILogger _logger;
         private ILogger<NodeMqttService> _logger;
         private CancellationTokenSource _shutdown;
+        private SemaphoreSlim _legacyCommandGate;
+        private readonly Func<MqttClient> _clientFactory;
+        private const int MaxPendingCommands = 64;
+        private readonly object _commandGate = new object();
+        private readonly List<Task> _commands = new List<Task>();
+        private bool _acceptingCommands;
 
-        public NodeMqttService(INodeConfigurationService configurationService, ICommandService commandService, IReportService reportService, ILogger<NodeMqttService> logger) 
+        public NodeMqttService(INodeConfigurationService configurationService, ICommandService commandService, IReportService reportService, ILogger<NodeMqttService> logger)
+            : this(configurationService, commandService, reportService, logger, () => new MqttClient(
+                configurationService.Configuration.Mqtt.ClientId,
+                configurationService.Configuration.Mqtt.ServerUrl,
+                configurationService.Configuration.Mqtt.Username,
+                configurationService.Configuration.Mqtt.Password))
+        {
+        }
+
+        public NodeMqttService(INodeConfigurationService configurationService, ICommandService commandService,
+            IReportService reportService, ILogger<NodeMqttService> logger, Func<MqttClient> clientFactory)
         {
             _logger = logger;
             _configurationService = configurationService;
             _commandService = commandService;
             _reportService = reportService;
+            _clientFactory = clientFactory ?? throw new ArgumentNullException(nameof(clientFactory));
         }
 
         public async Task Start() 
@@ -42,11 +60,14 @@ namespace RIoT2.Core.Services
                     return;
                 }
 
-                _client = new MqttClient(_configurationService.Configuration.Mqtt.ClientId,
-                    _configurationService.Configuration.Mqtt.ServerUrl,
-                    _configurationService.Configuration.Mqtt.Username,
-                    _configurationService.Configuration.Mqtt.Password);
+                _client = _clientFactory();
                 _shutdown = new CancellationTokenSource();
+                _legacyCommandGate = new SemaphoreSlim(1, 1);
+                lock (_commandGate)
+                {
+                    _commands.Clear();
+                    _acceptingCommands = true;
+                }
 
                 _configurationTopic = _configurationService.Configuration.GetTopic(MqttTopic.Configuration);
                 _commandTopic = _configurationService.Configuration.GetTopic(MqttTopic.Command);
@@ -87,17 +108,47 @@ namespace RIoT2.Core.Services
 #endif
                 }
                 if (MqttClient.IsMatch(mqttEventArgs.Topic, _commandTopic))
-                {
-                    if (_commandService is IAsyncCommandService asynchronous)
-                        await asynchronous.ExecuteJsonCommandAsync(mqttEventArgs.Message, _shutdown.Token).ConfigureAwait(false);
-                    else
-                        _commandService.ExecuteJsonCommand(mqttEventArgs.Message);
-                }
+                    DispatchCommand(mqttEventArgs.Message);
                 if (MqttClient.IsMatch(mqttEventArgs.Topic, _orchestratorOnlineTopic))
                     await AnnounceOnlineAsync().ConfigureAwait(false);
             }
             catch (OperationCanceledException) { _logger.LogDebug("Node MQTT work was cancelled"); }
             catch (Exception error) { _logger.LogError(error, "Could not process node MQTT message on {Topic}", mqttEventArgs.Topic); }
+        }
+
+        private void DispatchCommand(string message)
+        {
+            lock (_commandGate)
+            {
+                _commands.RemoveAll(task => task.IsCompleted);
+                if (!_acceptingCommands || _commands.Count >= MaxPendingCommands)
+                {
+                    _logger.LogWarning("Node MQTT command rejected: stopping or pending command limit {Limit} reached; no retry", MaxPendingCommands);
+                    return;
+                }
+                // Capture the device generation now, without blocking configuration messages behind I/O.
+                _commands.Add(ExecuteCommandAsync(message, _shutdown.Token));
+            }
+        }
+
+        private async Task ExecuteCommandAsync(string message, CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (_commandService is IAsyncCommandService asynchronous)
+                    await asynchronous.ExecuteJsonCommandAsync(message, cancellationToken).ConfigureAwait(false);
+                else
+                {
+                    await _legacyCommandGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+                    try
+                    {
+                        await Task.Run(() => _commandService.ExecuteJsonCommand(message), cancellationToken).ConfigureAwait(false);
+                    }
+                    finally { _legacyCommandGate.Release(); }
+                }
+            }
+            catch (OperationCanceledException) { _logger.LogDebug("Node MQTT command was cancelled"); }
+            catch (Exception error) { _logger.LogError(error, "Could not execute node MQTT command"); }
         }
 
         private async Task AnnounceOnlineAsync()
@@ -144,15 +195,29 @@ namespace RIoT2.Core.Services
             if (_client == null)
                 return;
 
+            Task[] commands;
+            lock (_commandGate)
+            {
+                _acceptingCommands = false;
+                commands = _commands.ToArray();
+            }
             _shutdown.Cancel();
             _client.MessageReceivedAsync -= _client_MessageReceived;
             _client.ConnectedAsync -= AnnounceOnlineAsync;
             _reportService.ReportUpdated -= _reportService_ReportUpdated;
 
-            await _client.Stop();
-            _client.Dispose();
-            _client = null;
-            _shutdown.Dispose();
+            try
+            {
+                await Task.WhenAll(commands).ConfigureAwait(false);
+                await _client.Stop().ConfigureAwait(false);
+            }
+            finally
+            {
+                _client.Dispose();
+                _client = null;
+                _shutdown.Dispose();
+                _legacyCommandGate.Dispose();
+            }
         }
 
         public async Task SendNodeOnlineMessage(NodeOnlineMessage msg)

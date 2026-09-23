@@ -93,7 +93,8 @@ The orchestrator executes device commands through `IOrchestratorMqttService.Exec
 independently of workflow evaluation.
 
 The rule-engine removal was a breaking Core API change. The orchestrator currently consumes
-`0.1.41`; the updated node and network plugins require `0.1.42` for the additive async contracts below.
+`0.1.41`; network plugins require `0.1.42` for the additive async contracts below, and the updated
+node requires `0.1.43` for bounded MQTT command dispatch.
 
 Version `0.1.40` also preserves large integer and JSON-looking text values when deserializing
 messages. `NodeOnlineMessage.GrpcBaseUrl` is an optional, additive field: workflow nodes advertise
@@ -130,7 +131,23 @@ finished (including `async void` implementations) must be migrated to obtain ful
 shutdown guarantees. Never abandon such work with a timeout and immediately reuse the device.
 
 `MqttClient.MessageReceivedAsync` is an additive awaited event; the legacy event is unchanged.
-The node uses the awaited event and `IAsyncCommandService` to observe command/configuration completion.
+The node uses the awaited event for message admission and configuration loading, and owns command
+completion separately as described below.
+
+### Responsive node command dispatch (0.1.43)
+
+`NodeMqttService` tracks up to 64 outstanding commands, including commands queued behind device I/O.
+The receive callback starts dispatch without awaiting the entire operation, so a configuration
+notification can cancel a stalled command instead of waiting for its deadline. Native async dispatch
+captures the current device generation before returning; queued commands cannot migrate to a
+replacement configuration. Completion failures are logged, and stop cancels and awaits all admitted
+work. Overflow/stopping rejects new commands with a warning; no automatic retry or durable queue is
+provided. MQTT acknowledgement does not imply successful device execution.
+Custom legacy `ICommandService` implementations remain serialized; a running synchronous call is
+awaited during shutdown, while queued calls are cancelled.
+
+The existing constructor is unchanged; an additional client-factory overload supports isolated
+transports, including loopback integration tests.
 
 ## Contributing
 
