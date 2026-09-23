@@ -9,37 +9,6 @@
         TextArray = 4
     }
 
-    public enum RuleType
-    {
-        Trigger = 0,
-        Function = 1,
-        Condition = 2,
-        Output = 3
-    }
-
-    public enum ConditionType
-    {
-        IfElse = 0,
-        Switch = 1
-    }
-
-    public enum FlowOperator
-    {
-        Continue = 0,
-        Stop = 1,
-        Jump = 2
-    }
-
-    public enum OutputOperation
-    {
-        Toggle = 1,         //invert current values 
-        Set_on = 2,         //write true to output
-        Set_off = 3,        //write false to output
-        Set_value = 4,      //simply write condition values 
-        Pulse_down = 5,     //set state to false for set time
-        Pulse_up = 6,        //set state to true for set time
-        Variable = 7
-    }
     public enum MqttTopic
     {
         NodeOnline = 1,

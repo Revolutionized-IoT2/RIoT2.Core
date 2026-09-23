@@ -24,12 +24,12 @@ centralizing:
 | Path | Responsibility |
 | --- | --- |
 | `Constants.cs` | MQTT topic templates, API endpoint URLs, and helpers to build/parse topics. |
-| `Enums.cs` | Shared enumerations (`ValueType`, `RuleType`, `MqttTopic`, `DashboardComponentType`, etc.). |
+| `Enums.cs` | Shared enumerations (`ValueType`, `MqttTopic`, `DashboardComponentType`, etc.). |
 | `Delegates.cs` | Shared delegate definitions. |
 | `Extensions.cs` | Extension methods for JSON, dictionaries, epoch/date conversions, and arrays. |
 | `Interfaces/` | Contracts such as `ITemplate`, `IReport`, `ICommand`, `IMessage`. |
 | `Interfaces/Services/` | Service contracts such as `ICodeProviderService`. |
-| `Models/` | Data model types (`Report`, `Command`, `ValueModel`, `RuleOutput`, templates, etc.). |
+| `Models/` | Data model types (`Report`, `Command`, `ValueModel`, templates, etc.). |
 | `Services/` | Reusable implementations such as `CodeProviderService`. |
 | `Utils/` | Utility helpers such as `Json` and `JsonEntity`. |
 
@@ -40,8 +40,10 @@ centralizing:
 - `MQTTnet` and `MQTTnet.Extensions.ManagedClient` — MQTT messaging.
 - `Microsoft.Extensions.Hosting` and `Microsoft.Extensions.Logging` — hosting and logging
   abstractions.
-- `CoreCLR-NCalc` — expression evaluation for rules.
 - `Quartz` — scheduling.
+
+Workflow evaluation belongs to Elsa 3 (`RIoT2.Elsa`), not Core. The retired internal rule engine,
+its function catalog, and its models must not be reintroduced.
 
 ## Core Concepts
 

@@ -19,7 +19,6 @@ namespace RIoT2.Core.Models
             _configurationFolder = new DirectoryInfo(assemblyLocation);
             Manifest = LoadManifest("Data/Manifest.json");
         }
-        public bool UseExtWorkflowEngine { get; set; } = false;
         public PackageManifest Manifest { get; set; }
 
         public override string ApplicationFolder { get => _configurationFolder.FullName; }

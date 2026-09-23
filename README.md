@@ -19,7 +19,7 @@ free of duplication:
 1. **Unified data model** � shared models such as `Report`, `Command`, templates, and
    configuration types that are serialized to/from JSON and exchanged over MQTT.
 2. **General utility methods** � JSON helpers, extension methods, and epoch/date conversions.
-3. **Reusable program logic** � services, interfaces, enums, delegates, rule functions, and MQTT
+3. **Reusable program logic** � services, interfaces, enums, delegates, and MQTT
    topic conventions consumed across the solution.
 
 ## Project Structure
@@ -27,11 +27,10 @@ free of duplication:
 | Path | Responsibility |
 | --- | --- |
 | `Constants.cs` | MQTT topic templates, API endpoint URLs, and topic build/parse helpers. |
-| `Enums.cs` | Shared enumerations (`ValueType`, `RuleType`, `MqttTopic`, `DashboardComponentType`, etc.). |
+| `Enums.cs` | Shared enumerations (`ValueType`, `MqttTopic`, `DashboardComponentType`, etc.). |
 | `Delegates.cs` | Shared delegate definitions. |
 | `Extensions.cs` | Extension methods for JSON, dictionaries, epoch/date conversions, and arrays. |
 | `Abstracts/` | Base classes such as `NodeConfigurationServiceBase`. |
-| `Functions/` | Reusable rule functions such as `FuncGetCode`. |
 | `Interfaces/` | Contracts such as `ITemplate`, `IReport`, `ICommand`, `IMessage`. |
 | `Interfaces/Services/` | Service contracts such as `IConfiguration` and `ICodeProviderService`. |
 | `Models/` | Data model types (`Report`, `Command`, `ValueModel`, `MqttConfiguration`, `DocumentMetadata`, templates, etc.). |
@@ -84,8 +83,17 @@ endpoints. `RIoT2.Core` itself contains no Matter protocol code.
 - `System.Text.Json` and `Newtonsoft.Json` � JSON serialization.
 - `MQTTnet` and `MQTTnet.Extensions.ManagedClient` � MQTT messaging.
 - `Microsoft.Extensions.Hosting` and `Microsoft.Extensions.Logging` � hosting and logging.
-- `CoreCLR-NCalc` � expression evaluation for rules.
 - `Quartz` � scheduling.
+
+## Automation
+
+Elsa 3 (`RIoT2.Elsa`) is the workflow engine. Core no longer includes the internal rule evaluator,
+rule/function models, or NCalc dependency. Device refresh scheduling still uses Quartz.
+The orchestrator executes device commands through `IOrchestratorMqttService.ExecuteCommand(Command)`,
+independently of workflow evaluation.
+
+This is a breaking Core API change. Publish Core as `0.1.39` before building or deploying the updated
+orchestrator, which consumes that package version from the private feed.
 
 ## Contributing
 

@@ -43,9 +43,10 @@ namespace RIoT2.Core.Interfaces.Services
         Task SendConfigurationCommand(string id);
 
         /// <summary>
-        /// Processes the output produced by a rule evaluation, publishing any resulting messages.
+        /// Resolves the target node, publishes the command, and records its state.
         /// </summary>
-        /// <param name="output">The rule evaluation result to process.</param>
-        Task ProcessOutput(RuleEvaluationResult output);
+        /// <param name="command">The command to execute.</param>
+        /// <returns>False if the command identifier is missing or cannot be resolved to a node.</returns>
+        Task<bool> ExecuteCommand(Command command);
     }
 }
