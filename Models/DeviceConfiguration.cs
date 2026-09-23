@@ -1,4 +1,5 @@
 ﻿using Quartz;
+using RIoT2.Core.Models.Matter;
 using System;
 using System.Collections.Generic;
 
@@ -13,7 +14,14 @@ namespace RIoT2.Core.Models
         public List<ReportTemplate> ReportTemplates { get; set; }
         public Dictionary<string, string> DeviceParameters { get; set; }
         public string RefreshSchedule { get; set; }
-        
+
+        /// <summary>
+        /// The Matter endpoints this device is exposed as through the RIoT Control Bridge, declared by
+        /// devices that implement <see cref="Interfaces.IMatterDevice"/>. <c>null</c> or empty for devices
+        /// that are not bridged to Matter.
+        /// </summary>
+        public List<MatterEndpointTemplate> MatterEndpoints { get; set; }
+
         /// <summary>
         /// Builds a scheduler trigger from the configured refresh schedule.
         /// </summary>

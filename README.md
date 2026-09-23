@@ -16,10 +16,10 @@ project in the RIoT2 solution (nodes, orchestrator, UI, and more).
 The Core project centralizes shared building blocks to keep the rest of the solution consistent and
 free of duplication:
 
-1. **Unified data model** — shared models such as `Report`, `Command`, templates, and
+1. **Unified data model** ï¿½ shared models such as `Report`, `Command`, templates, and
    configuration types that are serialized to/from JSON and exchanged over MQTT.
-2. **General utility methods** — JSON helpers, extension methods, and epoch/date conversions.
-3. **Reusable program logic** — services, interfaces, enums, delegates, rule functions, and MQTT
+2. **General utility methods** ï¿½ JSON helpers, extension methods, and epoch/date conversions.
+3. **Reusable program logic** ï¿½ services, interfaces, enums, delegates, rule functions, and MQTT
    topic conventions consumed across the solution.
 
 ## Project Structure
@@ -35,16 +35,57 @@ free of duplication:
 | `Interfaces/` | Contracts such as `ITemplate`, `IReport`, `ICommand`, `IMessage`. |
 | `Interfaces/Services/` | Service contracts such as `IConfiguration` and `ICodeProviderService`. |
 | `Models/` | Data model types (`Report`, `Command`, `ValueModel`, `MqttConfiguration`, `DocumentMetadata`, templates, etc.). |
+| `Models/Matter/` | Descriptor types (`MatterEndpointTemplate` and its bindings) used by `IMatterDevice`. |
 | `Services/` | Reusable implementations such as `CodeProviderService`. |
 | `Utils/` | Utility helpers such as `Json` and `JsonEntity`. |
 
+## Matter device declarations
+
+A device plugin opts in to being bridged to a Matter ecosystem (for example Google Home) by
+implementing `IMatterDevice` in addition to `IDeviceWithConfiguration`. The device returns one
+`MatterEndpointTemplate` per endpoint it wants exposed, describing the Matter device type and how its
+report and command templates map onto Matter cluster attributes:
+
+```csharp
+public IEnumerable<MatterEndpointTemplate> GetMatterEndpoints(DeviceConfiguration configuration)
+{
+    var report = configuration.ReportTemplates[0];
+    var command = configuration.CommandTemplates[0];
+
+    yield return new MatterEndpointTemplate
+    {
+        Id = $"{configuration.Id}:lamp",
+        Name = "Living Room Lamp",
+        DeviceType = MatterDeviceType.DimmableLight,
+        Attributes =
+        {
+            new MatterAttributeBinding { Attribute = MatterAttribute.OnOff, ReportTemplateId = report.Id, ValuePath = "on" },
+            new MatterAttributeBinding { Attribute = MatterAttribute.CurrentLevel, ReportTemplateId = report.Id, ValuePath = "brightness", Scale = MatterValueScale.Percent0To100ToLevel0To254 }
+        },
+        Commands =
+        {
+            new MatterCommandBinding { Attribute = MatterAttribute.OnOff, CommandTemplateId = command.Id, ValuePath = "on" },
+            new MatterCommandBinding { Attribute = MatterAttribute.CurrentLevel, CommandTemplateId = command.Id, ValuePath = "brightness", Scale = MatterValueScale.Percent0To100ToLevel0To254 }
+        }
+    };
+}
+```
+
+The declaration must be built against the `DeviceConfiguration` instance passed in, because devices
+that mint template ids per call would otherwise reference ids that are never persisted. Scales are
+declared in the RIoT-to-Matter direction; the bridge applies the inverse on the command path.
+
+The templates travel to the orchestrator on `DeviceConfiguration.MatterEndpoints`, through the
+existing configuration-template path, and the orchestrator's Matter bridge turns them into bridged
+endpoints. `RIoT2.Core` itself contains no Matter protocol code.
+
 ## Key Dependencies
 
-- `System.Text.Json` and `Newtonsoft.Json` — JSON serialization.
-- `MQTTnet` and `MQTTnet.Extensions.ManagedClient` — MQTT messaging.
-- `Microsoft.Extensions.Hosting` and `Microsoft.Extensions.Logging` — hosting and logging.
-- `CoreCLR-NCalc` — expression evaluation for rules.
-- `Quartz` — scheduling.
+- `System.Text.Json` and `Newtonsoft.Json` ï¿½ JSON serialization.
+- `MQTTnet` and `MQTTnet.Extensions.ManagedClient` ï¿½ MQTT messaging.
+- `Microsoft.Extensions.Hosting` and `Microsoft.Extensions.Logging` ï¿½ hosting and logging.
+- `CoreCLR-NCalc` ï¿½ expression evaluation for rules.
+- `Quartz` ï¿½ scheduling.
 
 ## Contributing
 
