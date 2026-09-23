@@ -23,6 +23,8 @@ namespace RIoT2.Core.Services
 
         private void Device_ReportUpdated(IDevice sender, IReport report)
         {
+            if (_deviceService is IAsyncDeviceService asynchronous && !asynchronous.IsActive(sender))
+                return;
             ReportUpdated?.Invoke(sender, report);
         }
     }

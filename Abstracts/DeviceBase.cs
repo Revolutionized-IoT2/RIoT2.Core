@@ -32,6 +32,11 @@ namespace RIoT2.Core.Abstracts
 
         public DeviceState State { get; private set; }
         public string StateMessage { get; private set; }
+        protected void SetState(DeviceState state, string message = "")
+        {
+            State = state;
+            StateMessage = message;
+        }
         public string Id { get; private set; }
         public string Name { get; private set; }
 

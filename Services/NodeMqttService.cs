@@ -5,6 +5,7 @@ using RIoT2.Core.Interfaces;
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using System.Threading;
 
 namespace RIoT2.Core.Services
 {
@@ -21,6 +22,7 @@ namespace RIoT2.Core.Services
         private string _nodeOnlineTopic;
         //private ILogger _logger;
         private ILogger<NodeMqttService> _logger;
+        private CancellationTokenSource _shutdown;
 
         public NodeMqttService(INodeConfigurationService configurationService, ICommandService commandService, IReportService reportService, ILogger<NodeMqttService> logger) 
         {
@@ -44,6 +46,7 @@ namespace RIoT2.Core.Services
                     _configurationService.Configuration.Mqtt.ServerUrl,
                     _configurationService.Configuration.Mqtt.Username,
                     _configurationService.Configuration.Mqtt.Password);
+                _shutdown = new CancellationTokenSource();
 
                 _configurationTopic = _configurationService.Configuration.GetTopic(MqttTopic.Configuration);
                 _commandTopic = _configurationService.Configuration.GetTopic(MqttTopic.Command);
@@ -51,7 +54,7 @@ namespace RIoT2.Core.Services
                 _orchestratorOnlineTopic = _configurationService.Configuration.GetTopic(MqttTopic.OrchestratorOnline);
                 _nodeOnlineTopic = _configurationService.Configuration.GetTopic(MqttTopic.NodeOnline);
 
-                _client.MessageReceived += _client_MessageReceived;
+                _client.MessageReceivedAsync += _client_MessageReceived;
                 _client.ConnectedAsync += AnnounceOnlineAsync;
                 _reportService.ReportUpdated += _reportService_ReportUpdated;
 
@@ -71,24 +74,30 @@ namespace RIoT2.Core.Services
             await _client.Publish(topic, value);
         }
 
-        private void _client_MessageReceived(MqttEventArgs mqttEventArgs)
+        private async Task _client_MessageReceived(MqttEventArgs mqttEventArgs)
         {
-            //Do not listen configuration when in debug -> configuration is loaded from local file in DEBUG! 
-
-            if (MqttClient.IsMatch(mqttEventArgs.Topic, _configurationTopic)) 
+            try
             {
-                #if DEBUG
-                _logger.LogWarning($"Received topic {mqttEventArgs.Topic}, but skipped because DEBUG");
-                #else
-                _configurationService.LoadDeviceConfiguration(mqttEventArgs.Message, _configurationService.Configuration.Id);
-                #endif
+                if (MqttClient.IsMatch(mqttEventArgs.Topic, _configurationTopic))
+                {
+#if DEBUG
+                    _logger.LogWarning("Received topic {Topic}, but skipped because DEBUG", mqttEventArgs.Topic);
+#else
+                    await _configurationService.LoadDeviceConfiguration(mqttEventArgs.Message, _configurationService.Configuration.Id).ConfigureAwait(false);
+#endif
+                }
+                if (MqttClient.IsMatch(mqttEventArgs.Topic, _commandTopic))
+                {
+                    if (_commandService is IAsyncCommandService asynchronous)
+                        await asynchronous.ExecuteJsonCommandAsync(mqttEventArgs.Message, _shutdown.Token).ConfigureAwait(false);
+                    else
+                        _commandService.ExecuteJsonCommand(mqttEventArgs.Message);
+                }
+                if (MqttClient.IsMatch(mqttEventArgs.Topic, _orchestratorOnlineTopic))
+                    await AnnounceOnlineAsync().ConfigureAwait(false);
             }
-
-            if (MqttClient.IsMatch(mqttEventArgs.Topic, _commandTopic))
-                _commandService.ExecuteJsonCommand(mqttEventArgs.Message);
-
-            if (MqttClient.IsMatch(mqttEventArgs.Topic, _orchestratorOnlineTopic))
-                _ = AnnounceOnlineAsync();
+            catch (OperationCanceledException) { _logger.LogDebug("Node MQTT work was cancelled"); }
+            catch (Exception error) { _logger.LogError(error, "Could not process node MQTT message on {Topic}", mqttEventArgs.Topic); }
         }
 
         private async Task AnnounceOnlineAsync()
@@ -135,13 +144,15 @@ namespace RIoT2.Core.Services
             if (_client == null)
                 return;
 
-            _client.MessageReceived -= _client_MessageReceived;
+            _shutdown.Cancel();
+            _client.MessageReceivedAsync -= _client_MessageReceived;
             _client.ConnectedAsync -= AnnounceOnlineAsync;
             _reportService.ReportUpdated -= _reportService_ReportUpdated;
 
             await _client.Stop();
             _client.Dispose();
             _client = null;
+            _shutdown.Dispose();
         }
 
         public async Task SendNodeOnlineMessage(NodeOnlineMessage msg)

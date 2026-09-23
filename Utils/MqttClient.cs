@@ -23,6 +23,7 @@ namespace RIoT2.Core.Utils
         private readonly int _port;
 
         public event MqttMessageReceivedHandler MessageReceived;
+        public event Func<MqttEventArgs, Task> MessageReceivedAsync;
         public event Func<Task> ConnectedAsync;
         public MqttClient(string clientId, string serverUrl, string username, string password)
             : this(clientId, serverUrl, username, password, 1883)
@@ -79,16 +80,21 @@ namespace RIoT2.Core.Utils
             }
         }
 
-        private void handleMqttMessageReceived(MqttApplicationMessageReceivedEventArgs e)
+        private async Task handleMqttMessageReceived(MqttApplicationMessageReceivedEventArgs e)
         {
             //e.clientId is the client ID of THIS client!
 
-            MessageReceived?.Invoke(new MqttEventArgs()
+            var message = new MqttEventArgs()
             {
                 ClientId = e.ClientId,
                 Message = e.ApplicationMessage.ConvertPayloadToString(),
                 Topic = e.ApplicationMessage.Topic
-            });
+            };
+            MessageReceived?.Invoke(message);
+            var handlers = MessageReceivedAsync;
+            if (handlers != null)
+                foreach (Func<MqttEventArgs, Task> handler in handlers.GetInvocationList())
+                    await handler(message).ConfigureAwait(false);
         }
 
         public async Task Publish(string topic, string payload, bool retain = false)
@@ -125,11 +131,7 @@ namespace RIoT2.Core.Utils
 
             var mqttClient = new MqttFactory().CreateManagedMqttClient();
             _client = mqttClient;
-            mqttClient.ApplicationMessageReceivedAsync += e =>
-            {
-                handleMqttMessageReceived(e);
-                return Task.CompletedTask;
-            };
+            mqttClient.ApplicationMessageReceivedAsync += handleMqttMessageReceived;
             mqttClient.ConnectedAsync += async _ =>
             {
                 var handlers = ConnectedAsync;

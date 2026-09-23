@@ -92,8 +92,8 @@ rule/function models, or NCalc dependency. Device refresh scheduling still uses 
 The orchestrator executes device commands through `IOrchestratorMqttService.ExecuteCommand(Command)`,
 independently of workflow evaluation.
 
-This is a breaking Core API change. Publish Core as `0.1.41` before building or deploying the updated
-orchestrator, which consumes that package version from the private feed.
+The rule-engine removal was a breaking Core API change. The orchestrator currently consumes
+`0.1.41`; the updated node and network plugins require `0.1.42` for the additive async contracts below.
 
 Version `0.1.40` also preserves large integer and JSON-looking text values when deserializing
 messages. `NodeOnlineMessage.GrpcBaseUrl` is an optional, additive field: workflow nodes advertise
@@ -108,6 +108,29 @@ Scheduler reloads and shutdown remove their owned device refresh subscriptions.
 properties such as `items[0].value`, including existing null values. Adding a final property is
 allowed only when its parent object exists; missing/incompatible parents and invalid array indexes
 throw `ArgumentException` rather than replacing or modifying an unrelated value.
+
+### Opt-in asynchronous devices (0.1.42)
+
+`IAsyncDevice`, `IAsyncCommandDevice`, and `IAsyncRefreshableReportDevice` add cancellation-aware
+Task-returning operations without changing the existing device interfaces. `AsyncDeviceBase` provides
+state transitions and synchronous compatibility entry points for migrated plugins. New network
+drivers should override its async methods rather than implement `async void` lifecycle methods.
+
+`DeviceServiceBase` owns one serialized operation adapter per device. Configuration replacement
+cancels old work, waits for it to finish, stops the old generation, then initializes/starts the new one.
+Queued commands from the cancelled generation cannot execute against new configuration; removed
+devices remain stopped. Failed shutdown prevents configuration replacement. `ReportService` suppresses
+reports from inactive devices, and Quartz awaits refresh operations through the same adapter.
+Use `DisposeAsync` (or `await using`) to await service cleanup without blocking a thread.
+The synchronous disposal entry point remains available for older hosts.
+
+Existing synchronous plugins remain supported. Their synchronous calls run as tracked tasks and are
+awaited, but cannot be forcibly interrupted. Plugins that return before their own background work has
+finished (including `async void` implementations) must be migrated to obtain full cancellation and
+shutdown guarantees. Never abandon such work with a timeout and immediately reuse the device.
+
+`MqttClient.MessageReceivedAsync` is an additive awaited event; the legacy event is unchanged.
+The node uses the awaited event and `IAsyncCommandService` to observe command/configuration completion.
 
 ## Contributing
 

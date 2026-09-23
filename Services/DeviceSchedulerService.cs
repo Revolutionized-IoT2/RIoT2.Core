@@ -28,6 +28,7 @@ namespace RIoT2.Core.Services
         private CancellationToken _cancellationToken;
         private readonly SemaphoreSlim _lifecycle = new SemaphoreSlim(1, 1);
         private readonly List<IRefreshableReportDevice> _subscriptions = new List<IRefreshableReportDevice>();
+        private readonly Dictionary<string, Func<CancellationToken, Task>> _refreshActions = new Dictionary<string, Func<CancellationToken, Task>>();
         private readonly string _schedulerName = "RIoT2-" + Guid.NewGuid().ToString("N");
         private bool _active;
 
@@ -108,8 +109,14 @@ namespace RIoT2.Core.Services
                 {
                     _logger.LogInformation($"Adding scheduler trigger for device {device.Configuration.Name} with schedule {deviceTrigger.CronSchedule}");
                     allTriggers.Add(deviceTrigger);
-                    SchedulerEvent += (device as IRefreshableReportDevice).RefreshReport;
-                    _subscriptions.Add((IRefreshableReportDevice)device);
+                    if (_deviceService is IAsyncDeviceService asynchronous)
+                        _refreshActions[deviceTrigger.Group] = token =>
+                            asynchronous.RefreshReportAsync(device, deviceTrigger.Group, deviceTrigger.Name, token);
+                    else
+                    {
+                        SchedulerEvent += ((IRefreshableReportDevice)device).RefreshReport;
+                        _subscriptions.Add((IRefreshableReportDevice)device);
+                    }
                 }
             }
 
@@ -150,6 +157,7 @@ namespace RIoT2.Core.Services
             if (_scheduler != null && !_scheduler.IsShutdown)
                 await _scheduler.Shutdown(true, cancellationToken);
             _scheduler = null;
+            _refreshActions.Clear();
         }
 
         private async Task configure(List<SchedulerTrigger> triggers) 
@@ -175,6 +183,8 @@ namespace RIoT2.Core.Services
 
                     IJobDetail raiseEventJob = JobBuilder.Create<RaiseEventJob>()
                    .Build();
+                    if (_refreshActions.TryGetValue(trg.Group, out var refresh))
+                        raiseEventJob.JobDataMap["refresh"] = refresh;
 
                     await _scheduler.ScheduleJob(raiseEventJob, trigger);
                 }
@@ -190,8 +200,11 @@ namespace RIoT2.Core.Services
     {
         public async Task Execute(IJobExecutionContext context)
         {
-            DeviceSchedulerService.TriggerSchedulerEvent(context.Trigger.Key.Group, context.Trigger.Key.Name);
-            await Task.CompletedTask;
+            if (context.MergedJobDataMap.ContainsKey("refresh") &&
+                context.MergedJobDataMap["refresh"] is Func<CancellationToken, Task> refresh)
+                await refresh(context.CancellationToken).ConfigureAwait(false);
+            else
+                DeviceSchedulerService.TriggerSchedulerEvent(context.Trigger.Key.Group, context.Trigger.Key.Name);
         }
     }
 }
