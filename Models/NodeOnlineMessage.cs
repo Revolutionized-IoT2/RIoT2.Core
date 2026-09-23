@@ -10,6 +10,7 @@
         public string Name { get; set; } = "";
         public bool IsOnline { get; set; }
         public string NodeBaseUrl { get; set; } = "";
+        public string GrpcBaseUrl { get; set; } = "";
         public NodeType NodeType { get; set; }
         public PackageManifest Manifest { get; set; } = null;
         public PackageManifest PluginManifest { get; set; } = null;

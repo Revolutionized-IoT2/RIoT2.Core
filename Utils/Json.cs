@@ -726,14 +726,14 @@ namespace RIoT2.Core.Utils
                     case JsonToken.Boolean:
                         return new ValueModel((bool)jValue);
                     case JsonToken.Integer:
-                        return new ValueModel((int)jValue);
+                        return new ValueModel(jValue.ToString(Formatting.None));
                     case JsonToken.Float:
                         return new ValueModel((double)jValue);
                     case JsonToken.String:
                     default:
                         // reader.Value can be null for token types such as Null/StartArray/EndArray;
                         // guard against a NullReferenceException.
-                        return reader.Value == null ? null : new ValueModel(reader.Value.ToString());
+                        return reader.Value == null ? null : new ValueModel((object)reader.Value.ToString());
                 }
             }
             return null;

@@ -92,8 +92,12 @@ rule/function models, or NCalc dependency. Device refresh scheduling still uses 
 The orchestrator executes device commands through `IOrchestratorMqttService.ExecuteCommand(Command)`,
 independently of workflow evaluation.
 
-This is a breaking Core API change. Publish Core as `0.1.39` before building or deploying the updated
+This is a breaking Core API change. Publish Core as `0.1.40` before building or deploying the updated
 orchestrator, which consumes that package version from the private feed.
+
+Version `0.1.40` also preserves large integer and JSON-looking text values when deserializing
+messages. `NodeOnlineMessage.GrpcBaseUrl` is an optional, additive field: workflow nodes advertise
+their dedicated gRPC endpoint separately from the web UI's `NodeBaseUrl`.
 
 ## Contributing
 
