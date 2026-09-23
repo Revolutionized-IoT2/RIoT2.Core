@@ -26,6 +26,10 @@ namespace RIoT2.Core.Services
         private IDeviceService _deviceService;
         private readonly INodeConfigurationService _configuration;
         private CancellationToken _cancellationToken;
+        private readonly SemaphoreSlim _lifecycle = new SemaphoreSlim(1, 1);
+        private readonly List<IRefreshableReportDevice> _subscriptions = new List<IRefreshableReportDevice>();
+        private readonly string _schedulerName = "RIoT2-" + Guid.NewGuid().ToString("N");
+        private bool _active;
 
         /// <summary>
         /// Occurs when a scheduled trigger fires, identifying the trigger by group and name.
@@ -39,7 +43,7 @@ namespace RIoT2.Core.Services
         /// <param name="name">The name of the trigger that fired.</param>
         public static void TriggerSchedulerEvent(string group, string name) 
         {
-            SchedulerEvent(group, name);
+            SchedulerEvent?.Invoke(group, name);
         }
 
         /// <summary>
@@ -61,19 +65,32 @@ namespace RIoT2.Core.Services
         /// <param name="cancellationToken">A token that signals the start operation should be aborted.</param>
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            _cancellationToken = cancellationToken;
-            _deviceService.DevicesUpdated += _deviceService_DevicesUpdated;
-            //_configuration.DeviceConfigurationUpdated += _configuration_DeviceConfigurationUpdated;
-            _logger.LogInformation("Scheduler initialized and waiting configuration.");
-            await Task.CompletedTask;
+            await _lifecycle.WaitAsync(cancellationToken);
+            try
+            {
+                if (_active)
+                    return;
+                _active = true;
+                _cancellationToken = cancellationToken;
+                _deviceService.DevicesUpdated += _deviceService_DevicesUpdated;
+                _logger.LogInformation("Scheduler initialized and waiting configuration.");
+            }
+            finally { _lifecycle.Release(); }
         }
 
         private void _deviceService_DevicesUpdated(ServiceEvent serviceEvent)
         {
-            if (serviceEvent == ServiceEvent.Started) 
+            _lifecycle.Wait();
+            try
             {
-                configureDeviceTriggers().Wait();
+                if (!_active)
+                    return;
+                if (serviceEvent == ServiceEvent.Started)
+                    configureDeviceTriggers().GetAwaiter().GetResult();
+                else if (serviceEvent == ServiceEvent.Stopped)
+                    stopScheduler().GetAwaiter().GetResult();
             }
+            finally { _lifecycle.Release(); }
         }
 
         private async Task configureDeviceTriggers()
@@ -92,6 +109,7 @@ namespace RIoT2.Core.Services
                     _logger.LogInformation($"Adding scheduler trigger for device {device.Configuration.Name} with schedule {deviceTrigger.CronSchedule}");
                     allTriggers.Add(deviceTrigger);
                     SchedulerEvent += (device as IRefreshableReportDevice).RefreshReport;
+                    _subscriptions.Add((IRefreshableReportDevice)device);
                 }
             }
 
@@ -115,14 +133,23 @@ namespace RIoT2.Core.Services
         public async Task StopAsync(CancellationToken stoppingToken)
         {
             _deviceService.DevicesUpdated -= _deviceService_DevicesUpdated;
-            //_configuration.DeviceConfigurationUpdated -= _configuration_DeviceConfigurationUpdated;
-            await stopScheduler(stoppingToken);
+            await _lifecycle.WaitAsync(stoppingToken);
+            try
+            {
+                _active = false;
+                await stopScheduler(stoppingToken);
+            }
+            finally { _lifecycle.Release(); }
         }
 
         private async Task stopScheduler(CancellationToken cancellationToken = default) 
         {
-            if (_scheduler != null && (_scheduler.IsStarted || _scheduler.InStandbyMode))
+            foreach (var device in _subscriptions)
+                SchedulerEvent -= device.RefreshReport;
+            _subscriptions.Clear();
+            if (_scheduler != null && !_scheduler.IsShutdown)
                 await _scheduler.Shutdown(true, cancellationToken);
+            _scheduler = null;
         }
 
         private async Task configure(List<SchedulerTrigger> triggers) 
@@ -131,7 +158,10 @@ namespace RIoT2.Core.Services
                 return;
 
         
-            StdSchedulerFactory factory = new StdSchedulerFactory();
+            StdSchedulerFactory factory = new StdSchedulerFactory(new System.Collections.Specialized.NameValueCollection
+            {
+                ["quartz.scheduler.instanceName"] = _schedulerName
+            });
             _scheduler = await factory.GetScheduler();
 
             try

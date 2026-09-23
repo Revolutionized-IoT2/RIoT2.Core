@@ -61,7 +61,7 @@ namespace RIoT2.Core
         /// <returns>The updated JSON string.</returns>
         public static string SetValue(this string json, string tokenPath, object value)
         {
-            return SetValue(json, tokenPath, value);
+            return Json.SetValue(json, tokenPath, value);
         }
 
         /// <summary>

@@ -11,28 +11,18 @@ namespace RIoT2.Core.Models
         public DateTime? To { get; set; }
         public bool IsValid
         {
-            get
-            {
-                if (TimesValid.HasValue)
-                {
-                    if (TimesValid.Value - TimesUsed <= 0)
-                        return false;
-                }
+            get => IsValidAt(DateTime.Now);
+        }
 
-                if (From.HasValue)
-                {
-                    if (DateTime.Now < From)
-                        return false;
-                }
-
-                if (To.HasValue)
-                {
-                    if (DateTime.Now > To)
-                        return false;
-                }
-
-                return true;
-            }
+        internal bool IsValidAt(DateTime now)
+        {
+            if (TimesValid.HasValue && TimesUsed >= TimesValid.Value)
+                return false;
+            if (From.HasValue && now < From.Value)
+                return false;
+            if (To.HasValue && now > To.Value)
+                return false;
+            return true;
         }
     }
 }

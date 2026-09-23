@@ -14,12 +14,18 @@ namespace RIoT2.Core.Services
     {
         private readonly List<DeviceCode> _codes;
         private readonly object _lock = new object();
+        private readonly Func<DateTime> _now;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CodeProviderService"/> class.
         /// </summary>
-        public CodeProviderService() 
+        public CodeProviderService() : this(() => DateTime.Now)
         {
+        }
+
+        public CodeProviderService(Func<DateTime> now)
+        {
+            _now = now ?? throw new ArgumentNullException(nameof(now));
             _codes = new List<DeviceCode>();
         }
 
@@ -55,12 +61,14 @@ namespace RIoT2.Core.Services
                 if (c == null)
                     return false;
 
-                if (c.IsValid)
+                var now = _now();
+                if (c.IsValidAt(now))
                 {
                     c.TimesUsed++;
                     return true;
                 }
-                else // code is not valid anymore -> remove it from list
+                else if ((c.To.HasValue && now > c.To.Value) ||
+                         (c.TimesValid.HasValue && c.TimesUsed >= c.TimesValid.Value))
                 {
                     _codes.Remove(c);
                 }

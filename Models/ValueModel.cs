@@ -33,18 +33,16 @@ namespace RIoT2.Core.Models
 
             if (value is JsonElement) 
             {
-                _value = (JsonElement)value;
+                _value = ((JsonElement)value).Clone();
                 return;
             }
 
             if (value is JObject) 
             {
                 var json = (value as JObject).ToString();
-                var jsonDocument = isJson(json);
-                if (jsonDocument != null)
-                    _value = jsonDocument.RootElement;
-                else
-                    _value = System.Text.Json.JsonSerializer.SerializeToElement(value, getOptions());
+                using (var jsonDocument = isJson(json))
+                    _value = jsonDocument != null ? jsonDocument.RootElement.Clone() :
+                        System.Text.Json.JsonSerializer.SerializeToElement(value, getOptions());
 
                 return;
             }
@@ -82,11 +80,9 @@ namespace RIoT2.Core.Models
 
         public ValueModel(string value, bool enforceCamelCase = true)
         {
-            var jsonDocument = isJson(value, enforceCamelCase);
-            if (jsonDocument != null)
-                _value = jsonDocument.RootElement;
-            else
-                _value = System.Text.Json.JsonSerializer.SerializeToElement(value, getOptions());
+            using (var jsonDocument = isJson(value, enforceCamelCase))
+                _value = jsonDocument != null ? jsonDocument.RootElement.Clone() :
+                    System.Text.Json.JsonSerializer.SerializeToElement(value, getOptions());
         }
         #endregion
 
@@ -251,7 +247,7 @@ namespace RIoT2.Core.Models
 
         public ValueModel Copy()
         {
-            return new ValueModel(_value.Clone());
+            return new ValueModel(this);
         }
 
         public IEnumerable<string> GetStrings() 
@@ -333,48 +329,54 @@ namespace RIoT2.Core.Models
 
         private JsonNode findNodePath(JsonNode node, string path = null, bool returnParent = false) 
         {
-            JsonNode parent = node;
-            foreach (var p in pathParts(path))
+            var parts = pathParts(path);
+            var length = returnParent ? parts.Length - 1 : parts.Length;
+            for (var i = 0; i < length; i++)
             {
-                parent = node;
-                if (p.Contains('[') && p.Contains(']')) //path is targeted to array item
+                var p = parts[i];
+                if (node == null)
+                    return null;
+                var bracket = p.IndexOf('[');
+                if (bracket >= 0)
                 {
-                    var pathArray = p.Split('[');
-                    var idxStr = pathArray[1].Remove(pathArray[1].Length - 1, 1); //remove last
-                    if (int.TryParse(idxStr, out int idx))
+                    if (bracket > 0 && p.EndsWith("]", StringComparison.Ordinal) &&
+                        int.TryParse(p.Substring(bracket + 1, p.Length - bracket - 2), out int idx))
                     {
-                        node = node[pathArray[0]];
-                        if (node == null)
-                            break;
-
-                        node = node.AsArray()[idx];
-                        if (node == null)
-                            break;
+                        if (!(node is JsonObject obj) || !obj.TryGetPropertyValue(p.Substring(0, bracket), out var array) ||
+                            !(array is JsonArray items) || idx < 0 || idx >= items.Count)
+                            return null;
+                        node = items[idx];
                     }
+                    else
+                        throw new ArgumentException("Invalid array index in value path.", nameof(path));
                 }
                 else
                 {
-                    //we must find node with all path parts
-                    node = node[p];
-                    if (node == null)
-                        break;
+                    if (!(node is JsonObject obj) || !obj.TryGetPropertyValue(p, out node))
+                        return null;
                 }
             }
-            return returnParent ? parent:node;
+            return node;
         }
 
         private JsonNode findNode(JsonNode node, string property)
         {
-            if (node.GetValueKind() == JsonValueKind.Object) 
+            var parent = findPropertyParent(node, property);
+            return parent?[property];
+        }
+
+        private JsonObject findPropertyParent(JsonNode node, string property)
+        {
+            if (node is JsonObject obj)
             {
-                foreach (var child in node.AsObject().AsEnumerable()) 
+                foreach (var child in obj)
                 {
                     if (child.Key == property)
-                        return child.Value;
+                        return obj;
 
-                    if (child.Value != null && child.Value.GetValueKind() == JsonValueKind.Object)
+                    if (child.Value is JsonObject)
                     {
-                        var found = findNode(child.Value, property);
+                        var found = findPropertyParent(child.Value, property);
                         if (found != null)
                             return found;
                     }
@@ -460,15 +462,8 @@ namespace RIoT2.Core.Models
                 if (!string.IsNullOrEmpty(property))
                 {
                     var root = Node;
-                    var nodeToUpdate = findNode(root, property);
-                    if (nodeToUpdate != null)
-                    {
-                        nodeToUpdate.ReplaceWith(value.Node);
-                    }
-                    else //create new property 
-                    {
-                        root.AsObject().Add(property, value.Node);
-                    }
+                    var parent = findPropertyParent(root, property) ?? root.AsObject();
+                    parent[property] = value.Node;
                     return new ValueModel(root.ToJsonString());
                 }
             }
@@ -488,23 +483,34 @@ namespace RIoT2.Core.Models
 
         public ValueModel Update(ValueModel value, string path = null)
         {
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+            if (!string.IsNullOrEmpty(path) && Type != ValueType.Entity)
+                throw new ArgumentException("A value path requires an object root.", nameof(path));
             if (Type == ValueType.Entity)
             {
                 if (!string.IsNullOrEmpty(path))
                 {
                     var root = Node;
-                    var node = findNodePath(root, path);
-                    if (node != null)
+                    var parent = findNodePath(root, path, true);
+                    var leaf = pathParts(path).Last();
+                    if (!(parent is JsonObject obj))
+                        throw new ArgumentException("The parent value path must identify an existing object.", nameof(path));
+                    var bracket = leaf.IndexOf('[');
+                    if (bracket >= 0)
                     {
-                        node.ReplaceWith(value.Node);
+                        if (!leaf.EndsWith("]", StringComparison.Ordinal) ||
+                            !int.TryParse(leaf.Substring(bracket + 1, leaf.Length - bracket - 2), out var index) ||
+                            !obj.TryGetPropertyValue(leaf.Substring(0, bracket), out var array) ||
+                            !(array is JsonArray items) || index < 0 || index >= items.Count)
+                            throw new ArgumentException("The value path must identify an existing array element.", nameof(path));
+                        items[index] = value.Node;
                     }
-                    else //else add new
+                    else
                     {
-                        var nodeToAdd = findNodePath(root, path, true);
-                        if (nodeToAdd == null || nodeToAdd.GetValueKind() != JsonValueKind.Object)
-                            return value; //cannot add: parent path is missing or not an object
-
-                        nodeToAdd.AsObject().Add(pathParts(path).Last(), value.Node);
+                        if (string.IsNullOrWhiteSpace(leaf))
+                            throw new ArgumentException("The value path must end with a property name.", nameof(path));
+                        obj[leaf] = value.Node;
                     }
                     return new ValueModel(root.ToJsonString());
                 }
@@ -580,6 +586,7 @@ namespace RIoT2.Core.Models
                     };
 
                     var serialized = System.Text.Json.JsonSerializer.Serialize(doc.RootElement, options);
+                    doc.Dispose();
                     doc = JsonDocument.Parse(serialized);
                 }
                 return doc;
@@ -634,7 +641,8 @@ namespace RIoT2.Core.Models
 
         public override JsonElement Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            return JsonDocument.ParseValue(ref reader).RootElement.Clone();
+            using (var document = JsonDocument.ParseValue(ref reader))
+                return document.RootElement.Clone();
         }
     }
 }

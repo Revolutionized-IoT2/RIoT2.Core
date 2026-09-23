@@ -92,12 +92,22 @@ rule/function models, or NCalc dependency. Device refresh scheduling still uses 
 The orchestrator executes device commands through `IOrchestratorMqttService.ExecuteCommand(Command)`,
 independently of workflow evaluation.
 
-This is a breaking Core API change. Publish Core as `0.1.40` before building or deploying the updated
+This is a breaking Core API change. Publish Core as `0.1.41` before building or deploying the updated
 orchestrator, which consumes that package version from the private feed.
 
 Version `0.1.40` also preserves large integer and JSON-looking text values when deserializing
 messages. `NodeOnlineMessage.GrpcBaseUrl` is an optional, additive field: workflow nodes advertise
 their dedicated gRPC endpoint separately from the web UI's `NodeBaseUrl`.
+
+Version `0.1.41` adds MQTT `ConnectedAsync` notifications on initial connection and reconnection.
+Register message/connection handlers before `Start`; use the connection callback to republish node
+presence. State/history reads are detached snapshots, safe to enumerate while reports arrive.
+Scheduler reloads and shutdown remove their owned device refresh subscriptions.
+
+`ValueModel` owns borrowed JSON elements. Updates support dotted property paths and indexed
+properties such as `items[0].value`, including existing null values. Adding a final property is
+allowed only when its parent object exists; missing/incompatible parents and invalid array indexes
+throw `ArgumentException` rather than replacing or modifying an unrelated value.
 
 ## Contributing
 

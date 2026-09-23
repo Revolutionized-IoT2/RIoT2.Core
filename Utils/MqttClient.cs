@@ -7,6 +7,7 @@ using RIoT2.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RIoT2.Core.Utils
@@ -19,25 +20,31 @@ namespace RIoT2.Core.Utils
         private string _password;
         private string _clientId;
         private string[] _clientTopics;
+        private readonly int _port;
 
         public event MqttMessageReceivedHandler MessageReceived;
+        public event Func<Task> ConnectedAsync;
         public MqttClient(string clientId, string serverUrl, string username, string password)
+            : this(clientId, serverUrl, username, password, 1883)
+        {
+        }
+
+        public MqttClient(string clientId, string serverUrl, string username, string password, int port)
         {
             _clientId = clientId;
             _serverUrl = serverUrl;
             _username = username;
             _password = password;
+            _port = port;
         }
 
         public async Task Start(params string[] topic)
         {
             _clientTopics = topic;
-            _client = await startClient(topic);
-            _client.ApplicationMessageReceivedAsync += e =>
-            {
-                handleMqttMessageReceived(e);
-                return Task.CompletedTask;
-            };
+            if (_client?.IsStarted == true)
+                throw new InvalidOperationException("The MQTT client has already been started.");
+            _client?.Dispose();
+            await startClient(topic);
         }
 
         public async Task Stop()
@@ -53,8 +60,22 @@ namespace RIoT2.Core.Utils
                     NodeBaseUrl = "",
                     IsOnline = false
                 };
-                await Publish(Constants.Get(_clientId, MqttTopic.NodeOnline), Json.Serialize(lwMsg));
-                await _client.StopAsync();
+                try
+                {
+                    if (_client.IsConnected)
+                    {
+                        using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
+                            await _client.InternalClient.PublishAsync(new MqttApplicationMessageBuilder()
+                                .WithTopic(Constants.Get(_clientId, MqttTopic.NodeOnline))
+                                .WithPayload(Json.Serialize(lwMsg))
+                                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
+                                .Build(), timeout.Token);
+                    }
+                }
+                finally
+                {
+                    await _client.StopAsync();
+                }
             }
         }
 
@@ -62,7 +83,7 @@ namespace RIoT2.Core.Utils
         {
             //e.clientId is the client ID of THIS client!
 
-            MessageReceived(new MqttEventArgs()
+            MessageReceived?.Invoke(new MqttEventArgs()
             {
                 ClientId = e.ClientId,
                 Message = e.ApplicationMessage.ConvertPayloadToString(),
@@ -96,20 +117,33 @@ namespace RIoT2.Core.Utils
                     .WithAutoReconnectDelay(TimeSpan.FromSeconds(5))
                     .WithClientOptions(new MqttClientOptionsBuilder()
                         .WithClientId(_clientId)
-                        .WithTcpServer(_serverUrl)
+                        .WithTcpServer(_serverUrl, _port)
                         .WithWillTopic(Constants.Get(_clientId, MqttTopic.NodeOnline))
                         .WithWillPayload(Encoding.UTF8.GetBytes(Json.Serialize(lwMsg)))
                         .WithCredentials(_username, _password))
                     .Build();
 
             var mqttClient = new MqttFactory().CreateManagedMqttClient();
-            await mqttClient.StartAsync(options);
+            _client = mqttClient;
+            mqttClient.ApplicationMessageReceivedAsync += e =>
+            {
+                handleMqttMessageReceived(e);
+                return Task.CompletedTask;
+            };
+            mqttClient.ConnectedAsync += async _ =>
+            {
+                var handlers = ConnectedAsync;
+                if (handlers != null)
+                    foreach (Func<Task> handler in handlers.GetInvocationList())
+                        await handler();
+            };
 
             var topicFilters = new List<MqttTopicFilter>();
             foreach (var t in topics)
                 topicFilters.Add(new MqttTopicFilterBuilder().WithTopic(t).Build());
 
             await mqttClient.SubscribeAsync(topicFilters);
+            await mqttClient.StartAsync(options);
             return mqttClient;
         }
 

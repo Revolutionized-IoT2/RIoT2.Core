@@ -2,6 +2,7 @@
 using RIoT2.Core.Models;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 namespace RIoT2.Core.Services
 {
@@ -15,6 +16,7 @@ namespace RIoT2.Core.Services
         private List<Report> _reports;
         private static readonly int _maxHistory = 25;
         Dictionary<string, List<Report>> _history;
+        private readonly object _sync = new object();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MessageStateService"/> class with empty state and history.
@@ -25,28 +27,36 @@ namespace RIoT2.Core.Services
         }
 
         /// <inheritdoc/>
-        public IEnumerable<Command> Commands { get { return _commands; } }
+        public IEnumerable<Command> Commands
+        {
+            get
+            {
+                lock (_sync)
+                    return _commands.Select(c => new Command { Id = c.Id, Value = c.Value?.Copy() }).ToList();
+            }
+        }
 
         /// <inheritdoc/>
-        public IEnumerable<Report> Reports { get { return _reports; } }
+        public IEnumerable<Report> Reports
+        {
+            get
+            {
+                lock (_sync)
+                    return _reports.Select(CopyReport).ToList();
+            }
+        }
 
         /// <inheritdoc/>
         public IEnumerable<Report> GetHistory(string reportId, int? count = null)
         {
-            if (_history.ContainsKey(reportId)) 
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count));
+            lock (_sync)
             {
-                var reports = _history[reportId].OrderByDescending(x => x.TimeStamp).ToList();
-                if (count == null)
-                {
-                    return reports;
-                }
-                else 
-                {
-                    return reports.GetRange(0, count.Value > reports.Count() ? reports.Count() : count.Value);
-                }
+                if (!_history.TryGetValue(reportId, out var history))
+                    return null;
+                return history.OrderByDescending(x => x.TimeStamp).Take(count ?? _maxHistory).Select(CopyReport).ToList();
             }
-
-            return null;
         }
 
         private void addToHistory(Report report)
@@ -64,36 +74,47 @@ namespace RIoT2.Core.Services
         /// <inheritdoc/>
         public void SetState(Report report, bool maintainHistory = false)
         {
-            var existingReport = _reports.FirstOrDefault(x => x.Id == report.Id);
-            if(existingReport != null)
-                _reports.Remove(existingReport);
-
-            _reports.Add(report);
-
-            if(maintainHistory)
-                addToHistory(report);
+            if (report == null)
+                throw new ArgumentNullException(nameof(report));
+            lock (_sync)
+            {
+                var snapshot = CopyReport(report);
+                _reports.RemoveAll(x => x.Id == report.Id);
+                _reports.Add(snapshot);
+                if (maintainHistory)
+                    addToHistory(snapshot);
+            }
         }
 
         /// <inheritdoc/>
         public void SetState(Command command)
         {
-            var existingCommand = _commands.FirstOrDefault(x => x.Id == command.Id);
-            if (existingCommand != null)
-                _commands.Remove(existingCommand);
-
-            _commands.Add(command);
+            if (command == null)
+                throw new ArgumentNullException(nameof(command));
+            lock (_sync)
+            {
+                _commands.RemoveAll(x => x.Id == command.Id);
+                _commands.Add(new Command { Id = command.Id, Value = command.Value?.Copy() });
+            }
         }
 
         /// <inheritdoc/>
         public void Reset(bool includeState = false)
         {
-            if (includeState) 
+            lock (_sync)
             {
-                _commands = new List<Command>();
-                _reports = new List<Report>();
+                if (includeState)
+                {
+                    _commands = new List<Command>();
+                    _reports = new List<Report>();
+                }
+                _history = new Dictionary<string, List<Report>>();
             }
-
-            _history = new Dictionary<string, List<Report>>();
         }
+
+        private static Report CopyReport(Report report) => new Report
+        {
+            Id = report.Id, Filter = report.Filter, TimeStamp = report.TimeStamp, Value = report.Value?.Copy()
+        };
     }
 }

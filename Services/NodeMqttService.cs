@@ -52,6 +52,7 @@ namespace RIoT2.Core.Services
                 _nodeOnlineTopic = _configurationService.Configuration.GetTopic(MqttTopic.NodeOnline);
 
                 _client.MessageReceived += _client_MessageReceived;
+                _client.ConnectedAsync += AnnounceOnlineAsync;
                 _reportService.ReportUpdated += _reportService_ReportUpdated;
 
                 await _client.Start(new string[] { _commandTopic, _configurationTopic, _orchestratorOnlineTopic });
@@ -87,7 +88,21 @@ namespace RIoT2.Core.Services
                 _commandService.ExecuteJsonCommand(mqttEventArgs.Message);
 
             if (MqttClient.IsMatch(mqttEventArgs.Topic, _orchestratorOnlineTopic))
-                _ = SendNodeOnlineMessage(_configurationService.OnlineMessage);
+                _ = AnnounceOnlineAsync();
+        }
+
+        private async Task AnnounceOnlineAsync()
+        {
+            try
+            {
+                if (_configurationService.OnlineMessage == null)
+                    throw new InvalidOperationException("The node online message has not been configured.");
+                await SendNodeOnlineMessage(_configurationService.OnlineMessage);
+            }
+            catch (Exception x)
+            {
+                _logger.LogError(x, "Could not announce node presence");
+            }
         }
 
         private async void _reportService_ReportUpdated(IDevice sender, IReport report)
@@ -121,9 +136,11 @@ namespace RIoT2.Core.Services
                 return;
 
             _client.MessageReceived -= _client_MessageReceived;
+            _client.ConnectedAsync -= AnnounceOnlineAsync;
             _reportService.ReportUpdated -= _reportService_ReportUpdated;
 
             await _client.Stop();
+            _client.Dispose();
             _client = null;
         }
 
