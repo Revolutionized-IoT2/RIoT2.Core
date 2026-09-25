@@ -130,6 +130,11 @@ namespace RIoT2.Core.Utils
             }
         }
 
+        /// <summary>
+        /// Sends a GET request using the shared HTTP helper. This overload intentionally accepts
+        /// self-signed TLS certificates for local device bridges such as Philips Hue; do not use it
+        /// for Internet-facing or credential-bearing endpoints.
+        /// </summary>
         public static async Task<HttpResponseMessage> GetAsync(
            string address,
            Dictionary<string, string> headers = null)
@@ -239,6 +244,11 @@ namespace RIoT2.Core.Utils
             }
         }
 
+        /// <summary>
+        /// Sends a PUT request using the shared HTTP helper. This overload intentionally accepts
+        /// self-signed TLS certificates for local device bridges such as Philips Hue; do not use it
+        /// for Internet-facing or credential-bearing endpoints.
+        /// </summary>
         public static async Task<HttpResponseMessage> PutAsync(
            string address,
            string body,
@@ -333,29 +343,6 @@ namespace RIoT2.Core.Utils
             {
                 return "download";
             }
-        }
-    }
-
-    internal class InsecureHttpClient : IDisposable
-    {
-        private HttpClientHandler _httpClientHandler;
-        private HttpClient _httpClient;
-        public InsecureHttpClient()
-        {
-            _httpClientHandler = new HttpClientHandler();
-            _httpClientHandler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => { return true; };
-            _httpClient = new HttpClient(_httpClientHandler);
-        }
-
-        internal HttpClient Client { get { return _httpClient; } }
-
-        public void Dispose()
-        {
-            if (_httpClientHandler != null)
-                _httpClientHandler.Dispose();
-
-            if (_httpClient != null)
-                _httpClient.Dispose();
         }
     }
 }

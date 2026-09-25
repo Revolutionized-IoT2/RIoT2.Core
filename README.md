@@ -1,4 +1,4 @@
-# RIoT2.Core
+﻿# RIoT2.Core
 Shared and core services for RIoT platform.
 
 ## Overview
@@ -16,10 +16,10 @@ project in the RIoT2 solution (nodes, orchestrator, UI, and more).
 The Core project centralizes shared building blocks to keep the rest of the solution consistent and
 free of duplication:
 
-1. **Unified data model** � shared models such as `Report`, `Command`, templates, and
+1. **Unified data model** - shared models such as `Report`, `Command`, templates, and
    configuration types that are serialized to/from JSON and exchanged over MQTT.
-2. **General utility methods** � JSON helpers, extension methods, and epoch/date conversions.
-3. **Reusable program logic** � services, interfaces, enums, delegates, and MQTT
+2. **General utility methods** - JSON helpers, extension methods, and epoch/date conversions.
+3. **Reusable program logic** - services, interfaces, enums, delegates, and MQTT
    topic conventions consumed across the solution.
 
 ## Project Structure
@@ -80,10 +80,10 @@ endpoints. `RIoT2.Core` itself contains no Matter protocol code.
 
 ## Key Dependencies
 
-- `System.Text.Json` and `Newtonsoft.Json` � JSON serialization.
-- `MQTTnet` and `MQTTnet.Extensions.ManagedClient` � MQTT messaging.
-- `Microsoft.Extensions.Hosting` and `Microsoft.Extensions.Logging` � hosting and logging.
-- `Quartz` � scheduling.
+- `System.Text.Json` and `Newtonsoft.Json` - JSON serialization.
+- `MQTTnet` and `MQTTnet.Extensions.ManagedClient` - MQTT messaging.
+- `Microsoft.Extensions.Hosting` and `Microsoft.Extensions.Logging` - hosting and logging.
+- `Quartz` - scheduling.
 
 ## Automation
 
@@ -148,6 +148,48 @@ awaited during shutdown, while queued calls are cancelled.
 
 The existing constructor is unchanged; an additional client-factory overload supports isolated
 transports, including loopback integration tests.
+
+## MQTT contract summary
+
+Core defines these MQTT topics in `Constants`:
+
+| Topic enum | Template | Producer/consumer intent |
+| --- | --- | --- |
+| `MqttTopic.NodeOnline` | `riot2/node/{id}/online` | Node or connector retained presence (`NodeOnlineMessage`). |
+| `MqttTopic.OrchestratorOnline` | `riot2/orchestrator/online` | Orchestrator retained presence; nodes/connectors republish presence after seeing it. |
+| `MqttTopic.Configuration` | `riot2/node/{id}/configuration` | Orchestrator asks a node or connector to reload configuration (`ConfigurationCommand`). |
+| `MqttTopic.Command` | `riot2/node/{id}/command` | Orchestrator publishes device commands (`Command`). |
+| `MqttTopic.Report` | `riot2/node/{id}/report` | Nodes/connectors publish device reports (`Report`). |
+
+Payloads are serialized with camelCase property names and usually omit nulls:
+
+```json
+{ "id": "temperature", "timeStamp": 1790253852, "filter": "room", "value": 21.5 }
+{ "id": "setRelay", "value": true }
+{ "apiBaseUrl": "https://orchestrator.example" }
+{ "name": "Node A", "isOnline": true, "nodeBaseUrl": "http://node", "grpcBaseUrl": "http://node:5001", "nodeType": 1 }
+```
+
+`Report.value` and `Command.value` use `ValueModel`, so valid JSON primitives, arrays, and objects
+are preserved. `Report.timeStamp` is Unix epoch seconds in UTC; use `ToEpoch()`/`FromEpoch()` for
+conversion.
+
+## Build and test
+
+From the multi-repo workspace root on Windows PowerShell:
+
+```powershell
+dotnet build .\RIoT2.Core\RIoT2.Core.csproj
+dotnet test .\RIoT2.Tests\RIoT2.Tests.csproj
+```
+
+`RIoT2.Tests` also builds sibling repositories (`RIoT2.Net.Orchestrator` and
+`RIoT2.Connector.InfluxDB`) through project references. If those repositories reference an older
+published `RIoT2.Core` package, update their package reference before expecting a clean full test
+build.
+
+Plugin packages downloaded by `NodeConfigurationServiceBase` are installed only under the
+application `Plugins` folder; zip entries that try to escape that folder are rejected.
 
 ## Contributing
 

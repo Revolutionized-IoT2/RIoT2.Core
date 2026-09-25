@@ -76,7 +76,7 @@ namespace RIoT2.Core.Abstracts
             var file = await Utils.Web.DownloadFile(url);
             if (file != null)
             {
-                saveFile("Data/" + file.Name, file.Content);
+                saveFile(Path.Combine("Data", Path.GetFileName(file.Name)), file.Content);
             }
         }
 
@@ -93,7 +93,7 @@ namespace RIoT2.Core.Abstracts
                 if (file != null && file.Exists) 
                 {
                     deleteFolderContent("Plugins");
-                    ZipFile.ExtractToDirectory(file.FullName, Path.Combine(Configuration.ApplicationFolder, "Plugins"));
+                    extractZipFile(file, Path.Combine(Configuration.ApplicationFolder, "Plugins"));
                     deleteFile("Data/" + packageName); //delete package after intallation
                 }
             } 
@@ -120,20 +120,20 @@ namespace RIoT2.Core.Abstracts
 
         private void deleteFolderContent(string directory)
         {
-            var fullPath = Path.Combine(Configuration.ApplicationFolder, directory);
+            var fullPath = getSafeApplicationPath(directory);
             if (Directory.Exists(fullPath))
             {
                 DirectoryInfo di = new DirectoryInfo(fullPath);
                 foreach (var f in di.GetFiles())
-                {
                     f.Delete();
-                }
+                foreach (var d in di.GetDirectories())
+                    d.Delete(true);
             }
         }
 
         private void deleteFile(string filename)
         {
-            var fullPath = Path.Combine(Configuration.ApplicationFolder, filename);
+            var fullPath = getSafeApplicationPath(filename);
             if (File.Exists(fullPath))
             {
                 FileInfo fi = new FileInfo(fullPath);
@@ -143,7 +143,8 @@ namespace RIoT2.Core.Abstracts
 
         private void saveFile(string filename, byte[] content) 
         {
-            var fullPath = Path.Combine(Configuration.ApplicationFolder, filename);
+            var fullPath = getSafeApplicationPath(filename);
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
             FileInfo fi = new FileInfo(fullPath);
             if (fi.Exists)
                 fi.Delete();
@@ -153,13 +154,53 @@ namespace RIoT2.Core.Abstracts
 
         private FileInfo loadFile(string filename)
         {
-            var fullPath = Path.Combine(Configuration.ApplicationFolder, filename);
+            var fullPath = getSafeApplicationPath(filename);
             FileInfo f = new FileInfo(fullPath);
 
             if (!f.Exists)
                 return null;
 
             return f;
+        }
+
+        private void extractZipFile(FileInfo file, string destination)
+        {
+            Directory.CreateDirectory(destination);
+            var destinationRoot = Path.GetFullPath(destination);
+            if (!destinationRoot.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
+                destinationRoot += Path.DirectorySeparatorChar;
+
+            using (var archive = ZipFile.OpenRead(file.FullName))
+            {
+                foreach (var entry in archive.Entries)
+                {
+                    var fullPath = Path.GetFullPath(Path.Combine(destinationRoot, entry.FullName));
+                    if (!fullPath.StartsWith(destinationRoot, StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidOperationException("Plugin package contains an entry outside the plugin folder.");
+
+                    if (string.IsNullOrEmpty(entry.Name))
+                    {
+                        Directory.CreateDirectory(fullPath);
+                        continue;
+                    }
+
+                    Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+                    entry.ExtractToFile(fullPath, true);
+                }
+            }
+        }
+
+        private string getSafeApplicationPath(string relativePath)
+        {
+            var root = Path.GetFullPath(Configuration.ApplicationFolder);
+            if (!root.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
+                root += Path.DirectorySeparatorChar;
+
+            var fullPath = Path.GetFullPath(Path.Combine(root, relativePath));
+            if (!fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Path must remain inside the application folder.");
+
+            return fullPath;
         }
     }
 }

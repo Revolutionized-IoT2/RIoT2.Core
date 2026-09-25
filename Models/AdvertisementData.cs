@@ -1,7 +1,7 @@
 ﻿using RIoT2.Core.Utils;
 using System;
+using System.Globalization;
 using System.Linq;
-using System.Text;
 
 namespace RIoT2.Core.Models
 {
@@ -17,7 +17,7 @@ namespace RIoT2.Core.Models
         {
             try 
             {
-                var bytes = Encoding.ASCII.GetBytes(Data.Replace("-", ""));
+                var bytes = ParseHexBytes(Data);
                 return BeaconData.FromBytes(bytes);
             }
             catch 
@@ -36,6 +36,21 @@ namespace RIoT2.Core.Models
         {
             return Json.Serialize(this);
         }
+
+        private static byte[] ParseHexBytes(string data)
+        {
+            if (string.IsNullOrWhiteSpace(data))
+                throw new ArgumentException("Beacon data is required.", nameof(data));
+
+            var hex = data.Replace("-", "").Replace(" ", "");
+            if (hex.Length % 2 != 0)
+                throw new ArgumentException("Beacon data must contain an even number of hex characters.", nameof(data));
+
+            var bytes = new byte[hex.Length / 2];
+            for (int i = 0; i < bytes.Length; i++)
+                bytes[i] = byte.Parse(hex.Substring(i * 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+            return bytes;
+        }
     }
 
     public class BeaconData
@@ -46,9 +61,10 @@ namespace RIoT2.Core.Models
         public sbyte TxPower { get; set; }
         public static BeaconData FromBytes(byte[] bytes)
         {
+            if (bytes == null) { throw new ArgumentNullException(nameof(bytes)); }
+            if (bytes.Length != 23) { throw new ArgumentException("Byte array length was expected to be 23", "bytes"); }
             if (bytes[0] != 0x02) { throw new ArgumentException("First byte in array was exptected to be 0x02", "bytes"); }
             if (bytes[1] != 0x15) { throw new ArgumentException("Second byte in array was expected to be 0x15", "bytes"); }
-            if (bytes.Length != 23) { throw new ArgumentException("Byte array length was expected to be 23", "bytes"); }
             return new BeaconData
             {
                 Uuid = new Guid(

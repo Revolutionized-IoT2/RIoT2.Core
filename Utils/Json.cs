@@ -16,6 +16,8 @@ namespace RIoT2.Core.Utils
     /// </summary>
     public static class Json
     {
+        private static readonly ISerializationBinder _safeTypeNameBinder = new RIoT2SerializationBinder();
+
         /// <summary>
         /// Converts a JSON string into a nested dictionary.
         /// </summary>
@@ -111,7 +113,8 @@ namespace RIoT2.Core.Utils
 
             return JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings()
             {
-                TypeNameHandling = TypeNameHandling.Auto
+                TypeNameHandling = TypeNameHandling.Auto,
+                SerializationBinder = _safeTypeNameBinder
             });
         }
 
@@ -127,6 +130,7 @@ namespace RIoT2.Core.Utils
             return JsonConvert.SerializeObject(obj, new JsonSerializerSettings()
             {
                 TypeNameHandling = autoTypeNameHandling ? TypeNameHandling.Auto : TypeNameHandling.None,
+                SerializationBinder = _safeTypeNameBinder,
                 ContractResolver = new CamelCasePropertyNamesContractResolver(),
                 NullValueHandling = includeNulls ? NullValueHandling.Include : NullValueHandling.Ignore,
             });
@@ -703,6 +707,64 @@ namespace RIoT2.Core.Utils
             }
         }
     }
+
+    /// <summary>
+    /// Restricts Json.NET type-name handling to RIoT2-owned contract types and simple collection
+    /// shapes so stored polymorphic configuration files remain loadable without allowing arbitrary
+    /// framework types to be constructed from untrusted JSON.
+    /// </summary>
+    public sealed class RIoT2SerializationBinder : ISerializationBinder
+    {
+        private static readonly ISerializationBinder _defaultBinder = new DefaultSerializationBinder();
+
+        public Type BindToType(string assemblyName, string typeName)
+        {
+            var type = _defaultBinder.BindToType(assemblyName, typeName);
+            if (!IsAllowedType(type))
+                throw new JsonSerializationException($"Type '{type.FullName}' from assembly '{type.Assembly.GetName().Name}' is not allowed in RIoT2 JSON type metadata.");
+            return type;
+        }
+
+        public void BindToName(Type serializedType, out string assemblyName, out string typeName)
+        {
+            if (!IsAllowedType(serializedType))
+                throw new JsonSerializationException($"Type '{serializedType.FullName}' from assembly '{serializedType.Assembly.GetName().Name}' is not allowed in RIoT2 JSON type metadata.");
+            _defaultBinder.BindToName(serializedType, out assemblyName, out typeName);
+        }
+
+        private static bool IsAllowedType(Type type)
+        {
+            if (type == null)
+                return false;
+
+            if (type.IsArray)
+                return IsAllowedType(type.GetElementType());
+
+            if (type.IsPrimitive || type == typeof(string) || type == typeof(decimal))
+                return true;
+
+            if (IsRIoT2Assembly(type.Assembly.GetName().Name))
+                return true;
+
+            if (!type.IsGenericType)
+                return false;
+
+            var definition = type.GetGenericTypeDefinition();
+            if (definition != typeof(List<>) &&
+                definition != typeof(Dictionary<,>) &&
+                definition != typeof(HashSet<>))
+                return false;
+
+            return type.GetGenericArguments().All(IsAllowedType);
+        }
+
+        private static bool IsRIoT2Assembly(string assemblyName)
+        {
+            return string.Equals(assemblyName, "RIoT2.Core", StringComparison.Ordinal) ||
+                   assemblyName.StartsWith("RIoT2.", StringComparison.Ordinal);
+        }
+    }
+
     public class ValueModelConverter : JsonConverter<ValueModel>
     {
         public override void WriteJson(JsonWriter writer, ValueModel value, Newtonsoft.Json.JsonSerializer serializer)
