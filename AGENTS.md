@@ -24,7 +24,7 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.csproj    # Core, Orchestrator and InfluxD
 ```
 
 - To check a consumer against unreleased Core, pack Core into the local feed:
-  `dotnet pack .\RIoT2.Core\RIoT2.Core.csproj -c Release -p:PackageVersion=0.1.45 -o .\.localfeed`.
+  `dotnet pack .\RIoT2.Core\RIoT2.Core.csproj -c Release -p:PackageVersion=<next-version> -o .\.localfeed`.
   Then restore the consumer with `.localfeed` as an extra source. A local pack is not a release.
 - To release, push a git tag `x.y.z`. CI (`.github/workflows/main.yml`) packs and pushes to GitHub
   Packages.
@@ -87,8 +87,8 @@ must stay compatible with it.
 - `ValueModel` keeps JSON-looking strings and large integers as they are. Path updates
   (`a.b`, `items[0].value`) throw `ArgumentException` when the parent is missing; they don't
   create it.
-- The next Core package is `0.1.45`. Until it is published, consumers need
-  `C:\Src\RIoT2\.localfeed` as an extra NuGet source for migration validation.
+- The current Core package is `1.0.1`, and every consumer pins it. Tag `1.0.0` failed CI and was
+  never published: don't reference it. A tag whose CI run fails publishes nothing.
 
 ## Related work
 

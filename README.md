@@ -6,7 +6,7 @@ runtime services used by every .NET component.
 
 - Type: class library, NuGet package `RIoT2.Core` on GitHub Packages
 - Target framework: .NET Standard 2.0
-- Next package version: `0.1.45` (not tagged or published yet)
+- Current package version: `1.0.1` (published; tag `1.0.0` failed CI and was never published)
 - Root namespace: `RIoT2.Core`
 
 How Core fits into the platform: [architecture overview](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/architecture/overview.md).
@@ -123,9 +123,10 @@ checked out next to this one.
 ## Versions and releases
 
 - Release notes are in [CHANGELOG.md](CHANGELOG.md).
-- To release, push a tag `x.y.z`. CI publishes the package to GitHub Packages.
-- Until `0.1.45` is published, consumers can restore with `C:\Src\RIoT2\.localfeed` as an extra
-  source when validating the migration.
+- To release, push a tag `x.y.z`. CI publishes the package to GitHub Packages. A tag whose CI
+  run fails publishes nothing; fix the build and push the next version.
+- To try an unreleased Core in a consumer, pack it into `C:\Src\RIoT2\.localfeed` and restore with
+  that folder as an extra source. A local pack is not a release.
 - Keep the public API additive. Consumers pin package versions, and device plugins run inside the
   Node's Core version, so the Node image and the plugin packages must be released together.
 

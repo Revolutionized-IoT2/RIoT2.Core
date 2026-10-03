@@ -6,9 +6,16 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-03
+
+The .NET 10 baseline release ([M8](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m08-dotnet10-migration.md)).
+It contains the 0.1.44 fixes. Tag `1.0.0` has the same code but failed CI (CA1873 under the
+newer SDK), so it was never published; use 1.0.1.
+
 - Build: added shared `Directory.Build.props`, `.editorconfig` and central
   `Directory.Packages.props`; CI builds use the .NET 10 SDK and `-p:CI=true` treats warnings as
   errors.
+- Build: SourceLink, and the PDB is embedded in the DLL (`DebugType=embedded`).
 - Changed package dependencies from 9.0.0 to 10.0.12 for `Microsoft.Extensions.Hosting`,
   `Microsoft.Extensions.Logging`, `Microsoft.Bcl.AsyncInterfaces` and `System.Text.Json`.
 - Fixed `DeviceBase` threshold-check error logging so the report id is passed through a template
