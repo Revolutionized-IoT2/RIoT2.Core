@@ -209,7 +209,7 @@ namespace RIoT2.Core.Abstracts
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogError(ex, "Error checking threshold", report);
+                        Logger.LogError(ex, "Error checking threshold for report {ReportId}", report.Id);
                     }
 
                     if (noOperation)

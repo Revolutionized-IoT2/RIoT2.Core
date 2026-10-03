@@ -6,6 +6,13 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+- Build: added shared `Directory.Build.props`, `.editorconfig` and central
+  `Directory.Packages.props`; CI builds use the .NET 10 SDK and `-p:CI=true` treats warnings as
+  errors.
+- Changed package dependencies from 9.0.0 to 10.0.12 for `Microsoft.Extensions.Hosting`,
+  `Microsoft.Extensions.Logging`, `Microsoft.Bcl.AsyncInterfaces` and `System.Text.Json`.
+- Fixed `DeviceBase` threshold-check error logging so the report id is passed through a template
+  placeholder.
 - Documentation: `AGENTS.md` is the AI instruction file, `CLAUDE.md` imports it, and version notes
   moved from the README to this file.
 

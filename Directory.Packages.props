@@ -1,0 +1,17 @@
+<Project>
+  <!-- Central package versions (plan M8 step 2). Shared versions come from
+       Revolutionized-IoT2/.github build/Directory.Packages.props.template. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.12" />
+    <PackageVersion Include="MQTTnet" Version="4.3.7.1207" />
+    <PackageVersion Include="MQTTnet.Extensions.ManagedClient" Version="4.3.7.1207" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageVersion Include="Quartz" Version="3.13.1" />
+    <PackageVersion Include="System.Text.Json" Version="10.0.12" />
+  </ItemGroup>
+</Project>

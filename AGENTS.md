@@ -19,14 +19,17 @@ Run from the workspace root (`C:\Src\RIoT2`), in PowerShell:
 
 ```powershell
 dotnet build .\RIoT2.Core\RIoT2.Core.csproj
+dotnet build .\RIoT2.Core\RIoT2.Core.csproj -p:CI=true
 dotnet test .\RIoT2.Tests\RIoT2.Tests.csproj    # Core, Orchestrator and InfluxDB tests (project references)
 ```
 
 - To check a consumer against unreleased Core, pack Core into the local feed:
-  `dotnet pack .\RIoT2.Core\RIoT2.Core.csproj -c Release -p:PackageVersion=<x.y.z> -o .\.localfeed`.
+  `dotnet pack .\RIoT2.Core\RIoT2.Core.csproj -c Release -p:PackageVersion=0.1.45 -o .\.localfeed`.
   Then restore the consumer with `.localfeed` as an extra source. A local pack is not a release.
 - To release, push a git tag `x.y.z`. CI (`.github/workflows/main.yml`) packs and pushes to GitHub
   Packages.
+- Shared build settings are in `Directory.Build.props` and `.editorconfig`; package versions are
+  centralized in `Directory.Packages.props`. `-p:CI=true` enables CI warning treatment locally.
 
 ## Layout
 
@@ -57,6 +60,7 @@ must stay compatible with it.
 - Keep .NET Standard 2.0. Use no APIs outside that surface.
 - Public API changes must be **additive**. Every consumer compiles against a pinned package
   version, and device plugins run inside the Node's Core version.
+- Keep `PackageReference` items versionless; edit `Directory.Packages.props` for package versions.
 - Serialize wire JSON with `Json.Serialize` / `Json.SerializeIgnoreNulls` (camelCase). Create
   messages with the `Create(string json)` factories.
 - Don't widen `RIoT2SerializationBinder` in `Utils/Json.cs`. `TypeNameHandling` is used on
@@ -83,9 +87,8 @@ must stay compatible with it.
 - `ValueModel` keeps JSON-looking strings and large integers as they are. Path updates
   (`a.b`, `items[0].value`) throw `ArgumentException` when the parent is missing; they don't
   create it.
-- Several Core versions are in use at once (see `CHANGELOG.md` and maintainer action
-  [MA2](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/backlog/README.md#maintainer-actions)).
-  Check which version a consumer pins before assuming a feature exists there.
+- The next Core package is `0.1.45`. Until it is published, consumers need
+  `C:\Src\RIoT2\.localfeed` as an extra NuGet source for migration validation.
 
 ## Related work
 

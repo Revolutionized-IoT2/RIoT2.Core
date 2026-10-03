@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- GitHub Packages has no symbol server: ship the PDB inside the DLL for SourceLink. -->
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -9,14 +11,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
-    <PackageReference Include="MQTTnet" Version="4.3.7.1207" />
-    <PackageReference Include="MQTTnet.Extensions.ManagedClient" Version="4.3.7.1207" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="Quartz" Version="3.13.1" />
-    <PackageReference Include="System.Text.Json" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="MQTTnet" />
+    <PackageReference Include="MQTTnet.Extensions.ManagedClient" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="Quartz" />
+    <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
 </Project>
