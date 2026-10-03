@@ -1,42 +1,56 @@
-﻿# RIoT2.Core
-Shared and core services for RIoT platform.
+# RIoT2.Core
 
-## Overview
+Shared library for the [RIoT2](https://github.com/Revolutionized-IoT2) platform. It contains the
+wire models and MQTT topics, the MQTT client, the device and plugin base classes, and the node
+runtime services used by every .NET component.
 
-`RIoT2.Core` is the foundational **class library** for the RIoT2 platform. It provides a unified
-data model, general-purpose utility methods, and reusable program logic shared across every
-project in the RIoT2 solution (nodes, orchestrator, UI, and more).
+- Type: class library, NuGet package `RIoT2.Core` on GitHub Packages
+- Target framework: .NET Standard 2.0
+- Root namespace: `RIoT2.Core`
 
-- **Type:** Library (no entry point)
-- **Target framework:** `.NET Standard 2.0`
-- **Root namespace:** `RIoT2.Core`
+How Core fits into the platform: [architecture overview](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/architecture/overview.md).
 
-## Purpose
+## Contents
 
-The Core project centralizes shared building blocks to keep the rest of the solution consistent and
-free of duplication:
-
-1. **Unified data model** - shared models such as `Report`, `Command`, templates, and
-   configuration types that are serialized to/from JSON and exchanged over MQTT.
-2. **General utility methods** - JSON helpers, extension methods, and epoch/date conversions.
-3. **Reusable program logic** - services, interfaces, enums, delegates, and MQTT
-   topic conventions consumed across the solution.
-
-## Project Structure
-
-| Path | Responsibility |
+| Path | Contents |
 | --- | --- |
-| `Constants.cs` | MQTT topic templates, API endpoint URLs, and topic build/parse helpers. |
-| `Enums.cs` | Shared enumerations (`ValueType`, `MqttTopic`, `DashboardComponentType`, etc.). |
-| `Delegates.cs` | Shared delegate definitions. |
-| `Extensions.cs` | Extension methods for JSON, dictionaries, epoch/date conversions, and arrays. |
-| `Abstracts/` | Base classes such as `NodeConfigurationServiceBase`. |
-| `Interfaces/` | Contracts such as `ITemplate`, `IReport`, `ICommand`, `IMessage`. |
-| `Interfaces/Services/` | Service contracts such as `IConfiguration` and `ICodeProviderService`. |
-| `Models/` | Data model types (`Report`, `Command`, `ValueModel`, `MqttConfiguration`, `DocumentMetadata`, templates, etc.). |
-| `Models/Matter/` | Descriptor types (`MatterEndpointTemplate` and its bindings) used by `IMatterDevice`. |
-| `Services/` | Reusable implementations such as `CodeProviderService`. |
-| `Utils/` | Utility helpers such as `Json` and `JsonEntity`. |
+| `Constants.cs` | MQTT topic templates, shared API URLs, and helpers to build and parse topics |
+| `Enums.cs` | Shared enumerations (`ValueType`, `MqttTopic`, `NodeType`, `DeviceState`, …) |
+| `Models/` | Messages (`Report`, `Command`, `NodeOnlineMessage`), `ValueModel`, configuration and template models |
+| `Models/Matter/` | Matter endpoint declarations used by `IMatterDevice` |
+| `Abstracts/` | Base classes: `DeviceBase`, `AsyncDeviceBase`, `DeviceServiceBase`, `NodeConfigurationServiceBase` |
+| `Interfaces/` | Device, message, template and service contracts |
+| `Services/` | `NodeMqttService`, `ReportService`, `DeviceSchedulerService`, `CodeProviderService` |
+| `Utils/` | `Json`, `MqttClient`, `Web` helpers |
+
+The topics and payloads that these types implement are specified in the platform contracts:
+
+- [MQTT topics and payloads](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/mqtt-topics.md)
+- [Node configuration, templates and plugins](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/configuration.md)
+
+## Using Core
+
+### Messages and values
+
+- `Report` and `Command` are the MQTT payloads. Create them with `Report.Create(json)` /
+  `Command.Create(json)`, and serialize with `Json.SerializeIgnoreNulls`. The JSON is
+  camelCase.
+- `ValueModel` wraps any JSON value: a primitive, an array or an object. It reports its
+  `ValueType`, supports path access such as `items[0].value`, and keeps large integers and
+  JSON-looking strings as they are.
+- Build topic strings with `Constants.Get(id, MqttTopic.Report)`, and read the id back with
+  `Constants.GetTopicId`.
+
+### Writing devices
+
+- Device plugins implement `IDevicePlugin`, and their devices derive from `AsyncDeviceBase`.
+  Override its async start, stop, command and refresh methods.
+- `DeviceServiceBase` runs one serialized operation queue per device. When the configuration
+  is replaced, the old work is cancelled and awaited before the new devices start.
+- Existing synchronous devices (`DeviceBase`) still work. Their calls can't be interrupted,
+  though, so long-running devices should move to `AsyncDeviceBase`.
+- Read device settings with `GetConfiguration<T>("key")`. Keys are case-sensitive, and the
+  configuration download camel-cases them, so use camelCase keys.
 
 ## Matter device declarations
 
@@ -78,121 +92,41 @@ The templates travel to the orchestrator on `DeviceConfiguration.MatterEndpoints
 existing configuration-template path, and the orchestrator's Matter bridge turns them into bridged
 endpoints. `RIoT2.Core` itself contains no Matter protocol code.
 
-## Key Dependencies
+## Dependencies
 
-- `System.Text.Json` and `Newtonsoft.Json` - JSON serialization.
-- `MQTTnet` and `MQTTnet.Extensions.ManagedClient` - MQTT messaging.
-- `Microsoft.Extensions.Hosting` and `Microsoft.Extensions.Logging` - hosting and logging.
-- `Quartz` - scheduling.
+- `Newtonsoft.Json` (wire JSON, with a restricted type binder) and `System.Text.Json`
+- `MQTTnet` and `MQTTnet.Extensions.ManagedClient`
+- `Microsoft.Extensions.Hosting` and `Microsoft.Extensions.Logging`
+- `Quartz` (device refresh scheduling)
 
-## Automation
-
-Elsa 3 (`RIoT2.Elsa`) is the workflow engine. Core no longer includes the internal rule evaluator,
-rule/function models, or NCalc dependency. Device refresh scheduling still uses Quartz.
-The orchestrator executes device commands through `IOrchestratorMqttService.ExecuteCommand(Command)`,
-independently of workflow evaluation.
-
-The rule-engine removal was a breaking Core API change. The orchestrator currently consumes
-`0.1.41`; network plugins require `0.1.42` for the additive async contracts below, and the updated
-node requires `0.1.43` for bounded MQTT command dispatch.
-
-Version `0.1.40` also preserves large integer and JSON-looking text values when deserializing
-messages. `NodeOnlineMessage.GrpcBaseUrl` is an optional, additive field: workflow nodes advertise
-their dedicated gRPC endpoint separately from the web UI's `NodeBaseUrl`.
-
-Version `0.1.41` adds MQTT `ConnectedAsync` notifications on initial connection and reconnection.
-Register message/connection handlers before `Start`; use the connection callback to republish node
-presence. State/history reads are detached snapshots, safe to enumerate while reports arrive.
-Scheduler reloads and shutdown remove their owned device refresh subscriptions.
-
-`ValueModel` owns borrowed JSON elements. Updates support dotted property paths and indexed
-properties such as `items[0].value`, including existing null values. Adding a final property is
-allowed only when its parent object exists; missing/incompatible parents and invalid array indexes
-throw `ArgumentException` rather than replacing or modifying an unrelated value.
-
-### Opt-in asynchronous devices (0.1.42)
-
-`IAsyncDevice`, `IAsyncCommandDevice`, and `IAsyncRefreshableReportDevice` add cancellation-aware
-Task-returning operations without changing the existing device interfaces. `AsyncDeviceBase` provides
-state transitions and synchronous compatibility entry points for migrated plugins. New network
-drivers should override its async methods rather than implement `async void` lifecycle methods.
-
-`DeviceServiceBase` owns one serialized operation adapter per device. Configuration replacement
-cancels old work, waits for it to finish, stops the old generation, then initializes/starts the new one.
-Queued commands from the cancelled generation cannot execute against new configuration; removed
-devices remain stopped. Failed shutdown prevents configuration replacement. `ReportService` suppresses
-reports from inactive devices, and Quartz awaits refresh operations through the same adapter.
-Use `DisposeAsync` (or `await using`) to await service cleanup without blocking a thread.
-The synchronous disposal entry point remains available for older hosts.
-
-Existing synchronous plugins remain supported. Their synchronous calls run as tracked tasks and are
-awaited, but cannot be forcibly interrupted. Plugins that return before their own background work has
-finished (including `async void` implementations) must be migrated to obtain full cancellation and
-shutdown guarantees. Never abandon such work with a timeout and immediately reuse the device.
-
-`MqttClient.MessageReceivedAsync` is an additive awaited event; the legacy event is unchanged.
-The node uses the awaited event for message admission and configuration loading, and owns command
-completion separately as described below.
-
-### Responsive node command dispatch (0.1.43)
-
-`NodeMqttService` tracks up to 64 outstanding commands, including commands queued behind device I/O.
-The receive callback starts dispatch without awaiting the entire operation, so a configuration
-notification can cancel a stalled command instead of waiting for its deadline. Native async dispatch
-captures the current device generation before returning; queued commands cannot migrate to a
-replacement configuration. Completion failures are logged, and stop cancels and awaits all admitted
-work. Overflow/stopping rejects new commands with a warning; no automatic retry or durable queue is
-provided. MQTT acknowledgement does not imply successful device execution.
-Custom legacy `ICommandService` implementations remain serialized; a running synchronous call is
-awaited during shutdown, while queued calls are cancelled.
-
-The existing constructor is unchanged; an additional client-factory overload supports isolated
-transports, including loopback integration tests.
-
-## MQTT contract summary
-
-Core defines these MQTT topics in `Constants`:
-
-| Topic enum | Template | Producer/consumer intent |
-| --- | --- | --- |
-| `MqttTopic.NodeOnline` | `riot2/node/{id}/online` | Node or connector retained presence (`NodeOnlineMessage`). |
-| `MqttTopic.OrchestratorOnline` | `riot2/orchestrator/online` | Orchestrator retained presence; nodes/connectors republish presence after seeing it. |
-| `MqttTopic.Configuration` | `riot2/node/{id}/configuration` | Orchestrator asks a node or connector to reload configuration (`ConfigurationCommand`). |
-| `MqttTopic.Command` | `riot2/node/{id}/command` | Orchestrator publishes device commands (`Command`). |
-| `MqttTopic.Report` | `riot2/node/{id}/report` | Nodes/connectors publish device reports (`Report`). |
-
-Payloads are serialized with camelCase property names and usually omit nulls:
-
-```json
-{ "id": "temperature", "timeStamp": 1790253852, "filter": "room", "value": 21.5 }
-{ "id": "setRelay", "value": true }
-{ "apiBaseUrl": "https://orchestrator.example" }
-{ "name": "Node A", "isOnline": true, "nodeBaseUrl": "http://node", "grpcBaseUrl": "http://node:5001", "nodeType": 1 }
-```
-
-`Report.value` and `Command.value` use `ValueModel`, so valid JSON primitives, arrays, and objects
-are preserved. `Report.timeStamp` is Unix epoch seconds in UTC; use `ToEpoch()`/`FromEpoch()` for
-conversion.
+Automation is handled by [RIoT2.Elsa](https://github.com/Revolutionized-IoT2/RIoT2.Elsa), not
+by Core.
 
 ## Build and test
 
-From the multi-repo workspace root on Windows PowerShell:
+From the workspace root (`C:\Src\RIoT2`):
 
 ```powershell
 dotnet build .\RIoT2.Core\RIoT2.Core.csproj
 dotnet test .\RIoT2.Tests\RIoT2.Tests.csproj
 ```
 
-`RIoT2.Tests` also builds sibling repositories (`RIoT2.Net.Orchestrator` and
-`RIoT2.Connector.InfluxDB`) through project references. If those repositories reference an older
-published `RIoT2.Core` package, update their package reference before expecting a clean full test
-build.
+[RIoT2.Tests](https://github.com/Revolutionized-IoT2/RIoT2.Tests) references Core,
+RIoT2.Net.Orchestrator and RIoT2.Connector.InfluxDB as projects, so those repositories must be
+checked out next to this one.
 
-Plugin packages downloaded by `NodeConfigurationServiceBase` are installed only under the
-application `Plugins` folder; zip entries that try to escape that folder are rejected.
+## Versions and releases
+
+- Release notes are in [CHANGELOG.md](CHANGELOG.md).
+- To release, push a tag `x.y.z`. CI publishes the package to GitHub Packages.
+- Keep the public API additive. Consumers pin package versions, and device plugins run inside the
+  Node's Core version, so the Node image and the plugin packages must be released together.
 
 ## Contributing
 
-This library is shared across the entire RIoT2 solution, so changes here can affect every consuming
-project. Keep the public API stable and additive whenever possible, and preserve `.NET Standard 2.0`
-compatibility.
+- Instructions for AI coding agents: [AGENTS.md](AGENTS.md).
+- Platform documentation: [.github/docs](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/README.md).
+
+## License
+
+See [LICENSE](LICENSE).
