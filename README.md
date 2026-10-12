@@ -123,8 +123,9 @@ checked out next to this one.
 ## Versions and releases
 
 - Release notes are in [CHANGELOG.md](CHANGELOG.md).
-- To release, push a tag `x.y.z`. CI publishes the package to GitHub Packages. A tag whose CI
-  run fails publishes nothing; fix the build and push the next version.
+- To release, push a tag `x.y.z`. The release workflow validates, then publishes the package to
+  GitHub Packages. A tag whose run fails publishes nothing; fix the build and push the next
+  version. Every push also runs CI ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)).
 - To try an unreleased Core in a consumer, pack it into `C:\Src\RIoT2\.localfeed` and restore with
   that folder as an extra source. A local pack is not a release.
 - Keep the public API additive. Consumers pin package versions, and device plugins run inside the

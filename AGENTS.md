@@ -26,8 +26,9 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.csproj    # Core, Orchestrator and InfluxD
 - To check a consumer against unreleased Core, pack Core into the local feed:
   `dotnet pack .\RIoT2.Core\RIoT2.Core.csproj -c Release -p:PackageVersion=<next-version> -o .\.localfeed`.
   Then restore the consumer with `.localfeed` as an extra source. A local pack is not a release.
-- To release, push a git tag `x.y.z`. CI (`.github/workflows/main.yml`) packs and pushes to GitHub
-  Packages.
+- Every push runs `.github/workflows/ci.yml` (build, pack smoke test, secret scan). To release,
+  push a git tag `x.y.z`: `release.yml` validates, then packs and pushes to GitHub Packages
+  ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)). Core's tests live in RIoT2.Tests.
 - Shared build settings are in `Directory.Build.props` and `.editorconfig`; package versions are
   centralized in `Directory.Packages.props`. `-p:CI=true` enables CI warning treatment locally.
 

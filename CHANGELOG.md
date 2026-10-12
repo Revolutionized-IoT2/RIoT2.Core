@@ -6,6 +6,9 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+- CI: every push runs `ci.yml` (build, pack smoke test, secret scan), and a tag runs `release.yml`,
+  which validates before it publishes. Both call the reusable workflows in the `.github` hub.
+
 ## [1.0.1] - 2026-10-03
 
 The .NET 10 baseline release ([M8](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m08-dotnet10-migration.md)).
