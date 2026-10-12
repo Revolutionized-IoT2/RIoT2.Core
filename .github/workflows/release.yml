@@ -1,0 +1,27 @@
+name: Release
+
+# Push a x.y.z tag to publish RIoT2.Core <tag> to GitHub Packages. Then bump the consumers
+# (release order: docs/backlog/README.md, MA2 and MA3 in the .github repository).
+
+on:
+  push:
+    tags: ["*.*.*"]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  validate:
+    uses: Revolutionized-IoT2/.github/.github/workflows/dotnet-validate.yml@main
+    with:
+      build: RIoT2.Core.sln
+      github-packages: false
+
+  package:
+    needs: validate
+    uses: Revolutionized-IoT2/.github/.github/workflows/nuget-publish.yml@main
+    with:
+      project: RIoT2.Core.csproj
+      push: true
+    secrets: inherit
