@@ -6,6 +6,21 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-12
+
+Restart only changed devices ([I04](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-0-1.md#i04-restart-only-changed-devices-s)).
+Additive API; consumers on 1.0.1 need no change.
+
+- Added `DeviceServiceBase.ReconfigureChangedDevicesAsync`. It restarts only the devices whose
+  configuration entry was added, changed or removed, plus configured devices that are not running,
+  and returns a `DeviceReconfigurationResult`. An identical configuration starts and stops
+  nothing, so reconnects and orchestrator restarts no longer restart every device
+  ([backlog item 18](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/backlog/open-issues.md)).
+  `ReconfigureDevicesAsync` still restarts every device and is now also the baseline for the diff.
+- Added `MqttClient.SetLastWill(topic, payload, retain)`. `Stop` publishes the configured message
+  on a graceful stop. The default (node presence, not retained) is unchanged.
+- `RIoT2.Core.csproj` sets `<Version>` to the next release, so RIoT2.Tests builds against this
+  source rather than the published package.
 - CI: every push runs `ci.yml` (build, pack smoke test, secret scan), and a tag runs `release.yml`,
   which validates before it publishes. Both call the reusable workflows in the `.github` hub.
 

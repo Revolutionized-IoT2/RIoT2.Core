@@ -21,6 +21,9 @@ namespace RIoT2.Core.Utils
         private string _clientId;
         private string[] _clientTopics;
         private readonly int _port;
+        private string _willTopic;
+        private string _willPayload;
+        private bool _willRetain;
 
         public event MqttMessageReceivedHandler MessageReceived;
         public event Func<MqttEventArgs, Task> MessageReceivedAsync;
@@ -37,6 +40,25 @@ namespace RIoT2.Core.Utils
             _username = username;
             _password = password;
             _port = port;
+            _willTopic = Constants.Get(clientId, MqttTopic.NodeOnline);
+            _willPayload = Json.Serialize(new NodeOnlineMessage() { NodeBaseUrl = "", IsOnline = false });
+        }
+
+        /// <summary>
+        /// Replaces the default last will (<c>riot2/node/{clientId}/online</c> with an offline
+        /// <see cref="NodeOnlineMessage"/>, not retained). The broker publishes the last will when the
+        /// connection drops, and <see cref="Stop"/> publishes the same message on a graceful stop.
+        /// Call it before <see cref="Start"/>.
+        /// </summary>
+        public void SetLastWill(string topic, string payload, bool retain)
+        {
+            if (string.IsNullOrEmpty(topic))
+                throw new ArgumentException("The last-will topic is required.", nameof(topic));
+            if (_client?.IsStarted == true)
+                throw new InvalidOperationException("Set the last will before the MQTT client is started.");
+            _willTopic = topic;
+            _willPayload = payload ?? "";
+            _willRetain = retain;
         }
 
         public async Task Start(params string[] topic)
@@ -55,22 +77,19 @@ namespace RIoT2.Core.Utils
 
             if (_client.IsStarted) 
             {
-                // Send Last Will Message that we are offline (Automatic lw is only sent if shutdow is ungracefull)
-                var lwMsg = new NodeOnlineMessage()
-                {
-                    NodeBaseUrl = "",
-                    IsOnline = false
-                };
+                // Publish the last will ourselves: the broker sends it only when the connection drops.
                 try
                 {
                     if (_client.IsConnected)
                     {
+                        var offline = new MqttApplicationMessageBuilder()
+                            .WithTopic(_willTopic)
+                            .WithPayload(_willPayload)
+                            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce);
+                        if (_willRetain)
+                            offline.WithRetainFlag();
                         using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
-                            await _client.InternalClient.PublishAsync(new MqttApplicationMessageBuilder()
-                                .WithTopic(Constants.Get(_clientId, MqttTopic.NodeOnline))
-                                .WithPayload(Json.Serialize(lwMsg))
-                                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce)
-                                .Build(), timeout.Token);
+                            await _client.InternalClient.PublishAsync(offline.Build(), timeout.Token);
                     }
                 }
                 finally
@@ -113,19 +132,14 @@ namespace RIoT2.Core.Utils
 
         private async Task<IManagedMqttClient> startClient(params string[] topics)
         {
-            var lwMsg = new NodeOnlineMessage()
-            {
-                NodeBaseUrl = "",
-                IsOnline = false
-            };
-
             var options = new ManagedMqttClientOptionsBuilder()
                     .WithAutoReconnectDelay(TimeSpan.FromSeconds(5))
                     .WithClientOptions(new MqttClientOptionsBuilder()
                         .WithClientId(_clientId)
                         .WithTcpServer(_serverUrl, _port)
-                        .WithWillTopic(Constants.Get(_clientId, MqttTopic.NodeOnline))
-                        .WithWillPayload(Encoding.UTF8.GetBytes(Json.Serialize(lwMsg)))
+                        .WithWillTopic(_willTopic)
+                        .WithWillPayload(Encoding.UTF8.GetBytes(_willPayload))
+                        .WithWillRetain(_willRetain)
                         .WithCredentials(_username, _password))
                     .Build();
 

@@ -2,6 +2,7 @@ using RIoT2.Core.Interfaces;
 using RIoT2.Core.Interfaces.Services;
 using RIoT2.Core.Models;
 using RIoT2.Core.Services;
+using RIoT2.Core.Utils;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -17,6 +18,8 @@ namespace RIoT2.Core.Abstracts
         private readonly INodeConfigurationService _configurationService;
         private readonly SemaphoreSlim _lifecycle = new SemaphoreSlim(1, 1);
         private readonly Dictionary<IDevice, DeviceOperationAdapter> _runtimes = new Dictionary<IDevice, DeviceOperationAdapter>();
+        // Serialized configuration each device was last initialized with; the key of the per-device diff.
+        private readonly Dictionary<IDevice, string> _applied = new Dictionary<IDevice, string>();
         private int _disposed;
 
         public event DeviceServiceUpdatedHandler DevicesUpdated;
@@ -66,31 +69,166 @@ namespace RIoT2.Core.Abstracts
                 {
                     var configuration = _configurationService?.DeviceConfiguration?.DeviceConfigurations?
                         .FirstOrDefault(c => c.ClassFullName == device.GetType().FullName);
-                    if (configuration != null)
-                        InitializeAsync(device, configuration, CancellationToken.None).GetAwaiter().GetResult();
+                    if (configuration == null)
+                        continue;
+                    var key = Json.Serialize(configuration);
+                    if (InitializeAsync(device, configuration, CancellationToken.None).GetAwaiter().GetResult())
+                        SetApplied(device, key);
                 }
             }
             finally { _lifecycle.Release(); }
         }
 
+        /// <summary>
+        /// Stops every device, then initializes and starts each device that has an entry in
+        /// <paramref name="configuration"/>, whether or not its configuration changed.
+        /// Prefer <see cref="ReconfigureChangedDevicesAsync"/>, which leaves unchanged devices running.
+        /// </summary>
         public async Task ReconfigureDevicesAsync(IEnumerable<DeviceConfiguration> configuration, CancellationToken cancellationToken)
         {
-            var snapshot = configuration?.ToList() ?? new List<DeviceConfiguration>();
+            var desired = Desired(configuration);
             CancelOperations();
             await _lifecycle.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
+                lock (_applied) _applied.Clear();
                 await StopCoreAsync(cancellationToken).ConfigureAwait(false);
                 var configured = new List<IDevice>();
                 foreach (var device in Devices)
                 {
-                    var entry = snapshot.FirstOrDefault(c => c.ClassFullName == device.GetType().FullName);
-                    if (entry != null && await InitializeAsync(device, entry, cancellationToken).ConfigureAwait(false))
+                    if (desired.TryGetValue(device, out var entry) &&
+                        await InitializeAsync(device, entry.Configuration, cancellationToken).ConfigureAwait(false))
+                    {
+                        SetApplied(device, entry.Key);
                         configured.Add(device);
+                    }
                 }
                 await StartCoreAsync(configured, cancellationToken).ConfigureAwait(false);
             }
             finally { _lifecycle.Release(); }
+        }
+
+        /// <summary>
+        /// Applies <paramref name="configuration"/> and restarts only the devices that need it: a device
+        /// whose configuration was added, changed or removed, or a configured device that is not running
+        /// (for example after a start failure). A device is matched to its entry by
+        /// <see cref="DeviceConfiguration.ClassFullName"/>, and two entries are equal when they serialize
+        /// to the same JSON. An identical configuration therefore starts and stops nothing.
+        /// </summary>
+        public async Task<DeviceReconfigurationResult> ReconfigureChangedDevicesAsync(IEnumerable<DeviceConfiguration> configuration, CancellationToken cancellationToken)
+        {
+            var desired = Desired(configuration);
+            // Free devices that are about to be replaced from stalled work before waiting for the lifecycle lock.
+            foreach (var device in Changed(desired))
+                Runtime(device).Cancel();
+            await _lifecycle.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                var changed = Changed(desired);
+                var result = new DeviceReconfigurationResult { Unchanged = Devices.Count - changed.Count };
+                if (changed.Count == 0)
+                    return result;
+
+                var stopped = new List<IDevice>();
+                foreach (var device in changed)
+                {
+                    try
+                    {
+                        await Runtime(device).StopAsync(cancellationToken).ConfigureAwait(false);
+                        stopped.Add(device);
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+                    catch (Exception error)
+                    {
+                        _logger.LogError(error, "Error stopping device {DeviceId}; its configuration was not replaced", device.Id);
+                        result.Failed++;
+                    }
+                    finally { RemoveApplied(device); }
+                }
+                DevicesUpdated?.Invoke(ServiceEvent.Stopped);
+
+                foreach (var device in stopped)
+                {
+                    if (!desired.TryGetValue(device, out var entry))
+                    {
+                        result.Removed++;
+                        continue;
+                    }
+                    if (!await InitializeAsync(device, entry.Configuration, cancellationToken).ConfigureAwait(false))
+                    {
+                        result.Failed++;
+                        continue;
+                    }
+                    SetApplied(device, entry.Key);
+                    try
+                    {
+                        await Runtime(device).StartAsync(cancellationToken).ConfigureAwait(false);
+                        result.Started++;
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+                    catch (Exception error)
+                    {
+                        _logger.LogError(error, "Error starting device {DeviceId}", device.Id);
+                        result.Failed++;
+                    }
+                }
+
+                // The scheduler rebuilds its triggers from all devices, so restore it while any device runs.
+                if (Devices.Any(IsActive))
+                    DevicesUpdated?.Invoke(ServiceEvent.Started);
+                return result;
+            }
+            finally { _lifecycle.Release(); }
+        }
+
+        private Dictionary<IDevice, DesiredDevice> Desired(IEnumerable<DeviceConfiguration> configuration)
+        {
+            var snapshot = configuration?.Where(c => c != null).ToList() ?? new List<DeviceConfiguration>();
+            var desired = new Dictionary<IDevice, DesiredDevice>();
+            foreach (var device in Devices)
+            {
+                var entry = snapshot.FirstOrDefault(c => c.ClassFullName == device.GetType().FullName);
+                if (entry != null)
+                    desired[device] = new DesiredDevice(entry, Json.Serialize(entry));
+            }
+            return desired;
+        }
+
+        private List<IDevice> Changed(Dictionary<IDevice, DesiredDevice> desired)
+        {
+            var changed = new List<IDevice>();
+            foreach (var device in Devices)
+            {
+                string applied;
+                lock (_applied) _applied.TryGetValue(device, out applied);
+                if (desired.TryGetValue(device, out var entry)
+                    ? entry.Key != applied || !IsActive(device)
+                    : applied != null)
+                    changed.Add(device);
+            }
+            return changed;
+        }
+
+        private void SetApplied(IDevice device, string key)
+        {
+            lock (_applied) _applied[device] = key;
+        }
+
+        private void RemoveApplied(IDevice device)
+        {
+            lock (_applied) _applied.Remove(device);
+        }
+
+        private sealed class DesiredDevice
+        {
+            public DesiredDevice(DeviceConfiguration configuration, string key)
+            {
+                Configuration = configuration;
+                Key = key;
+            }
+
+            public DeviceConfiguration Configuration { get; }
+            public string Key { get; }
         }
 
         public async Task StartAllDevicesAsync(bool restartDevicesInErrorState, CancellationToken cancellationToken)

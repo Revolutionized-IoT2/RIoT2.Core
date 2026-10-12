@@ -79,8 +79,8 @@ must stay compatible with it.
 - `Json.Serialize` also camel-cases **dictionary keys**, so `deviceParameters` keys arrive
   camel-cased, while `DeviceBase.GetConfiguration<T>(key)` is case-sensitive. Use camelCase
   parameter keys (contract divergence C1).
-- `MqttClient` publishes at QoS 2 but subscribes at QoS 0, uses port 1883 with no TLS, and does
-  not retain its last will (divergences D1, D2, D4; plan
+- `MqttClient` publishes at QoS 2 but subscribes at QoS 0, uses port 1883 with no TLS, and by
+  default does not retain its last will (divergences D1, D4; plan
   [M10](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m10-mqtt-client-robustness.md)).
 - MQTT receive callbacks are serialized. Don't await device I/O inside them: a configuration
   message must be able to cancel a stalled command. `NodeMqttService` starts command dispatch at
@@ -88,8 +88,18 @@ must stay compatible with it.
 - `ValueModel` keeps JSON-looking strings and large integers as they are. Path updates
   (`a.b`, `items[0].value`) throw `ArgumentException` when the parent is missing; they don't
   create it.
-- The current Core package is `1.0.1`, and every consumer pins it. Tag `1.0.0` failed CI and was
-  never published: don't reference it. A tag whose CI run fails publishes nothing.
+- `MqttClient.SetLastWill(topic, payload, retain)` replaces the default last will and must be
+  called before `Start`. `Stop` publishes the same message, because the broker sends the last
+  will only when the connection drops. The orchestrator uses it for its retained presence.
+- `DeviceServiceBase.ReconfigureChangedDevicesAsync` compares each device's entry, serialized with
+  `Json.Serialize`, with the one it was last initialized with. Keep that serialization
+  deterministic: a field that changes on every download would restart the device every time.
+- The current Core package is `1.1.0`. Tag `1.0.0` failed CI and was never published: don't
+  reference it. A tag whose CI run fails publishes nothing.
+- `<Version>` in `RIoT2.Core.csproj` is the next release and must be at least the version the
+  Orchestrator and InfluxDB connector pin. RIoT2.Tests references this project and those
+  packages at once, and NuGet silently picks the higher version, so a lower project version makes
+  the tests run against the published package instead of this source.
 
 ## Related work
 

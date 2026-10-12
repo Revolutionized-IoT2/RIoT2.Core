@@ -6,7 +6,7 @@ runtime services used by every .NET component.
 
 - Type: class library, NuGet package `RIoT2.Core` on GitHub Packages
 - Target framework: .NET Standard 2.0
-- Current package version: `1.0.1` (published; tag `1.0.0` failed CI and was never published)
+- Current package version: `1.1.0` (tag `1.0.0` failed CI and was never published)
 - Root namespace: `RIoT2.Core`
 
 How Core fits into the platform: [architecture overview](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/architecture/overview.md).
@@ -46,8 +46,12 @@ The topics and payloads that these types implement are specified in the platform
 
 - Device plugins implement `IDevicePlugin`, and their devices derive from `AsyncDeviceBase`.
   Override its async start, stop, command and refresh methods.
-- `DeviceServiceBase` runs one serialized operation queue per device. When the configuration
-  is replaced, the old work is cancelled and awaited before the new devices start.
+- `DeviceServiceBase` runs one serialized operation queue per device. When a device's
+  configuration is replaced, its old work is cancelled and awaited before it starts again.
+- `ReconfigureChangedDevicesAsync` (Core 1.1.0) restarts only the devices whose configuration
+  entry was added, changed or removed, plus configured devices that are not running. An identical
+  configuration, as sent after every reconnect, starts and stops nothing.
+  `ReconfigureDevicesAsync` still restarts every device.
 - Existing synchronous devices (`DeviceBase`) still work. Their calls can't be interrupted,
   though, so long-running devices should move to `AsyncDeviceBase`.
 - Read device settings with `GetConfiguration<T>("key")`. Keys are case-sensitive, and the
