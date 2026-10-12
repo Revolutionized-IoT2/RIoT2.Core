@@ -96,4 +96,5 @@ must stay compatible with it.
 - [M2](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m02-system-text-json-persistence.md): one JSON stack.
 - [M10](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m10-mqtt-client-robustness.md): MQTT client robustness.
 - [M11](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m11-async-cleanup.md): remaining blocking code.
-- Backlog items 3, 4, 11 and 12 in [open-issues.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/backlog/open-issues.md).
+- [M12](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m12-device-plugin-sdk.md) ([ADR 0014](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0014-device-plugin-sdk.md)): the `RIoT2.Core.Devices*` plugin SDK packages.
+- Backlog items 3, 4, 11, 12 and 23 in [open-issues.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/backlog/open-issues.md).
