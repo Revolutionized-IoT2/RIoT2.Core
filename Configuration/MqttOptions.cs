@@ -10,6 +10,7 @@ namespace RIoT2.Core.Configuration
         public const string HostVariable = "RIOT2_MQTT_IP";
         public const string UsernameVariable = "RIOT2_MQTT_USERNAME";
         public const string PasswordVariable = "RIOT2_MQTT_PASSWORD";
+        public const string PortVariable = "RIOT2_MQTT_PORT";
 
         /// <summary>Broker host name or IP address, without scheme or port.</summary>
         public string Host { get; set; }
@@ -20,10 +21,17 @@ namespace RIoT2.Core.Configuration
         /// <summary>Broker password; <c>null</c> when not set.</summary>
         public string Password { get; set; }
 
-        /// <summary>Reads <c>RIOT2_MQTT_IP</c> (required), <c>RIOT2_MQTT_USERNAME</c> and <c>RIOT2_MQTT_PASSWORD</c>.</summary>
+        /// <summary>Broker TCP port; 1883 unless <c>RIOT2_MQTT_PORT</c> is set.</summary>
+        public int Port { get; set; } = MqttConfiguration.DefaultPort;
+
+        /// <summary>
+        /// Reads <c>RIOT2_MQTT_IP</c> (required), <c>RIOT2_MQTT_PORT</c>, <c>RIOT2_MQTT_USERNAME</c> and
+        /// <c>RIOT2_MQTT_PASSWORD</c>.
+        /// </summary>
         public static MqttOptions Read(SettingsReader settings) => new MqttOptions
         {
             Host = settings.Required(HostVariable),
+            Port = settings.Integer(PortVariable, MqttConfiguration.DefaultPort, 1, 65535),
             Username = settings.Optional(UsernameVariable),
             Password = settings.Optional(PasswordVariable)
         };
@@ -33,6 +41,7 @@ namespace RIoT2.Core.Configuration
         {
             ClientId = clientId,
             ServerUrl = Host,
+            Port = Port,
             Username = Username,
             Password = Password
         };

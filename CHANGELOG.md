@@ -6,6 +6,35 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-13
+
+MQTT client robustness ([I08](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-0-1.md#i08-mqtt-client-robustness-m), plan M10). Additive API: plugins and services built against 1.2.0
+or earlier keep working, and the members marked obsolete are removed in I45.
+
+- Changed: `MqttClient` publishes, subscribes and sends its last will at **QoS 1** (divergence D4:
+  publishing at QoS 2 while subscribing at QoS 0 meant everything was delivered at QoS 0). A
+  receiver can now see a duplicate after a reconnect.
+- Changed: messages published while the broker is unreachable wait in a bounded queue
+  (`MqttConfiguration.MaxPendingMessages`, default 10,000). When it is full, the oldest message is
+  dropped, counted (`MqttClient.DroppedMessages`, metric `riot2.mqtt.dropped`) and logged at most
+  once a minute. It used to grow without limit.
+- Changed: received messages go through a bounded queue (1,000) to one worker per client, which
+  calls every handler in order, each in its own `try/catch`; a failing handler is logged and no
+  longer affects the other handlers or the next message. When the queue is full, receiving pauses.
+- Changed: `DeviceSchedulerService` rebuilds its Quartz triggers in a background loop instead of
+  inside `DevicesUpdated`, which the device service raises while it holds its lifecycle lock; a
+  refresh job waiting for that lock could deadlock a reconfiguration. Its trigger event is per
+  instance, so two schedulers in one process no longer trigger each other's devices.
+- Added `MqttClient(MqttConfiguration, ILogger)`, `StartAsync(subscriptions, cancellationToken)`
+  with a `MqttQos` per `MqttSubscription`, `PublishAsync(topic, payload, qos, retain,
+  cancellationToken)`, which throws `InvalidOperationException("MQTT client not started")` before a
+  start, `StopAsync`, `IAsyncDisposable`, `ConnectionStateChanged` and `DroppedMessages`. `Dispose`
+  waits at most 5 s. No MQTTnet type is part of the public API.
+- Added `RIOT2_MQTT_PORT` (`MqttOptions.Port`, `MqttConfiguration.Port`, default 1883).
+- Added `DeviceSchedulerService.RefreshTriggered`, `TriggerRefresh` and `WhenIdleAsync`.
+- Deprecated `MqttClient.Publish` (use `PublishAsync`), and the static
+  `DeviceSchedulerService.SchedulerEvent` and `TriggerSchedulerEvent`.
+
 ## [1.2.0] - 2026-10-13
 
 Typed configuration ([I07](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-0-1.md#i07-typed-configuration-s)). Additive API; consumers on 1.1.0 need no change.

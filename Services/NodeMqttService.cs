@@ -32,11 +32,8 @@ namespace RIoT2.Core.Services
         private bool _acceptingCommands;
 
         public NodeMqttService(INodeConfigurationService configurationService, ICommandService commandService, IReportService reportService, ILogger<NodeMqttService> logger)
-            : this(configurationService, commandService, reportService, logger, () => new MqttClient(
-                configurationService.Configuration.Mqtt.ClientId,
-                configurationService.Configuration.Mqtt.ServerUrl,
-                configurationService.Configuration.Mqtt.Username,
-                configurationService.Configuration.Mqtt.Password))
+            : this(configurationService, commandService, reportService, logger,
+                () => new MqttClient(configurationService.Configuration.Mqtt, logger))
         {
         }
 
@@ -92,7 +89,7 @@ namespace RIoT2.Core.Services
             if (_client == null)
                 throw new InvalidOperationException("Cannot send command before the MQTT service is started.");
 
-            await _client.Publish(topic, value);
+            await _client.PublishAsync(topic, value);
         }
 
         private async Task _client_MessageReceived(MqttEventArgs mqttEventArgs)
@@ -182,7 +179,7 @@ namespace RIoT2.Core.Services
                     return;
                 }
 
-                await _client.Publish(_reportTopic, Json.SerializeIgnoreNulls(typedReport));
+                await _client.PublishAsync(_reportTopic, Json.SerializeIgnoreNulls(typedReport));
             }
             catch (Exception x)
             {

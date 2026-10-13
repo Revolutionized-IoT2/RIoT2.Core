@@ -86,22 +86,26 @@ must stay compatible with it.
 - `Json.Serialize` also camel-cases **dictionary keys**, so `deviceParameters` keys arrive
   camel-cased, while `DeviceBase.GetConfiguration<T>(key)` is case-sensitive. Use camelCase
   parameter keys (contract divergence C1).
-- `MqttClient` publishes at QoS 2 but subscribes at QoS 0, uses port 1883 with no TLS, and by
-  default does not retain its last will (divergences D1, D4; plan
-  [M10](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m10-mqtt-client-robustness.md)).
-- MQTT receive callbacks are serialized. Don't await device I/O inside them: a configuration
-  message must be able to cancel a stalled command. `NodeMqttService` starts command dispatch at
+- `MqttClient` publishes and subscribes at QoS 1 (since 1.3.0), so receivers must tolerate a
+  duplicate. Its port is `RIOT2_MQTT_PORT` (default 1883); there is no TLS yet (I34, I51), and by
+  default it does not retain its last will (divergence D1). Publishing before a start throws.
+- Don't expose MQTTnet types from Core's public API: `MqttQos`, `MqttSubscription` and
+  `MqttEventArgs` stand in for them, so a later MQTTnet 5 migration only touches `MqttClient`
+  ([M10](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m10-mqtt-client-robustness.md)).
+- MQTT receive callbacks are serialized: one worker per client calls the handlers in order, each
+  in its own `try/catch`, and receiving pauses when 1,000 messages wait. Don't await device I/O
+  inside them: a configuration message must be able to cancel a stalled command. `NodeMqttService` starts command dispatch at
   admission, tracks at most 64 commands, and awaits them at shutdown.
 - `ValueModel` keeps JSON-looking strings and large integers as they are. Path updates
   (`a.b`, `items[0].value`) throw `ArgumentException` when the parent is missing; they don't
   create it.
 - `MqttClient.SetLastWill(topic, payload, retain)` replaces the default last will and must be
-  called before `Start`. `Stop` publishes the same message, because the broker sends the last
+  called before `Start`. `StopAsync` publishes the same message, because the broker sends the last
   will only when the connection drops. The orchestrator uses it for its retained presence.
 - `DeviceServiceBase.ReconfigureChangedDevicesAsync` compares each device's entry, serialized with
   `Json.Serialize`, with the one it was last initialized with. Keep that serialization
   deterministic: a field that changes on every download would restart the device every time.
-- The current Core package is `1.2.0`, and `<Version>` is `1.2.0`. Raise `<Version>` to the next
+- The current Core package is `1.3.0`, and `<Version>` is `1.3.0`. Raise `<Version>` to the next
   release with the first change after a release.
 - Services read settings only through an options type built with `SettingsReader` (plan M4); no
   service calls `Environment.GetEnvironmentVariable`. Messages keep the format
@@ -116,7 +120,7 @@ must stay compatible with it.
 
 - [M1](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m01-split-core-packages.md): split Core into contract and runtime packages.
 - [M2](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m02-system-text-json-persistence.md): one JSON stack.
-- [M10](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m10-mqtt-client-robustness.md): MQTT client robustness.
+- [M10](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m10-mqtt-client-robustness.md): MQTT client robustness (done in I08, Core 1.3.0; TLS comes with I34 and I51).
 - [M11](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m11-async-cleanup.md): remaining blocking code.
 - [M12](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m12-device-plugin-sdk.md) ([ADR 0014](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0014-device-plugin-sdk.md)): the `RIoT2.Core.Devices*` plugin SDK packages.
 - Backlog items 3, 4, 11, 12 and 23 in [open-issues.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/backlog/open-issues.md).
