@@ -64,9 +64,9 @@ namespace RIoT2.Core.Abstracts
         }
 
         /// <inheritdoc/>
+        [Obsolete("Blocks the calling thread; use DownloadPluginPackageAsync.")]
         public virtual void DownloadPluginPackage(string url)
         {
-            //Kept for backward compatibility; prefer DownloadPluginPackageAsync to avoid blocking.
             DownloadPluginPackageAsync(url).GetAwaiter().GetResult();
         }
 

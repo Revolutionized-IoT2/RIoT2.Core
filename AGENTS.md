@@ -96,6 +96,9 @@ must stay compatible with it.
   in its own `try/catch`, and receiving pauses when 1,000 messages wait. Don't await device I/O
   inside them: a configuration message must be able to cancel a stalled command. `NodeMqttService` starts command dispatch at
   admission, tracks at most 64 commands, and awaits them at shutdown.
+- `NodeMqttService` publishes reports through a bounded queue (1,000, oldest dropped) and one
+  publisher, in the order the devices raised them. Device events are synchronous: never handle one
+  with an `async void` method; hand the work to a queue or a tracked task.
 - `ValueModel` keeps JSON-looking strings and large integers as they are. Path updates
   (`a.b`, `items[0].value`) throw `ArgumentException` when the parent is missing; they don't
   create it.

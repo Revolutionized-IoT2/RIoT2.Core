@@ -6,6 +6,20 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-13
+
+Async cleanup, part 1 ([I09](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-0-1.md#i09-async-cleanup-part-1-s), plan M11). Additive: plugins and services built against 1.3.0 or
+earlier keep working.
+
+- Changed: `NodeMqttService` publishes reports through a bounded queue (`ReportQueueCapacity`,
+  1,000) and one publisher, so reports are published in the order the devices raised them, and a
+  failed publish is logged and doesn't stop the next one. The handler used to be `async void`, one
+  continuation per report. When the queue is full the oldest report is dropped, counted
+  (`NodeMqttService.DroppedReports`) and logged at most once a minute. `Stop` publishes the reports
+  already queued before the client goes offline.
+- Deprecated: `INodeConfigurationService.DownloadPluginPackage` and its base implementation block
+  the calling thread; use `DownloadPluginPackageAsync`. The node no longer calls them.
+
 ## [1.3.0] - 2026-10-13
 
 MQTT client robustness ([I08](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-0-1.md#i08-mqtt-client-robustness-m), plan M10). Additive API: plugins and services built against 1.2.0

@@ -22,6 +22,7 @@ namespace RIoT2.Core.Interfaces.Services
         /// Downloads a plugin package from the specified URL into Data folder. The package can be installed by calling InstallPluginPackage.
         /// </summary>
         /// <param name="url">The URL of the plugin package to download.</param>
+        [Obsolete("Blocks the calling thread; use DownloadPluginPackageAsync.")]
         void DownloadPluginPackage(string url);
 
         /// <summary>

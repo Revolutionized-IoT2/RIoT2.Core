@@ -7,11 +7,25 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using System.Threading;
 using System.Collections.Generic;
+using System.Threading.Channels;
 
 namespace RIoT2.Core.Services
 {
+    /// <summary>
+    /// The node's MQTT side: receives configuration and commands, announces presence and publishes
+    /// the reports of its devices.
+    /// </summary>
+    /// <remarks>
+    /// Reports go through a bounded queue to one publisher, so they are published in the order the
+    /// devices raised them and a slow broker never blocks a device. When the queue is full, the
+    /// oldest report is dropped, counted (<see cref="DroppedReports"/>) and logged.
+    /// </remarks>
     public class NodeMqttService : INodeMqttService
     {
+        /// <summary>Reports that may wait for the publisher before the oldest one is dropped.</summary>
+        public const int ReportQueueCapacity = 1000;
+
+        private static readonly TimeSpan DropWarningInterval = TimeSpan.FromMinutes(1);
         private MqttClient _client;
         private ICommandService _commandService;
         private IReportService _reportService;
@@ -30,6 +44,13 @@ namespace RIoT2.Core.Services
         private readonly object _commandGate = new object();
         private readonly List<Task> _commands = new List<Task>();
         private bool _acceptingCommands;
+        private Channel<Report> _reports;
+        private Task _reportPublisher = Task.CompletedTask;
+        private long _droppedReports;
+        private long _lastDropWarning;
+
+        /// <summary>Reports dropped because the report queue was full.</summary>
+        public long DroppedReports => Interlocked.Read(ref _droppedReports);
 
         public NodeMqttService(INodeConfigurationService configurationService, ICommandService commandService, IReportService reportService, ILogger<NodeMqttService> logger)
             : this(configurationService, commandService, reportService, logger,
@@ -71,6 +92,15 @@ namespace RIoT2.Core.Services
                 _reportTopic = _configurationService.Configuration.GetTopic(MqttTopic.Report);
                 _orchestratorOnlineTopic = _configurationService.Configuration.GetTopic(MqttTopic.OrchestratorOnline);
                 _nodeOnlineTopic = _configurationService.Configuration.GetTopic(MqttTopic.NodeOnline);
+
+                var reports = Channel.CreateBounded<Report>(new BoundedChannelOptions(ReportQueueCapacity)
+                {
+                    SingleReader = true,
+                    FullMode = BoundedChannelFullMode.DropOldest
+                }, OnReportDropped);
+                _reports = reports;
+                var client = _client;
+                _reportPublisher = Task.Run(() => PublishReportsAsync(client, reports.Reader));
 
                 _client.MessageReceivedAsync += _client_MessageReceived;
                 _client.ConnectedAsync += AnnounceOnlineAsync;
@@ -162,29 +192,46 @@ namespace RIoT2.Core.Services
             }
         }
 
-        private async void _reportService_ReportUpdated(IDevice sender, IReport report)
+        private void _reportService_ReportUpdated(IDevice sender, IReport report)
         {
-            try
+            if (!(report is Report typedReport))
             {
-                var typedReport = report as Report;
-                if (typedReport == null)
-                {
-                    _logger.LogWarning("ReportUpdated received an unexpected report type; publish skipped.");
-                    return;
-                }
-
-                if (_client == null)
-                {
-                    _logger.LogWarning("ReportUpdated received before the MQTT service was started; publish skipped.");
-                    return;
-                }
-
-                await _client.PublishAsync(_reportTopic, Json.SerializeIgnoreNulls(typedReport));
+                _logger.LogWarning("ReportUpdated received an unexpected report type; publish skipped.");
+                return;
             }
-            catch (Exception x)
+
+            var reports = _reports;
+            if (reports == null || !reports.Writer.TryWrite(typedReport))
+                _logger.LogWarning("ReportUpdated received while the MQTT service is not running; publish skipped.");
+        }
+
+        private async Task PublishReportsAsync(MqttClient client, ChannelReader<Report> reader)
+        {
+            while (await reader.WaitToReadAsync().ConfigureAwait(false))
             {
-                _logger.LogError(x, $"Failed to publish report to topic {_reportTopic}");
+                while (reader.TryRead(out var report))
+                {
+                    try
+                    {
+                        await client.PublishAsync(_reportTopic, Json.SerializeIgnoreNulls(report)).ConfigureAwait(false);
+                    }
+                    catch (Exception x)
+                    {
+                        _logger.LogError(x, "Failed to publish report {ReportId} to topic {Topic}; the next reports are still published",
+                            report.Id, _reportTopic);
+                    }
+                }
             }
+        }
+
+        private void OnReportDropped(Report report)
+        {
+            var dropped = Interlocked.Increment(ref _droppedReports);
+            var now = DateTime.UtcNow.Ticks;
+            var last = Interlocked.Read(ref _lastDropWarning);
+            if (now - last >= DropWarningInterval.Ticks && Interlocked.CompareExchange(ref _lastDropWarning, now, last) == last)
+                _logger.LogWarning("Report queue full ({Capacity}): dropped the oldest report {ReportId}; {Dropped} reports dropped so far",
+                    ReportQueueCapacity, report.Id, dropped);
         }
 
         public async Task Stop()
@@ -197,6 +244,8 @@ namespace RIoT2.Core.Services
 
             var shutdown = _shutdown;
             var legacyCommandGate = _legacyCommandGate;
+            var reports = _reports;
+            var reportPublisher = _reportPublisher;
             Task[] commands;
             lock (_commandGate)
             {
@@ -211,6 +260,9 @@ namespace RIoT2.Core.Services
             try
             {
                 await Task.WhenAll(commands).ConfigureAwait(false);
+                // Publish the reports already queued before the client goes offline.
+                reports.Writer.TryComplete();
+                await reportPublisher.ConfigureAwait(false);
                 await client.Stop().ConfigureAwait(false);
             }
             finally

@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <!-- The next release. Keep it at or above the version consumers pin: RIoT2.Tests references this
          project and the Orchestrator package at once, and NuGet picks the higher version. -->
-    <Version>1.3.0</Version>
+    <Version>1.4.0</Version>
     <!-- GitHub Packages has no symbol server: ship the PDB inside the DLL for SourceLink. -->
     <DebugType>embedded</DebugType>
   </PropertyGroup>
