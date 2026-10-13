@@ -23,6 +23,7 @@ How Core fits into the platform: [architecture overview](https://github.com/Revo
 | `Interfaces/` | Device, message, template and service contracts |
 | `Services/` | `NodeMqttService`, `ReportService`, `DeviceSchedulerService`, `CodeProviderService` |
 | `Utils/` | `Json`, `MqttClient`, `Web` helpers |
+| `Configuration/` | `SettingsReader`, `MqttOptions` and `ConfigurationValidationException`: how every service reads and validates its `RIOT2_*` settings |
 | `contracts/golden/` | Golden files: the JSON on MQTT, in orchestrator responses and in `StoredObjects`. Not part of the package. See [contracts/golden/README.md](contracts/golden/README.md). |
 
 The topics and payloads that these types implement are specified in the platform contracts:

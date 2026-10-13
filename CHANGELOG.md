@@ -6,6 +6,16 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-13
+
+Typed configuration ([I07](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-0-1.md#i07-typed-configuration-s)). Additive API; consumers on 1.1.0 need no change.
+
+- Added `RIoT2.Core.Configuration`. `SettingsReader` reads `RIOT2_*` settings from an
+  `IConfiguration` (a host's configuration includes the environment variables) and collects every
+  missing or invalid one; `ThrowIfInvalid` logs them as critical and throws
+  `ConfigurationValidationException` with one message in the same format for every service:
+  `Invalid {component} configuration: {problem}; {problem}.` `MqttOptions` maps `RIOT2_MQTT_IP`, `RIOT2_MQTT_USERNAME` and
+  `RIOT2_MQTT_PASSWORD`; an unset user or password is `null`, so the client connects anonymously.
 - Fixed: `NodeMqttService.Stop` threw `NullReferenceException` when called twice at the same time,
   as a host does when its owner and `Run` both stop it. Only the first call stops now
   ([I06](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-0-1.md#i06-in-process-end-to-end-harness-m), found by the end-to-end tests).

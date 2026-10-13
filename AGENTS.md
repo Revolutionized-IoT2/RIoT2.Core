@@ -45,6 +45,7 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj
 | `Interfaces/` | Device, message, template and service contracts |
 | `Services/` | `NodeMqttService`, `ReportService`, `DeviceSchedulerService`, `CodeProviderService`, … |
 | `Utils/` | `Json` (Newtonsoft with a restricted binder), `MqttClient`, `Web` |
+| `Configuration/` | `SettingsReader` (reads `RIOT2_*` settings from `IConfiguration`, collects every problem), `MqttOptions`, `ConfigurationValidationException` |
 | `contracts/golden/` | Golden files for every message, response and stored format; read by RIoT2.Tests, Elsa, UI and firmware tests |
 
 ## Contracts implemented here
@@ -100,7 +101,11 @@ must stay compatible with it.
 - `DeviceServiceBase.ReconfigureChangedDevicesAsync` compares each device's entry, serialized with
   `Json.Serialize`, with the one it was last initialized with. Keep that serialization
   deterministic: a field that changes on every download would restart the device every time.
-- The current Core package is `1.1.0`; `<Version>` is `1.1.1`, the next release. Tag `1.0.0` failed CI and was never published: don't
+- The current Core package is `1.2.0`, and `<Version>` is `1.2.0`. Raise `<Version>` to the next
+  release with the first change after a release.
+- Services read settings only through an options type built with `SettingsReader` (plan M4); no
+  service calls `Environment.GetEnvironmentVariable`. Messages keep the format
+  `Invalid {component} configuration: …`, which the services' tests pin. Tag `1.0.0` failed CI and was never published: don't
   reference it. A tag whose CI run fails publishes nothing.
 - `<Version>` in `RIoT2.Core.csproj` is the next release and must be at least the version the
   Orchestrator, Node and InfluxDB connector pin. RIoT2.Tests references this project and those
