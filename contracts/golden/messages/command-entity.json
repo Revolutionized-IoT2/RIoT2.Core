@@ -1,0 +1,11 @@
+{
+  "id": "golden-command-entity",
+  "value": {
+    "temperature": 21.5,
+    "humidity": 40,
+    "open": true,
+    "location": {
+      "room": "Kitchen"
+    }
+  }
+}

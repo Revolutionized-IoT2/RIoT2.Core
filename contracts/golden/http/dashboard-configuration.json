@@ -1,0 +1,40 @@
+{
+  "pages": [
+    {
+      "name": "Living room",
+      "icon": "sofa",
+      "components": [
+        {
+          "name": "Climate",
+          "description": "Living room climate",
+          "icon": "thermometer",
+          "type": 5,
+          "size": 6,
+          "elements": [
+            {
+              "name": "Temperature",
+              "id": "golden-element",
+              "icon": "thermometer",
+              "numberOfPreviousReports": 10,
+              "reportTemplate": {
+                "type": 2,
+                "id": "golden-report-number",
+                "name": "Temperature",
+                "address": "temperature",
+                "parameters": {},
+                "filters": [],
+                "maintainHistory": true,
+                "model": null
+              },
+              "commandTemplate": null,
+              "previousReports": null,
+              "properties": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "name": "Home",
+  "id": "golden-dashboard"
+}

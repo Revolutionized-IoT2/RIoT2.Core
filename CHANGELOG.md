@@ -6,6 +6,13 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+Repository only; the package doesn't change.
+
+- Added `contracts/golden/`, the golden files ([I05](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-0-1.md#i05-golden-files-and-route-contract-m)): one `Report` and `Command` per
+  `ValueType`, the presence, last-will and configuration messages, the orchestrator's HTTP
+  responses, and real `StoredObjects` samples with credentials scrubbed, before and after the
+  orchestrator saves them. RIoT2.Tests, Elsa, the UI and the firmware tests read them.
+
 ## [1.1.0] - 2026-10-12
 
 Restart only changed devices ([I04](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-0-1.md#i04-restart-only-changed-devices-s)).

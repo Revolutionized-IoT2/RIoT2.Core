@@ -44,6 +44,7 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.csproj    # Core, Orchestrator and InfluxD
 | `Interfaces/` | Device, message, template and service contracts |
 | `Services/` | `NodeMqttService`, `ReportService`, `DeviceSchedulerService`, `CodeProviderService`, … |
 | `Utils/` | `Json` (Newtonsoft with a restricted binder), `MqttClient`, `Web` |
+| `contracts/golden/` | Golden files for every message, response and stored format; read by RIoT2.Tests, Elsa, UI and firmware tests |
 
 ## Contracts implemented here
 
@@ -64,6 +65,10 @@ must stay compatible with it.
 - Keep `PackageReference` items versionless; edit `Directory.Packages.props` for package versions.
 - Serialize wire JSON with `Json.Serialize` / `Json.SerializeIgnoreNulls` (camelCase). Create
   messages with the `Create(string json)` factories.
+- The files in `contracts/golden/` define the formats. A change to `Models/`, `ValueModel` or
+  `Utils/Json.cs` that alters them must regenerate them (RIoT2.Tests with `RIOT2_UPDATE_GOLDEN=1`),
+  and every consumer in [contracts/golden/README.md](contracts/golden/README.md) must still pass.
+  Never commit a stored sample before replacing its credentials, tokens, IP and MAC addresses.
 - Don't widen `RIoT2SerializationBinder` in `Utils/Json.cs`. `TypeNameHandling` is used on
   configuration posted over REST and MQTT, and the binder is what blocks deserialization gadgets.
 - `NodeConfigurationServiceBase` must keep extracting plugin zips only inside `Plugins/`

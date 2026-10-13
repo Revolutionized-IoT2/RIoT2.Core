@@ -23,11 +23,15 @@ How Core fits into the platform: [architecture overview](https://github.com/Revo
 | `Interfaces/` | Device, message, template and service contracts |
 | `Services/` | `NodeMqttService`, `ReportService`, `DeviceSchedulerService`, `CodeProviderService` |
 | `Utils/` | `Json`, `MqttClient`, `Web` helpers |
+| `contracts/golden/` | Golden files: the JSON on MQTT, in orchestrator responses and in `StoredObjects`. Not part of the package. See [contracts/golden/README.md](contracts/golden/README.md). |
 
 The topics and payloads that these types implement are specified in the platform contracts:
 
 - [MQTT topics and payloads](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/mqtt-topics.md)
 - [Node configuration, templates and plugins](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/configuration.md)
+
+The [golden files](contracts/golden/README.md) are examples of each format. RIoT2.Tests, Elsa,
+the UI and the firmware tests read them, so a format change fails their CI.
 
 ## Using Core
 
@@ -122,7 +126,9 @@ versions are centralized in `Directory.Packages.props`.
 
 [RIoT2.Tests](https://github.com/Revolutionized-IoT2/RIoT2.Tests) references Core,
 RIoT2.Net.Orchestrator and RIoT2.Connector.InfluxDB as projects, so those repositories must be
-checked out next to this one.
+checked out next to this one. A change to a message or stored format must update the golden files:
+run the RIoT2.Tests suite with `RIOT2_UPDATE_GOLDEN=1`, review the diff, and commit it here
+([contracts/golden/README.md](contracts/golden/README.md)).
 
 ## Versions and releases
 
