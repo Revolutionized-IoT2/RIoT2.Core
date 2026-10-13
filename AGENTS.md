@@ -21,6 +21,7 @@ Run from the workspace root (`C:\Src\RIoT2`), in PowerShell:
 dotnet build .\RIoT2.Core\RIoT2.Core.csproj
 dotnet build .\RIoT2.Core\RIoT2.Core.csproj -p:CI=true
 dotnet test .\RIoT2.Tests\RIoT2.Tests.csproj    # Core, Orchestrator and InfluxDB tests (project references)
+dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj -c Release    # End-to-end: broker, Orchestrator, Node, Devices plugin
 ```
 
 - To check a consumer against unreleased Core, pack Core into the local feed:
@@ -99,10 +100,10 @@ must stay compatible with it.
 - `DeviceServiceBase.ReconfigureChangedDevicesAsync` compares each device's entry, serialized with
   `Json.Serialize`, with the one it was last initialized with. Keep that serialization
   deterministic: a field that changes on every download would restart the device every time.
-- The current Core package is `1.1.0`. Tag `1.0.0` failed CI and was never published: don't
+- The current Core package is `1.1.0`; `<Version>` is `1.1.1`, the next release. Tag `1.0.0` failed CI and was never published: don't
   reference it. A tag whose CI run fails publishes nothing.
 - `<Version>` in `RIoT2.Core.csproj` is the next release and must be at least the version the
-  Orchestrator and InfluxDB connector pin. RIoT2.Tests references this project and those
+  Orchestrator, Node and InfluxDB connector pin. RIoT2.Tests references this project and those
   packages at once, and NuGet silently picks the higher version, so a lower project version makes
   the tests run against the published package instead of this source.
 

@@ -192,31 +192,35 @@ namespace RIoT2.Core.Services
 
         public async Task Stop()
         {
-            if (_client == null)
+            // Only the first of concurrent calls stops: a host can be stopped twice (by its owner, and
+            // by Run when the application stops), and both calls reach the hosted service.
+            var client = Interlocked.Exchange(ref _client, null);
+            if (client == null)
                 return;
 
+            var shutdown = _shutdown;
+            var legacyCommandGate = _legacyCommandGate;
             Task[] commands;
             lock (_commandGate)
             {
                 _acceptingCommands = false;
                 commands = _commands.ToArray();
             }
-            _shutdown.Cancel();
-            _client.MessageReceivedAsync -= _client_MessageReceived;
-            _client.ConnectedAsync -= AnnounceOnlineAsync;
+            shutdown.Cancel();
+            client.MessageReceivedAsync -= _client_MessageReceived;
+            client.ConnectedAsync -= AnnounceOnlineAsync;
             _reportService.ReportUpdated -= _reportService_ReportUpdated;
 
             try
             {
                 await Task.WhenAll(commands).ConfigureAwait(false);
-                await _client.Stop().ConfigureAwait(false);
+                await client.Stop().ConfigureAwait(false);
             }
             finally
             {
-                _client.Dispose();
-                _client = null;
-                _shutdown.Dispose();
-                _legacyCommandGate.Dispose();
+                client.Dispose();
+                shutdown.Dispose();
+                legacyCommandGate.Dispose();
             }
         }
 

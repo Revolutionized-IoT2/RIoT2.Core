@@ -1,5 +1,6 @@
 ﻿using MQTTnet;
 using MQTTnet.Client;
+using MQTTnet.Exceptions;
 using MQTTnet.Extensions.ManagedClient;
 using MQTTnet.Packets;
 using MQTTnet.Protocol;
@@ -24,6 +25,7 @@ namespace RIoT2.Core.Utils
         private string _willTopic;
         private string _willPayload;
         private bool _willRetain;
+        private readonly SemaphoreSlim _stopGate = new SemaphoreSlim(1, 1);
 
         public event MqttMessageReceivedHandler MessageReceived;
         public event Func<MqttEventArgs, Task> MessageReceivedAsync;
@@ -70,17 +72,26 @@ namespace RIoT2.Core.Utils
             await startClient(topic);
         }
 
+        /// <summary>
+        /// Publishes the last will and stops the client. Concurrent calls are serialized: a host that
+        /// is stopped twice (by its owner, and by <c>Run</c>) calls it twice at the same time.
+        /// </summary>
         public async Task Stop()
         {
             if (_client == null)
                 return;
 
-            if (_client.IsStarted) 
+            await _stopGate.WaitAsync().ConfigureAwait(false);
+            try
             {
+                var client = _client;
+                if (client == null || !client.IsStarted)
+                    return;
+
                 // Publish the last will ourselves: the broker sends it only when the connection drops.
                 try
                 {
-                    if (_client.IsConnected)
+                    if (client.IsConnected)
                     {
                         var offline = new MqttApplicationMessageBuilder()
                             .WithTopic(_willTopic)
@@ -89,13 +100,21 @@ namespace RIoT2.Core.Utils
                         if (_willRetain)
                             offline.WithRetainFlag();
                         using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
-                            await _client.InternalClient.PublishAsync(offline.Build(), timeout.Token);
+                            await client.InternalClient.PublishAsync(offline.Build(), timeout.Token).ConfigureAwait(false);
                     }
+                }
+                catch (Exception x) when (x is MqttCommunicationException || x is OperationCanceledException)
+                {
+                    // The connection dropped or the broker didn't answer, so the broker publishes the last will.
                 }
                 finally
                 {
-                    await _client.StopAsync();
+                    await client.StopAsync().ConfigureAwait(false);
                 }
+            }
+            finally
+            {
+                _stopGate.Release();
             }
         }
 

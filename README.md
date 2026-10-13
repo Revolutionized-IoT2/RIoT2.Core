@@ -118,6 +118,7 @@ From the workspace root (`C:\Src\RIoT2`):
 ```powershell
 dotnet build .\RIoT2.Core\RIoT2.Core.csproj
 dotnet test .\RIoT2.Tests\RIoT2.Tests.csproj
+dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj -c Release
 ```
 
 Add `-p:CI=true` to `dotnet build` to reproduce CI analyzer settings locally. Shared build
@@ -126,7 +127,9 @@ versions are centralized in `Directory.Packages.props`.
 
 [RIoT2.Tests](https://github.com/Revolutionized-IoT2/RIoT2.Tests) references Core,
 RIoT2.Net.Orchestrator and RIoT2.Connector.InfluxDB as projects, so those repositories must be
-checked out next to this one. A change to a message or stored format must update the golden files:
+checked out next to this one. Its [end-to-end tests](https://github.com/Revolutionized-IoT2/RIoT2.Tests/blob/main/README.md#end-to-end-tests) also run this source with the
+Orchestrator, the Node and the Devices plugin. A change to a message or stored format must update
+the golden files:
 run the RIoT2.Tests suite with `RIOT2_UPDATE_GOLDEN=1`, review the diff, and commit it here
 ([contracts/golden/README.md](contracts/golden/README.md)).
 

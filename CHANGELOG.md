@@ -6,9 +6,15 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
-Repository only; the package doesn't change.
+- Fixed: `NodeMqttService.Stop` threw `NullReferenceException` when called twice at the same time,
+  as a host does when its owner and `Run` both stop it. Only the first call stops now
+  ([I06](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-0-1.md#i06-in-process-end-to-end-harness-m), found by the end-to-end tests).
+- Fixed: `MqttClient.Stop` threw `MqttClientDisconnectedException` when the connection dropped
+  while it published the offline message, and concurrent calls published it twice. Calls are now
+  serialized, and a lost connection or a 5 s timeout is ignored, because the broker then publishes
+  the last will itself.
 
-- Added `contracts/golden/`, the golden files ([I05](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-0-1.md#i05-golden-files-and-route-contract-m)): one `Report` and `Command` per
+- Added `contracts/golden/` (in the repository, not in the package), the golden files ([I05](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-0-1.md#i05-golden-files-and-route-contract-m)): one `Report` and `Command` per
   `ValueType`, the presence, last-will and configuration messages, the orchestrator's HTTP
   responses, and real `StoredObjects` samples with credentials scrubbed, before and after the
   orchestrator saves them. RIoT2.Tests, Elsa, the UI and the firmware tests read them.
