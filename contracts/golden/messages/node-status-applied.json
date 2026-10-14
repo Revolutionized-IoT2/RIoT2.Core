@@ -1,0 +1,19 @@
+{
+  "appliedRevision": 42,
+  "appliedHash": "9f2c4e1b7a3d5c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f6a",
+  "state": "applied",
+  "failedDevices": [
+    {
+      "id": "golden-device",
+      "message": "Port COM3 not found"
+    }
+  ],
+  "pluginManifest": {
+    "name": "RIoT2.Net.Devices",
+    "version": "1.2.0",
+    "date": "2026-10-14",
+    "installedPackageFilename": "RIoT2.Net.Devices_1.2.0.zip"
+  },
+  "timeStamp": 1760000000,
+  "contractVersion": 1
+}

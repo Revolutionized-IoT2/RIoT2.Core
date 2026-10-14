@@ -12,12 +12,15 @@ step 3).
 
 | Folder | Content | Written by |
 |---|---|---|
-| `messages/` | One `Report` and one `Command` per `ValueType` (`boolean`, `number`, `text`, `entity`, `textarray`), `NodeOnlineMessage` (`node-online`, and `node-offline`, the default last will), `ConfigurationCommand` | The serializer call each producer uses: `Report.ToJson()`, `Json.SerializeIgnoreNulls`, `Json.Serialize` |
-| `http/` | Orchestrator responses: node configuration, report, command and variable values, dashboard | `Json.Serialize`, or System.Text.Json with the controller settings for the variable value |
+| `messages/` | One `Report` and one `Command` per `ValueType` (`boolean`, `number`, `text`, `entity`, `textarray`), `NodeOnlineMessage` (`node-online`, and `node-offline`, the default last will), `ConfigurationCommand`. From Core 1.6.0 also the additive shapes: `correlated-command`, `result-executed`, `result-failed`, `node-status-applied`, `node-status-failed`, `node-online-capabilities`, `configuration-command-hash` | The serializer call each producer uses: `Report.ToJson()`, `Json.SerializeIgnoreNulls`, `Json.Serialize`; `CommandResult.ToJson()` and `NodeStatusMessage.ToJson()` |
+| `http/` | Orchestrator responses: node configuration (and `node-configuration-hash`, with the revision and hashes of design 7.2), report, command and variable values, dashboard | `Json.Serialize`, or System.Text.Json with the controller settings for the variable value |
 | `stored/` | Real `StoredObjects` files from a development installation, credentials scrubbed. `Rule/` is a legacy type that the orchestrator no longer loads; it is kept for the M2 step 4 loader. | Older orchestrator versions (input) |
 | `stored-saved/` | The same objects after the orchestrator loads and saves them again | `StoredObjectService` through the production save paths |
 
-Ids follow the file name: `golden-report-{type}` and `golden-command-{type}`.
+Ids follow the file name: `golden-report-{type}` and `golden-command-{type}`. Files whose names
+start with `command-` or `report-` are read as a `Command` or `Report` by the InfluxDB tests and
+the UI, so name other shapes differently. The old files stay as they are: they prove that readers
+still accept payloads without the newer optional fields.
 
 ## Who reads them
 

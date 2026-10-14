@@ -1,0 +1,6 @@
+{
+  "state": "failed",
+  "error": "GET http://192.0.2.1:5000/api/nodes/golden/configuration failed: 503",
+  "timeStamp": 1760000000,
+  "contractVersion": 1
+}

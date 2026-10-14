@@ -15,7 +15,9 @@
         Configuration = 2,
         Command = 3,
         Report = 4,
-        OrchestratorOnline = 5
+        OrchestratorOnline = 5,
+        CommandResult = 6,
+        NodeStatus = 7
     }
 
     public enum FileOrFolder

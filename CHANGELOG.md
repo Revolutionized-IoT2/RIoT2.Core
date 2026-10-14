@@ -6,6 +6,32 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-14
+
+Additive contract release ([I14](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i14-additive-contract-release-s); designs 7.1 phase 2 and 7.2 phase 1, ADR 0005).
+Nothing uses the new types yet: command results come with I15, desired-state configuration with
+I16. Every new optional property is omitted while unset, with Newtonsoft and System.Text.Json, so
+existing payloads, responses and stored files are byte-for-byte unchanged and every existing
+golden file still matches.
+
+- Added: topics `MqttTopic.CommandResult` (6, `riot2/node/{id}/command/result`) and
+  `MqttTopic.NodeStatus` (7, `riot2/node/{id}/status`).
+- Added: `CommandResult` with `CommandResultStatus` (`executed`, `failed`, `rejected`,
+  `unknownCommand`, `duplicate`), and `NodeStatusMessage` with `NodeConfigurationState`
+  (`applied`, `applying`, `failed`, `pendingRestart`) and `FailedDevice`. Both have `Create(json)`
+  and `ToJson()`.
+- Added: optional `Command.CorrelationId`, `NodeOnlineMessage.Capabilities` (with
+  `HasCapability`), `ConfigurationCommand.Revision` and `Hash`, `NodeDeviceConfiguration.Revision`
+  and `Hash`, and `DeviceConfiguration.Hash`.
+- Added: `Contract.Version` (1) and `Contract.Capabilities` (`command-result/1`,
+  `desired-state/1`). Every MQTT payload (`Report`, `Command`, `NodeOnlineMessage`,
+  `ConfigurationCommand`) has an optional `contractVersion`; absent means 1. The two new messages
+  set it to 1.
+- Golden files for the new shapes: `messages/correlated-command.json`, `result-executed.json`,
+  `result-failed.json`, `node-status-applied.json`, `node-status-failed.json`,
+  `node-online-capabilities.json`, `configuration-command-hash.json` and
+  `http/node-configuration-hash.json`.
+
 ## [1.5.0] - 2026-10-14
 
 Plugin configuration and conformance ([I10](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-0-1.md#i10-plugin-configuration-and-conformance-m), plans M6 and M12 steps 1–2). Additive:

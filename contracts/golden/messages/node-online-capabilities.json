@@ -1,0 +1,24 @@
+{
+  "name": "Golden node",
+  "isOnline": true,
+  "nodeBaseUrl": "http://192.0.2.10:5001/",
+  "grpcBaseUrl": "",
+  "nodeType": 1,
+  "manifest": {
+    "name": "RIoT2.Net.Node",
+    "version": "1.0.2",
+    "date": "2026-10-12",
+    "installedPackageFilename": ""
+  },
+  "pluginManifest": {
+    "name": "RIoT2.Net.Devices",
+    "version": "1.0.1",
+    "date": "2026-10-12",
+    "installedPackageFilename": "RIoT2.Net.Devices_1.0.1.zip"
+  },
+  "capabilities": [
+    "command-result/1",
+    "desired-state/1"
+  ],
+  "contractVersion": 1
+}

@@ -17,8 +17,9 @@ How Core fits into the platform: [architecture overview](https://github.com/Revo
 | Path | Contents |
 | --- | --- |
 | `Constants.cs` | MQTT topic templates, shared API URLs, and helpers to build and parse topics |
+| `Contract.cs` | `Contract.Version` and the capability names nodes advertise (`Contract.Capabilities`) |
 | `Enums.cs` | Shared enumerations (`ValueType`, `MqttTopic`, `NodeType`, `DeviceState`, …) |
-| `Models/` | Messages (`Report`, `Command`, `NodeOnlineMessage`), `ValueModel`, configuration and template models |
+| `Models/` | Messages (`Report`, `Command`, `NodeOnlineMessage`, `ConfigurationCommand`, and from 1.6.0 `CommandResult` and `NodeStatusMessage`), `ValueModel`, configuration and template models |
 | `Models/Matter/` | Matter endpoint declarations used by `IMatterDevice` |
 | `Abstracts/` | Base classes: `PluginBase`, `DeviceBase`, `AsyncDeviceBase`, `DeviceServiceBase`, `NodeConfigurationServiceBase` |
 | `Plugins/` | What node and plugins share: `PluginHostContract` (shared assemblies), `DeviceTemplates` (the template a device shows in the UI), `[RequiresHardware]` |
@@ -49,6 +50,12 @@ the UI and the firmware tests read them, so a format change fails their CI.
   JSON-looking strings as they are.
 - Build topic strings with `Constants.Get(id, MqttTopic.Report)`, and read the id back with
   `Constants.GetTopicId`.
+- Contract additions are optional properties that are omitted while unset, so older readers and
+  the golden files don't see them. Since 1.6.0 these include `Command.CorrelationId`,
+  `NodeOnlineMessage.Capabilities`, the configuration `Revision`/`Hash` fields and
+  `contractVersion` on every MQTT payload. `CommandResult` and `NodeStatusMessage` (topics
+  `CommandResult` and `NodeStatus`) are defined for designs 7.1 and 7.2; check a node's
+  capabilities with `NodeOnlineMessage.HasCapability` before you rely on them.
 
 ### Writing devices
 

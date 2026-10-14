@@ -1,0 +1,408 @@
+{
+  "name": "M5Core2 Test Node",
+  "id": "083AF2681900",
+  "pluginPackageUrl": null,
+  "deviceConfigurations": [
+    {
+      "id": "view-clock",
+      "name": "Clock",
+      "classFullName": "RIoT2.Ard.M5Core2.Node.ClockView",
+      "commandTemplates": null,
+      "reportTemplates": null,
+      "deviceParameters": {
+        "timezone": "EET-2EEST,M3.5.0/3,M10.5.0/4"
+      },
+      "refreshSchedule": null,
+      "matterEndpoints": null,
+      "hash": "002c4e1b7a3d5c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f6a"
+    },
+    {
+      "id": "view-buttons",
+      "name": "Living Room Lights",
+      "classFullName": "RIoT2.Ard.M5Core2.Node.ButtonView",
+      "commandTemplates": [
+        {
+          "id": "btn-livingroom-cmd",
+          "name": "Living Room",
+          "address": "btn-1",
+          "model": false,
+          "type": 0
+        },
+        {
+          "id": "btn-kitchen-cmd",
+          "name": "Kitchen",
+          "address": "btn-2",
+          "model": false,
+          "type": 0
+        },
+        {
+          "id": "btn-bedroom-cmd",
+          "name": "Bedroom",
+          "address": "btn-3",
+          "model": false,
+          "type": 0
+        }
+      ],
+      "reportTemplates": [
+        {
+          "type": 0,
+          "id": "btn-livingroom-report",
+          "name": "Living Room",
+          "address": "btn-1",
+          "parameters": {
+            "icon": "bulb"
+          },
+          "filters": [],
+          "maintainHistory": false,
+          "model": null
+        },
+        {
+          "type": 0,
+          "id": "btn-kitchen-report",
+          "name": "Kitchen",
+          "address": "btn-2",
+          "parameters": {
+            "icon": "bulb"
+          },
+          "filters": [],
+          "maintainHistory": false,
+          "model": null
+        },
+        {
+          "type": 0,
+          "id": "btn-bedroom-report",
+          "name": "Bedroom",
+          "address": "btn-3",
+          "parameters": {
+            "icon": "bulb"
+          },
+          "filters": [],
+          "maintainHistory": false,
+          "model": null
+        }
+      ],
+      "deviceParameters": {
+        "header": "Lights",
+        "subHeader": "tap a room to toggle"
+      },
+      "refreshSchedule": null,
+      "matterEndpoints": null,
+      "hash": "012c4e1b7a3d5c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f6a"
+    },
+    {
+      "id": "view-toggle",
+      "name": "Porch Relay",
+      "classFullName": "RIoT2.Ard.M5Core2.Node.ToggleView",
+      "commandTemplates": [
+        {
+          "id": "porch-relay-cmd",
+          "name": "Porch Relay",
+          "address": "relay-1",
+          "model": false,
+          "type": 0
+        }
+      ],
+      "reportTemplates": [
+        {
+          "type": 0,
+          "id": "porch-relay-report",
+          "name": "Porch Relay",
+          "address": "relay-1",
+          "parameters": {},
+          "filters": [],
+          "maintainHistory": false,
+          "model": null
+        }
+      ],
+      "deviceParameters": null,
+      "refreshSchedule": null,
+      "matterEndpoints": null,
+      "hash": "022c4e1b7a3d5c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f6a"
+    },
+    {
+      "id": "view-slider",
+      "name": "Fan Speed",
+      "classFullName": "RIoT2.Ard.M5Core2.Node.SliderView",
+      "commandTemplates": [
+        {
+          "id": "fan-speed-cmd",
+          "name": "Fan Speed",
+          "address": "fan-1",
+          "model": 0,
+          "type": 2
+        }
+      ],
+      "reportTemplates": [
+        {
+          "type": 2,
+          "id": "fan-speed-report",
+          "name": "Fan Speed",
+          "address": "fan-1",
+          "parameters": {},
+          "filters": [],
+          "maintainHistory": false,
+          "model": null
+        }
+      ],
+      "deviceParameters": {
+        "min": "0",
+        "max": "10",
+        "step": "1",
+        "unit": ""
+      },
+      "refreshSchedule": null,
+      "matterEndpoints": null,
+      "hash": "032c4e1b7a3d5c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f6a"
+    },
+    {
+      "id": "view-percentage",
+      "name": "Bedroom Dimmer",
+      "classFullName": "RIoT2.Ard.M5Core2.Node.PercentageView",
+      "commandTemplates": [
+        {
+          "id": "dimmer-cmd",
+          "name": "Bedroom Dimmer",
+          "address": "dimmer-1",
+          "model": 0,
+          "type": 2
+        }
+      ],
+      "reportTemplates": [
+        {
+          "type": 2,
+          "id": "dimmer-report",
+          "name": "Bedroom Dimmer",
+          "address": "dimmer-1",
+          "parameters": {},
+          "filters": [],
+          "maintainHistory": false,
+          "model": null
+        }
+      ],
+      "deviceParameters": null,
+      "refreshSchedule": null,
+      "matterEndpoints": null,
+      "hash": "042c4e1b7a3d5c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f6a"
+    },
+    {
+      "id": "view-colorscheme",
+      "name": "Office Lamp Color",
+      "classFullName": "RIoT2.Ard.M5Core2.Node.ColorSchemeView",
+      "commandTemplates": [
+        {
+          "id": "lamp-color-cmd",
+          "name": "Office Lamp Color",
+          "address": "lamp-1",
+          "model": "#000000",
+          "type": 1
+        }
+      ],
+      "reportTemplates": [
+        {
+          "type": 1,
+          "id": "lamp-color-report",
+          "name": "Office Lamp Color",
+          "address": "lamp-1",
+          "parameters": {},
+          "filters": [],
+          "maintainHistory": false,
+          "model": null
+        }
+      ],
+      "deviceParameters": null,
+      "refreshSchedule": null,
+      "matterEndpoints": null,
+      "hash": "052c4e1b7a3d5c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f6a"
+    },
+    {
+      "id": "view-values",
+      "name": "Weather Station",
+      "classFullName": "RIoT2.Ard.M5Core2.Node.ValueView",
+      "commandTemplates": [
+        {
+          "id": "temperature-cmd",
+          "name": "Temperature",
+          "address": "temp-1",
+          "model": "21",
+          "type": 2
+        },
+        {
+          "id": "humidity-cmd",
+          "name": "Humidity",
+          "address": "humidity-1",
+          "model": "99",
+          "type": 2
+        }
+      ],
+      "reportTemplates": null,
+      "deviceParameters": {
+        "unit1": "C",
+        "unit2": "%"
+      },
+      "refreshSchedule": null,
+      "matterEndpoints": null,
+      "hash": "062c4e1b7a3d5c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f6a"
+    },
+    {
+      "id": "view-energygauge",
+      "name": "Whole-Home Power",
+      "classFullName": "RIoT2.Ard.M5Core2.Node.EnergyGaugeView",
+      "commandTemplates": [
+        {
+          "id": "power-reading-cmd",
+          "name": "Whole-Home Power",
+          "address": "power-1",
+          "model": 0,
+          "type": 2
+        }
+      ],
+      "reportTemplates": null,
+      "deviceParameters": {
+        "unit": "W",
+        "min": "0",
+        "max": "3000"
+      },
+      "refreshSchedule": null,
+      "matterEndpoints": null,
+      "hash": "072c4e1b7a3d5c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f6a"
+    },
+    {
+      "id": "view-scenes",
+      "name": "Scenes",
+      "classFullName": "RIoT2.Ard.M5Core2.Node.SceneSelectorView",
+      "commandTemplates": null,
+      "reportTemplates": [
+        {
+          "type": 1,
+          "id": "scene-movie-night",
+          "name": "Movie Night",
+          "address": "",
+          "parameters": {},
+          "filters": [],
+          "maintainHistory": false,
+          "model": null
+        },
+        {
+          "type": 1,
+          "id": "scene-dinner",
+          "name": "Dinner",
+          "address": "",
+          "parameters": {},
+          "filters": [],
+          "maintainHistory": false,
+          "model": null
+        },
+        {
+          "type": 1,
+          "id": "scene-good-morning",
+          "name": "Good Morning",
+          "address": "",
+          "parameters": {},
+          "filters": [],
+          "maintainHistory": false,
+          "model": null
+        },
+        {
+          "type": 1,
+          "id": "scene-good-night",
+          "name": "Good Night",
+          "address": "",
+          "parameters": {},
+          "filters": [],
+          "maintainHistory": false,
+          "model": null
+        }
+      ],
+      "deviceParameters": null,
+      "refreshSchedule": null,
+      "matterEndpoints": null,
+      "hash": "082c4e1b7a3d5c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f6a"
+    },
+    {
+      "id": "view-alert",
+      "name": "Doorbell Alert",
+      "classFullName": "RIoT2.Ard.M5Core2.Node.AlertView",
+      "commandTemplates": [
+        {
+          "id": "doorbell-alert-cmd",
+          "name": "Doorbell Alert",
+          "address": "doorbell-1",
+          "model": {
+            "title": "Doorbell",
+            "message": "Someone is at the front door",
+            "subHeader": "tap to acknowledge",
+            "soundEnabled": true
+          },
+          "type": 3
+        }
+      ],
+      "reportTemplates": null,
+      "deviceParameters": null,
+      "refreshSchedule": null,
+      "matterEndpoints": null,
+      "hash": "092c4e1b7a3d5c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f6a"
+    },
+    {
+      "id": "view-notification",
+      "name": "Status Notice",
+      "classFullName": "RIoT2.Ard.M5Core2.Node.NotificationView",
+      "commandTemplates": [
+        {
+          "id": "status-notice-cmd",
+          "name": "Status Notice",
+          "address": "notice-1",
+          "model": {
+            "title": "Washing machine",
+            "message": "Cycle complete",
+            "subHeader": "read on-device, auto-dismisses",
+            "soundEnabled": true
+          },
+          "type": 3
+        }
+      ],
+      "reportTemplates": null,
+      "deviceParameters": {
+        "durationMs": "5000"
+      },
+      "refreshSchedule": null,
+      "matterEndpoints": null,
+      "hash": "0a2c4e1b7a3d5c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f6a"
+    },
+    {
+      "id": "view-timer",
+      "name": "Kitchen Timer",
+      "classFullName": "RIoT2.Ard.M5Core2.Node.TimerView",
+      "commandTemplates": [
+        {
+          "id": "kitchen-timer-cmd",
+          "name": "Kitchen Timer",
+          "address": "timer-1",
+          "model": false,
+          "type": 2
+        }
+      ],
+      "reportTemplates": [
+        {
+          "type": 2,
+          "id": "kitchen-timer-report",
+          "name": "Kitchen Timer",
+          "address": "timer-1",
+          "parameters": {},
+          "filters": [],
+          "maintainHistory": false,
+          "model": null
+        }
+      ],
+      "deviceParameters": {
+        "defaultMinutes": "10",
+        "stepMinutes": "1",
+        "maxMinutes": "60"
+      },
+      "refreshSchedule": null,
+      "matterEndpoints": null,
+      "hash": "0b2c4e1b7a3d5c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f6a"
+    }
+  ],
+  "revision": 42,
+  "hash": "9f2c4e1b7a3d5c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f6a"
+}

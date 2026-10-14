@@ -41,7 +41,7 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj
 |---|---|
 | `Constants.cs` | MQTT topic templates and shared API URLs (`Get`, `GetTopicId`) |
 | `Enums.cs` | `ValueType`, `MqttTopic`, `NodeType`, `DeviceState`, … (numeric values are wire format) |
-| `Models/` | Wire and configuration models: `Report`, `Command`, `ValueModel`, `NodeOnlineMessage`, `DeviceConfiguration`, templates |
+| `Models/` | Wire and configuration models: `Report`, `Command`, `ValueModel`, `NodeOnlineMessage`, `CommandResult`, `NodeStatusMessage`, `DeviceConfiguration`, templates |
 | `Models/Matter/` | `MatterEndpointTemplate` and its bindings (declarations only, no protocol code) |
 | `Abstracts/` | `PluginBase`, `DeviceBase`, `AsyncDeviceBase`, `DeviceServiceBase`, `NodeConfigurationServiceBase` |
 | `Plugins/` | `PluginHostContract` (assemblies the node shares with plugins), `DeviceTemplates` (template the node returns per device), `RequiresHardwareAttribute` |
@@ -56,7 +56,7 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj
 
 Core is the code side of these hub documents. Change both together:
 
-- [mqtt-topics.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/mqtt-topics.md): `Constants.cs`, `Models/Report.cs`, `Command.cs`, `ConfigurationCommand.cs`, `NodeOnlineMessage.cs`, `Utils/MqttClient.cs`, `Services/NodeMqttService.cs`
+- [mqtt-topics.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/mqtt-topics.md): `Constants.cs`, `Contract.cs`, `Models/Report.cs`, `Command.cs`, `CommandResult.cs`, `ConfigurationCommand.cs`, `NodeOnlineMessage.cs`, `NodeStatusMessage.cs`, `Utils/MqttClient.cs`, `Services/NodeMqttService.cs`
 - [configuration.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/configuration.md): `Models/NodeDeviceConfiguration.cs`, `DeviceConfiguration.cs`, templates, `Abstracts/NodeConfigurationServiceBase.cs`
 - [http-api.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/http-api.md): the shared URLs in `Constants.cs`
 
@@ -75,6 +75,15 @@ must stay compatible with it.
   `Utils/Json.cs` that alters them must regenerate them (RIoT2.Tests with `RIOT2_UPDATE_GOLDEN=1`),
   and every consumer in [contracts/golden/README.md](contracts/golden/README.md) must still pass.
   Never commit a stored sample before replacing its credentials, tokens, IP and MAC addresses.
+- A new optional property on a model must not change existing output: make it nullable and give
+  it both `[JsonProperty(NullValueHandling = NullValueHandling.Ignore)]` (Newtonsoft) and
+  `[System.Text.Json.Serialization.JsonIgnore(Condition = WhenWritingNull)]` (orchestrator
+  controllers), and add it after the existing properties. Don't use `JsonProperty(Order)`: one
+  ordered property reorders the whole object. `GoldenAdditiveContractTests` in RIoT2.Tests checks
+  both serializers.
+- New golden message files must not start with `command-` or `report-`: the InfluxDB tests and the
+  UI read every file with those prefixes as a `Command` or `Report`.
+- `contractVersion` stays 1 (`Contract.Version`) until a breaking change, which needs an ADR.
 - Don't widen `RIoT2SerializationBinder` in `Utils/Json.cs`. `TypeNameHandling` is used on
   configuration posted over REST and MQTT, and the binder is what blocks deserialization gadgets.
 - `NodeConfigurationServiceBase` must keep extracting plugin zips only inside `Plugins/`

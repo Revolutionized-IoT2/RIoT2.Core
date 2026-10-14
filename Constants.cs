@@ -14,6 +14,8 @@ namespace RIoT2.Core
         private static readonly string configurationTopic = "riot2/node/{id}/configuration";
         private static readonly string commandTopic = "riot2/node/{id}/command";
         private static readonly string reportTopic = "riot2/node/{id}/report";
+        private static readonly string commandResultTopic = "riot2/node/{id}/command/result";
+        private static readonly string nodeStatusTopic = "riot2/node/{id}/status";
 
         /// <summary>The API endpoint template for retrieving a node's configuration.</summary>
         public static readonly string ApiConfigurationUrl = "/api/nodes/{id}/configuration";
@@ -76,6 +78,10 @@ namespace RIoT2.Core
                     return nodeOnlineTopic;
                 case MqttTopic.OrchestratorOnline:
                     return orchestratorOnlineTopic;
+                case MqttTopic.CommandResult:
+                    return commandResultTopic;
+                case MqttTopic.NodeStatus:
+                    return nodeStatusTopic;
                 default:
                     return "";
             }

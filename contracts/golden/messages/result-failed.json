@@ -1,0 +1,8 @@
+{
+  "correlationId": "golden-correlation-2",
+  "commandId": "golden-command-number",
+  "status": "failed",
+  "error": "Device threw: relay not responding",
+  "timeStamp": 1760000000,
+  "contractVersion": 1
+}

@@ -23,6 +23,14 @@ namespace RIoT2.Core.Models
         public List<MatterEndpointTemplate> MatterEndpoints { get; set; }
 
         /// <summary>
+        /// Optional lowercase hex SHA-256 of this entry as served (design 7.2), so a node can tell which
+        /// devices changed. Omitted when <c>null</c>.
+        /// </summary>
+        [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+        public string Hash { get; set; }
+
+        /// <summary>
         /// Builds a scheduler trigger from the configured refresh schedule.
         /// </summary>
         /// <returns>A <see cref="SchedulerTrigger"/> when <c>RefreshSchedule</c> is a valid cron expression; otherwise, <c>null</c>.</returns>
