@@ -288,7 +288,10 @@
         "stationId": "70:ee:50:00:00:01"
       },
       "refreshSchedule": "0 0/15 0 ? * * *",
-      "matterEndpoints": null
+      "matterEndpoints": null,
+      "hash": "42769034ae23894c8fb5b45275b5e92cb788c70f111e8744b634f9dc0982ea58"
     }
-  ]
+  ],
+  "revision": 1,
+  "hash": "61796ebda7a66c5fbc1f838a71409d4ba173b39776b03d9b93a0a55a78b8f30d"
 }

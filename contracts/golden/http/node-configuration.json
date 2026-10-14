@@ -13,7 +13,8 @@
         "timezone": "EET-2EEST,M3.5.0/3,M10.5.0/4"
       },
       "refreshSchedule": null,
-      "matterEndpoints": null
+      "matterEndpoints": null,
+      "hash": "ca8c126a003930a5dba2ad0d67edeed980cc201750cbc6169093827b33055240"
     },
     {
       "id": "view-buttons",
@@ -85,7 +86,8 @@
         "subHeader": "tap a room to toggle"
       },
       "refreshSchedule": null,
-      "matterEndpoints": null
+      "matterEndpoints": null,
+      "hash": "3b2a698f27d6e66a4fb15ff6c0a8b5e13127dfac330b1f8993c4a9d470aee406"
     },
     {
       "id": "view-toggle",
@@ -114,7 +116,8 @@
       ],
       "deviceParameters": null,
       "refreshSchedule": null,
-      "matterEndpoints": null
+      "matterEndpoints": null,
+      "hash": "a25d906a84820a2f08cb797cf41ee8f1c6b55a32cb52af6494347529ba20ca50"
     },
     {
       "id": "view-slider",
@@ -148,7 +151,8 @@
         "unit": ""
       },
       "refreshSchedule": null,
-      "matterEndpoints": null
+      "matterEndpoints": null,
+      "hash": "8876cb0fac945f7d9a8c8307e9414908297c3f4ee5d020e2be603e6fd5782b63"
     },
     {
       "id": "view-percentage",
@@ -177,7 +181,8 @@
       ],
       "deviceParameters": null,
       "refreshSchedule": null,
-      "matterEndpoints": null
+      "matterEndpoints": null,
+      "hash": "fc43ab984e1c501121f2d705033b9d1e259fa6f2a889bc149c797c01eb78913a"
     },
     {
       "id": "view-colorscheme",
@@ -206,7 +211,8 @@
       ],
       "deviceParameters": null,
       "refreshSchedule": null,
-      "matterEndpoints": null
+      "matterEndpoints": null,
+      "hash": "5fc920cf28a345a583d8aa5550381a91c0ccb950f63ef0a34be35b5cd53e57af"
     },
     {
       "id": "view-values",
@@ -234,7 +240,8 @@
         "unit2": "%"
       },
       "refreshSchedule": null,
-      "matterEndpoints": null
+      "matterEndpoints": null,
+      "hash": "588abd7de3c06e9142286aa847fb0442ce9432cd63c85348db01f70ed4cda9a3"
     },
     {
       "id": "view-energygauge",
@@ -256,7 +263,8 @@
         "max": "3000"
       },
       "refreshSchedule": null,
-      "matterEndpoints": null
+      "matterEndpoints": null,
+      "hash": "3a310b7c4c12e95b95a80be1a245ef78b88dea7c3f27acb49ce7465f385dc2df"
     },
     {
       "id": "view-scenes",
@@ -307,7 +315,8 @@
       ],
       "deviceParameters": null,
       "refreshSchedule": null,
-      "matterEndpoints": null
+      "matterEndpoints": null,
+      "hash": "f2721c499e3d6e54c5c8d868f13d567952e540dda793eebf5cc40de6defc1a10"
     },
     {
       "id": "view-alert",
@@ -330,7 +339,8 @@
       "reportTemplates": null,
       "deviceParameters": null,
       "refreshSchedule": null,
-      "matterEndpoints": null
+      "matterEndpoints": null,
+      "hash": "02cb790f4bcb9f4b43b56effe133881ddb0cdd3ea553ab727d8ed4f6e5551d2a"
     },
     {
       "id": "view-notification",
@@ -355,7 +365,8 @@
         "durationMs": "5000"
       },
       "refreshSchedule": null,
-      "matterEndpoints": null
+      "matterEndpoints": null,
+      "hash": "121ca9250d231cb4f1d7c11b37a0c757598f19d6c7c429fd6959b90fb9935de4"
     },
     {
       "id": "view-timer",
@@ -388,7 +399,10 @@
         "maxMinutes": "60"
       },
       "refreshSchedule": null,
-      "matterEndpoints": null
+      "matterEndpoints": null,
+      "hash": "95357b0f68a9d75ebfba62c7e4f4fc4415e83a3a6b85653d0649067b37f91d91"
     }
-  ]
+  ],
+  "revision": 1,
+  "hash": "be0d034b80dc6033176134f1bd996412b77ec81796420c4958240b0444a0b194"
 }

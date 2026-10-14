@@ -105,8 +105,9 @@ must stay compatible with it.
   camel-cased, while `DeviceBase.GetConfiguration<T>(key)` is case-sensitive. Use camelCase
   parameter keys (contract divergence C1).
 - `MqttClient` publishes and subscribes at QoS 1 (since 1.3.0), so receivers must tolerate a
-  duplicate. Its port is `RIOT2_MQTT_PORT` (default 1883); there is no TLS yet (I34, I51), and by
-  default it does not retain its last will (divergence D1). Publishing before a start throws.
+  duplicate. Its port is `RIOT2_MQTT_PORT` (default 1883); there is no TLS yet (I34, I51). A bare
+  `MqttClient` doesn't retain its last will; `NodeMqttService` sets a retained one and retains its
+  presence (since 1.8.0). Publishing before a start throws.
 - Don't expose MQTTnet types from Core's public API: `MqttQos`, `MqttSubscription` and
   `MqttEventArgs` stand in for them, so a later MQTTnet 5 migration only touches `MqttClient`
   ([M10](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m10-mqtt-client-robustness.md)).
@@ -123,6 +124,14 @@ must stay compatible with it.
   (`DeviceNotReadyException`, a configuration still being applied, the 64-command limit). Throw
   `UnknownCommandException` for a command no device owns; the node advertises `command-result/1`
   in its online message (design 7.1).
+- Desired state (design 7.2, 1.8.0): `NodeConfigurationServiceBase.LoadDeviceConfiguration` skips
+  a command whose `hash` is applied with every device running, or being applied; a failed fetch
+  must keep the current configuration and report `failed` (never set `DeviceConfiguration` to
+  `null`). The host reports the outcome on `ConfigurationStatus` (`Applied` with the devices that
+  aren't running, `Failed`, `PendingRestart`) and calls `SaveAppliedConfiguration`; otherwise the
+  status stays `applying`. `NodeMqttService` advertises `desired-state/1` only for a configuration
+  service that implements `INodeConfigurationStatusSource`. The device diff key must keep ignoring
+  the entry's `hash`, or the first hashed configuration restarts every device.
 - `NodeMqttService` publishes reports through a bounded queue (1,000, oldest dropped) and one
   publisher, in the order the devices raised them. Device events are synchronous: never handle one
   with an `async void` method; hand the work to a queue or a tracked task.

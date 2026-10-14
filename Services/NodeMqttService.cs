@@ -37,6 +37,9 @@ namespace RIoT2.Core.Services
         private string _orchestratorOnlineTopic;
         private string _nodeOnlineTopic;
         private string _commandResultTopic;
+        private string _statusTopic;
+        private INodeConfigurationStatusSource _statusSource;
+        private readonly SemaphoreSlim _statusGate = new SemaphoreSlim(1, 1);
         //private ILogger _logger;
         private ILogger<NodeMqttService> _logger;
         private CancellationTokenSource _shutdown;
@@ -99,6 +102,11 @@ namespace RIoT2.Core.Services
                 _orchestratorOnlineTopic = _configurationService.Configuration.GetTopic(MqttTopic.OrchestratorOnline);
                 _nodeOnlineTopic = _configurationService.Configuration.GetTopic(MqttTopic.NodeOnline);
                 _commandResultTopic = _configurationService.Configuration.GetTopic(MqttTopic.CommandResult);
+                _statusTopic = _configurationService.Configuration.GetTopic(MqttTopic.NodeStatus);
+                _statusSource = _configurationService as INodeConfigurationStatusSource;
+
+                // Presence is retained, like the firmware's, so a late subscriber sees it (D1 removed in I16).
+                _client.SetLastWill(_nodeOnlineTopic, Json.Serialize(new NodeOnlineMessage { NodeBaseUrl = "", IsOnline = false }), true);
 
                 var reports = Channel.CreateBounded<Report>(new BoundedChannelOptions(ReportQueueCapacity)
                 {
@@ -112,6 +120,8 @@ namespace RIoT2.Core.Services
                 _client.MessageReceivedAsync += _client_MessageReceived;
                 _client.ConnectedAsync += AnnounceOnlineAsync;
                 _reportService.ReportUpdated += _reportService_ReportUpdated;
+                if (_statusSource != null)
+                    _statusSource.ConfigurationStatus.Changed += OnStatusChanged;
 
                 await _client.Start(new string[] { _commandTopic, _configurationTopic, _orchestratorOnlineTopic });
             }
@@ -324,12 +334,40 @@ namespace RIoT2.Core.Services
                 message.Capabilities = message.Capabilities ?? new List<string>();
                 if (!message.Capabilities.Contains(Contract.Capabilities.CommandResult))
                     message.Capabilities.Add(Contract.Capabilities.CommandResult);
+                if (_statusSource != null)
+                {
+                    if (!message.Capabilities.Contains(Contract.Capabilities.DesiredState))
+                        message.Capabilities.Add(Contract.Capabilities.DesiredState);
+                    // The status goes first, so an orchestrator that reacts to the presence already has it.
+                    await PublishStatusAsync().ConfigureAwait(false);
+                }
                 await SendNodeOnlineMessage(message);
             }
             catch (Exception x)
             {
                 _logger.LogError(x, "Could not announce node presence");
             }
+        }
+
+        private void OnStatusChanged(NodeStatusMessage status) => _ = PublishStatusAsync();
+
+        // Publishes the status as it is now, one publish at a time, so the retained message is always the latest.
+        private async Task PublishStatusAsync()
+        {
+            var client = _client;
+            var source = _statusSource;
+            if (client == null || source == null)
+                return;
+            await _statusGate.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                await client.PublishAsync(_statusTopic, source.ConfigurationStatus.Current.ToJson(), retain: true).ConfigureAwait(false);
+            }
+            catch (Exception x)
+            {
+                _logger.LogWarning(x, "Could not publish the node configuration status; it is published again on the next connect");
+            }
+            finally { _statusGate.Release(); }
         }
 
         private void _reportService_ReportUpdated(IDevice sender, IReport report)
@@ -396,6 +434,8 @@ namespace RIoT2.Core.Services
             client.MessageReceivedAsync -= _client_MessageReceived;
             client.ConnectedAsync -= AnnounceOnlineAsync;
             _reportService.ReportUpdated -= _reportService_ReportUpdated;
+            if (_statusSource != null)
+                _statusSource.ConfigurationStatus.Changed -= OnStatusChanged;
 
             try
             {
@@ -414,9 +454,11 @@ namespace RIoT2.Core.Services
             }
         }
 
+        /// <summary>Publishes the node's presence, retained.</summary>
         public async Task SendNodeOnlineMessage(NodeOnlineMessage msg)
         {
-            await SendCommand(_nodeOnlineTopic, Json.SerializeIgnoreNulls(msg));
+            var client = _client ?? throw new InvalidOperationException("Cannot send the presence before the MQTT service is started.");
+            await client.PublishAsync(_nodeOnlineTopic, Json.SerializeIgnoreNulls(msg), retain: true).ConfigureAwait(false);
         }
 
         public bool IsConnected()

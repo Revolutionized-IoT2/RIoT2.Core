@@ -24,6 +24,23 @@ namespace RIoT2.Core.Utils
             ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
         });
 
+        /// <summary>
+        /// Sends <paramref name="request"/> on the shared client, cancelled after
+        /// <paramref name="timeOutMilliseconds"/> or by <paramref name="cancellationToken"/>.
+        /// Unlike the other methods it doesn't wrap exceptions.
+        /// </summary>
+        public static async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            int timeOutMilliseconds = defaultTimeOutMilliseconds, CancellationToken cancellationToken = default)
+        {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+            using (var cancel = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+            {
+                cancel.CancelAfter(timeOutMilliseconds);
+                return await _httpClient.SendAsync(request, cancel.Token).ConfigureAwait(false);
+            }
+        }
+
         public static async Task<WebFile> DownloadFile(string url)
         {
             try

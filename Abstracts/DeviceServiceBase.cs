@@ -189,9 +189,18 @@ namespace RIoT2.Core.Abstracts
             {
                 var entry = snapshot.FirstOrDefault(c => c.ClassFullName == device.GetType().FullName);
                 if (entry != null)
-                    desired[device] = new DesiredDevice(entry, Json.Serialize(entry));
+                    desired[device] = new DesiredDevice(entry, Key(entry));
             }
             return desired;
+        }
+
+        // The entry's hash (design 7.2) is left out, so an orchestrator that starts sending it restarts nothing.
+        private static string Key(DeviceConfiguration entry)
+        {
+            var token = Newtonsoft.Json.JsonConvert.DeserializeObject<Newtonsoft.Json.Linq.JObject>(Json.Serialize(entry),
+                new Newtonsoft.Json.JsonSerializerSettings { DateParseHandling = Newtonsoft.Json.DateParseHandling.None });
+            token.Remove("hash");
+            return token.ToString(Newtonsoft.Json.Formatting.None);
         }
 
         private List<IDevice> Changed(Dictionary<IDevice, DesiredDevice> desired)

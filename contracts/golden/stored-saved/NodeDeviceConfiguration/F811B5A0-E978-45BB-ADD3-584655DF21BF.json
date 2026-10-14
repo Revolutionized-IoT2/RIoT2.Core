@@ -53,7 +53,8 @@
         "nodeId": "2"
       },
       "refreshSchedule": "",
-      "matterEndpoints": null
+      "matterEndpoints": null,
+      "hash": "7352b7ea771a4ea9ad4acc0ddc58dfb5919f6cd7ba3b22776679a5421193261f"
     },
     {
       "id": "c31e5440-088f-4bed-bd72-b27671883da6",
@@ -112,7 +113,10 @@
         "nodeId": "3"
       },
       "refreshSchedule": "",
-      "matterEndpoints": null
+      "matterEndpoints": null,
+      "hash": "16b23fc93f0d2b3b360ccf1678522030b60fc25407f689f8a0a0579a647e8687"
     }
-  ]
+  ],
+  "revision": 1,
+  "hash": "9f9f9d726afe47f549755ddf624293a7aecf0d30e5e2a540e6bd3a0cfc21c3a8"
 }

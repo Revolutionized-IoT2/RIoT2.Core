@@ -1,10 +1,14 @@
 ﻿using RIoT2.Core.Interfaces.Services;
 using RIoT2.Core.Models;
+using RIoT2.Core.Services;
 using RIoT2.Core.Utils;
 using System;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 
 namespace RIoT2.Core.Abstracts
@@ -13,8 +17,11 @@ namespace RIoT2.Core.Abstracts
     /// Provides a base implementation of <see cref="INodeConfigurationService"/> that handles
     /// loading device configuration and downloading and installing plugin packages.
     /// </summary>
-    public abstract class NodeConfigurationServiceBase : INodeConfigurationService
+    public abstract class NodeConfigurationServiceBase : INodeConfigurationService, INodeConfigurationStatusSource
     {
+        private readonly object _pendingGate = new object();
+        private string _pendingHash;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="NodeConfigurationServiceBase"/> class with no device configuration loaded.
         /// </summary>
@@ -38,29 +45,150 @@ namespace RIoT2.Core.Abstracts
         /// <inheritdoc/>
         public virtual NodeOnlineMessage OnlineMessage { get; set; }
 
-        /// <inheritdoc/>
+        /// <summary>The node's view of its configuration, published on its status topic (design 7.2).</summary>
+        public NodeConfigurationStatus ConfigurationStatus { get; } = new NodeConfigurationStatus();
+
+        /// <summary>How long fetching the configuration may take.</summary>
+        protected virtual int ConfigurationFetchTimeoutMilliseconds => 30000;
+
+        /// <summary>
+        /// Where the last applied configuration is kept, so the node can start with it when the
+        /// orchestrator is down (design 7.2, decision 4).
+        /// </summary>
+        protected virtual string AppliedConfigurationPath => getSafeApplicationPath(Path.Combine("Data", "configuration.applied.json"));
+
+        /// <summary>
+        /// Handles a <see cref="ConfigurationCommand"/> (design 7.2). A command whose <c>hash</c> is
+        /// already applied, with every device running, or is being applied, needs no work: the status is
+        /// published again and nothing is fetched. Otherwise the configuration is fetched, with
+        /// <c>If-None-Match</c> for the configuration it holds, and handed to the devices. When fetching or reading
+        /// it fails the node keeps its current configuration, reports <c>failed</c>, and this method throws.
+        /// </summary>
         public virtual async Task LoadDeviceConfiguration(string json, string id)
         {
-            DeviceConfigurationLoaded = false;
-            var cmd = Json.Deserialize<ConfigurationCommand>(json);
+            var command = Json.Deserialize<ConfigurationCommand>(json);
+            if (string.IsNullOrEmpty(command?.ApiBaseUrl))
+                throw Fail("The configuration command has no apiBaseUrl.");
 
-            var response = await Web.GetAsync(cmd.ApiBaseUrl + Constants.ApiConfigurationUrl.Replace("{id}", id));
-            if (response.IsSuccessStatusCode)
+            var current = DeviceConfiguration;
+            if (!string.IsNullOrEmpty(command.Hash) && current != null)
             {
-                var deviceJson = await response.Content.ReadAsStringAsync();
-                SetDeviceConfiguration(Json.Deserialize<NodeDeviceConfiguration>(deviceJson));
+                if (ConfigurationStatus.IsApplied(command.Hash))
+                {
+                    ConfigurationStatus.Republish();
+                    return;
+                }
+                if (IsBeingApplied(command.Hash))
+                    return;
+            }
+
+            var url = command.ApiBaseUrl + Constants.ApiConfigurationUrl.Replace("{id}", id);
+            // The configuration the node holds, which a 304 confirms. While another one is being
+            // applied, or after one failed, it differs from the applied hash.
+            var held = current?.Hash;
+            HttpResponseMessage response;
+            using (var request = new HttpRequestMessage(HttpMethod.Get, url))
+            {
+                if (!string.IsNullOrEmpty(held))
+                    request.Headers.IfNoneMatch.Add(new EntityTagHeaderValue("\"" + held + "\""));
+                try
+                {
+                    response = await Web.SendAsync(request, ConfigurationFetchTimeoutMilliseconds).ConfigureAwait(false);
+                }
+                catch (Exception error)
+                {
+                    throw Fail($"Could not fetch the configuration from {url}: {error.GetBaseException().Message}", error);
+                }
+            }
+
+            using (response)
+            {
+                if (response.StatusCode == HttpStatusCode.NotModified && current != null)
+                {
+                    // Unchanged: report again, or apply it again (devices not running, or not applied yet).
+                    if (ConfigurationStatus.IsApplied(held))
+                        ConfigurationStatus.Republish();
+                    else
+                        SetDeviceConfiguration(current);
+                    return;
+                }
+                if (!response.IsSuccessStatusCode)
+                    throw Fail($"Could not fetch the configuration from {url}: HTTP {(int)response.StatusCode} {response.ReasonPhrase}");
+
+                NodeDeviceConfiguration configuration;
+                try
+                {
+                    configuration = Json.Deserialize<NodeDeviceConfiguration>(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+                }
+                catch (Exception error)
+                {
+                    throw Fail($"The configuration from {url} is not valid: {error.GetBaseException().Message}", error);
+                }
+                if (configuration == null)
+                    throw Fail($"The configuration from {url} is empty.");
+                SetDeviceConfiguration(configuration);
             }
         }
 
+        private Exception Fail(string message, Exception inner = null)
+        {
+            ConfigurationStatus.Failed(message);
+            return new InvalidOperationException(message, inner);
+        }
+
+        private bool IsBeingApplied(string hash)
+        {
+            lock (_pendingGate)
+                return _pendingHash == hash && ConfigurationStatus.Current.State == NodeConfigurationState.Applying;
+        }
+
         /// <summary>
-        /// Sets the current device configuration, marks it as loaded, and raises <see cref="DeviceConfigurationUpdated"/>.
+        /// Sets the current device configuration, marks it as loaded, reports <c>applying</c>, and raises
+        /// <see cref="DeviceConfigurationUpdated"/>. The host reports the outcome on <see cref="ConfigurationStatus"/>.
         /// </summary>
         /// <param name="configuration">The device configuration to apply.</param>
         public void SetDeviceConfiguration(NodeDeviceConfiguration configuration) 
         {
+            lock (_pendingGate)
+            {
+                _pendingHash = configuration?.Hash;
+                ConfigurationStatus.Applying();
+            }
             DeviceConfiguration = configuration;
             DeviceConfigurationLoaded = true;
             DeviceConfigurationUpdated?.Invoke();
+        }
+
+        /// <summary>
+        /// Starts with the configuration saved by <see cref="SaveAppliedConfiguration"/>, if there is one:
+        /// it becomes the current configuration (see <see cref="SetDeviceConfiguration"/>) and is returned.
+        /// Returns <c>null</c> when nothing was saved, and throws when the saved file can't be read.
+        /// </summary>
+        public NodeDeviceConfiguration LoadAppliedConfiguration()
+        {
+            var path = AppliedConfigurationPath;
+            if (!File.Exists(path))
+                return null;
+            var configuration = Json.Deserialize<NodeDeviceConfiguration>(File.ReadAllText(path));
+            if (configuration == null)
+                throw new InvalidDataException($"The saved configuration {path} is empty.");
+            SetDeviceConfiguration(configuration);
+            return configuration;
+        }
+
+        /// <summary>Saves <paramref name="configuration"/> for <see cref="LoadAppliedConfiguration"/>, replacing the previous file atomically.</summary>
+        public void SaveAppliedConfiguration(NodeDeviceConfiguration configuration)
+        {
+            if (configuration == null)
+                throw new ArgumentNullException(nameof(configuration));
+            var path = AppliedConfigurationPath;
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            var temporary = path + ".tmp";
+            File.WriteAllText(temporary, Json.Serialize(configuration));
+            if (File.Exists(path))
+                File.Replace(temporary, path, null);
+            else
+                File.Move(temporary, path);
         }
 
         /// <inheritdoc/>

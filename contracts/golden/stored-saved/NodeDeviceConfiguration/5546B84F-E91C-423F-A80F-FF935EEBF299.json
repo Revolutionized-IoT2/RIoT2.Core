@@ -22,7 +22,10 @@
       ],
       "deviceParameters": {},
       "refreshSchedule": null,
-      "matterEndpoints": null
+      "matterEndpoints": null,
+      "hash": "4b4b65a56eb4e46a8636b782a32c63bc38eaca3a4ef734af239d0be2f65ef50c"
     }
-  ]
+  ],
+  "revision": 1,
+  "hash": "849bdf8524e69afd67c467ca62fefbd4672c9d5a7efdd8fff150685ac978b263"
 }

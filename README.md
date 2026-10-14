@@ -56,6 +56,10 @@ the UI and the firmware tests read them, so a format change fails their CI.
   `contractVersion` on every MQTT payload. `CommandResult` and `NodeStatusMessage` (topics
   `CommandResult` and `NodeStatus`) are defined for designs 7.1 and 7.2; check a node's
   capabilities with `NodeOnlineMessage.HasCapability` before you rely on them.
+- Desired state (1.8.0): `ConfigurationHash.Stamp` computes the configuration hashes,
+  `NodeConfigurationStatus` holds the node's status, and `NodeConfigurationServiceBase` skips a
+  configuration it already runs and saves and loads the applied one
+  (`SaveAppliedConfiguration`, `LoadAppliedConfiguration`).
 
 ### Writing devices
 

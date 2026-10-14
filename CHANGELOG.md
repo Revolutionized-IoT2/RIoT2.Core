@@ -6,6 +6,29 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-10-14
+
+Desired-state configuration on the node ([I16](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i16-desired-state-configuration-for-net-nodes-m), design 7.2 phases 2–3). Additive.
+
+- Added: `ConfigurationHash` (the configuration hashes of design 7.2), `NodeConfigurationStatus`
+  and `INodeConfigurationStatusSource`, and `Web.SendAsync`.
+- Changed: `NodeConfigurationServiceBase.LoadDeviceConfiguration` doesn't fetch a configuration
+  whose `hash` it already runs with every device running, or is applying; it answers with its
+  status. It fetches with `If-None-Match`, and a `304` applies the current configuration again
+  (starting devices that aren't running).
+- Fixed: a failed configuration fetch was ignored silently and left `DeviceConfigurationLoaded`
+  `false`. The node now keeps its configuration, reports `failed` with the reason, and throws, so
+  the failure is logged.
+- Added: `SaveAppliedConfiguration` and `LoadAppliedConfiguration`
+  (`Data/configuration.applied.json`, overridable with `AppliedConfigurationPath`), so a node can
+  start with its last configuration while the orchestrator is down.
+- Changed: `NodeMqttService` retains its presence and last will (divergence D1 fixed), publishes
+  the configuration status retained on `riot2/node/{id}/status` on every connect (before its
+  presence) and on every change, and advertises `desired-state/1` when its configuration service
+  implements `INodeConfigurationStatusSource`, as `NodeConfigurationServiceBase` does.
+- Changed: `DeviceServiceBase.ReconfigureChangedDevicesAsync` ignores an entry's `hash`, so the
+  first configuration with hashes restarts nothing.
+
 ## [1.7.0] - 2026-10-14
 
 Command results on the node ([I15](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i15-command-results-and-api-v2-m), design 7.1 phase 2). Additive.

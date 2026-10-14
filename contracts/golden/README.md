@@ -13,7 +13,7 @@ step 3).
 | Folder | Content | Written by |
 |---|---|---|
 | `messages/` | One `Report` and one `Command` per `ValueType` (`boolean`, `number`, `text`, `entity`, `textarray`), `NodeOnlineMessage` (`node-online`, and `node-offline`, the default last will), `ConfigurationCommand`. From Core 1.6.0 also the additive shapes: `correlated-command`, `result-executed`, `result-failed`, `node-status-applied`, `node-status-failed`, `node-online-capabilities`, `configuration-command-hash` | The serializer call each producer uses: `Report.ToJson()`, `Json.SerializeIgnoreNulls`, `Json.Serialize`; `CommandResult.ToJson()` and `NodeStatusMessage.ToJson()` |
-| `http/` | Orchestrator responses: node configuration (and `node-configuration-hash`, with the revision and hashes of design 7.2), report, command and variable values, dashboard | `Json.Serialize`, or System.Text.Json with the controller settings for the variable value |
+| `http/` | Orchestrator responses: node configuration (with its real revision and hashes since Orchestrator 1.5.0; `node-configuration-hash` has fixed ones), report, command and variable values, dashboard | `Json.Serialize`, or System.Text.Json with the controller settings for the variable value |
 | `stored/` | Real `StoredObjects` files from a development installation, credentials scrubbed. `Rule/` is a legacy type that the orchestrator no longer loads; it is kept for the M2 step 4 loader. | Older orchestrator versions (input) |
 | `stored-saved/` | The same objects after the orchestrator loads and saves them again | `StoredObjectService` through the production save paths |
 
