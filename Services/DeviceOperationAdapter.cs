@@ -110,7 +110,7 @@ namespace RIoT2.Core.Services
             lock (_sync)
             {
                 if (!_accepting)
-                    throw new InvalidOperationException("The device is not accepting work.");
+                    throw new DeviceNotReadyException("The device is not accepting work.");
                 linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _run.Token);
             }
             using (linked)
@@ -120,7 +120,7 @@ namespace RIoT2.Core.Services
                 {
                     linked.Token.ThrowIfCancellationRequested();
                     if (!IsActive)
-                        throw new InvalidOperationException("The device is not running.");
+                        throw new DeviceNotReadyException("The device is not running.");
                     await operation(linked.Token).ConfigureAwait(false);
                     linked.Token.ThrowIfCancellationRequested();
                 }

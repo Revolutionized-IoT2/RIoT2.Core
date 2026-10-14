@@ -6,6 +6,23 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-10-14
+
+Command results on the node ([I15](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i15-command-results-and-api-v2-m), design 7.1 phase 2). Additive.
+
+- Added: `NodeMqttService` answers every command that has a `correlationId` on
+  `riot2/node/{id}/command/result`: `executed`, `failed` (the exception message), `unknownCommand`,
+  `rejected` (64 commands pending, stopping, device or configuration not ready) or `duplicate`. It
+  keeps the last 256 correlation ids and their outcomes for 10 minutes and doesn't run a repeat: a
+  repeat of a running command gets no answer of its own, one of an executed command `duplicate`, one
+  of a failed command the same failure. A command cancelled because its device was stopped or
+  reconfigured is `failed`; one cancelled by the node stopping gets no answer and its id is
+  forgotten. A command without a `correlationId` behaves as before. It adds `command-result/1` to the node's online message.
+- Added: `CorrelationCache`, `UnknownCommandException` (thrown by `CommandService` and
+  `DeviceServiceBase` when no device owns a command) and `DeviceNotReadyException` (thrown by the
+  device runtime when a device isn't running or accepting work). Both derive from
+  `InvalidOperationException`, as before.
+
 ## [1.6.0] - 2026-10-14
 
 Additive contract release ([I14](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i14-additive-contract-release-s); designs 7.1 phase 2 and 7.2 phase 1, ADR 0005).

@@ -114,6 +114,15 @@ must stay compatible with it.
   in its own `try/catch`, and receiving pauses when 1,000 messages wait. Don't await device I/O
   inside them: a configuration message must be able to cancel a stalled command. `NodeMqttService` starts command dispatch at
   admission, tracks at most 64 commands, and awaits them at shutdown.
+- A command with a `correlationId` must get exactly one `CommandResult` from `NodeMqttService`,
+  except when shutdown cancels it (then none, and the id is forgotten so the redelivery runs). A
+  redelivery never runs: it gets nothing while the first runs, then `duplicate` after `executed`, or
+  the first `failed`/`unknownCommand` again (`CorrelationCache.Complete` before publishing). Any
+  other cancellation is `failed`: never run a command against a replacement configuration.
+  Answer `rejected`, and forget the id, whenever the command didn't run and may run later
+  (`DeviceNotReadyException`, a configuration still being applied, the 64-command limit). Throw
+  `UnknownCommandException` for a command no device owns; the node advertises `command-result/1`
+  in its online message (design 7.1).
 - `NodeMqttService` publishes reports through a bounded queue (1,000, oldest dropped) and one
   publisher, in the order the devices raised them. Device events are synchronous: never handle one
   with an `async void` method; hand the work to a queue or a tracked task.

@@ -38,7 +38,7 @@ namespace RIoT2.Core.Services
             {
                 var device = _deviceService.GetDeviceByCommandId(cmd.Id);
                 if (device == null)
-                    throw new InvalidOperationException("No device handles command " + cmd.Id + ".");
+                    throw new UnknownCommandException(cmd.Id);
                 await Task.Run(() => device.ExecuteCommand(cmd.Id, cmd.Value.ToJson()), cancellationToken).ConfigureAwait(false);
             }
         }

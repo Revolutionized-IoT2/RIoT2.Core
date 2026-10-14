@@ -315,7 +315,7 @@ namespace RIoT2.Core.Abstracts
         {
             var device = GetDeviceByCommandId(commandId);
             if (device == null)
-                throw new InvalidOperationException("No device handles command " + commandId + ".");
+                throw new UnknownCommandException(commandId);
             return Runtime(device).CommandAsync(commandId, value, cancellationToken);
         }
 

@@ -65,7 +65,7 @@ namespace RIoT2.Core.Models
         /// <summary>No device on the node owns the command id.</summary>
         public const string UnknownCommand = "unknownCommand";
 
-        /// <summary>The correlation id was seen recently, so the command was not run again.</summary>
+        /// <summary>The correlation id was executed recently, so the command was not run again. (A redelivery of a command that failed gets that failure again, and one that is still running gets no extra answer.)</summary>
         public const string Duplicate = "duplicate";
     }
 }
