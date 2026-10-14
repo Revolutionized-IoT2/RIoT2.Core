@@ -6,6 +6,28 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-14
+
+Plugin configuration and conformance ([I10](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-0-1.md#i10-plugin-configuration-and-conformance-m), plans M6 and M12 steps 1–2). Additive:
+plugins built against 1.4.0 or earlier keep loading. A plugin built on `PluginBase` needs a node
+with Core 1.5.0.
+
+- Added: `PluginBase`, the base class for device plugins. `Register()` calls `AddService` and
+  `AddDevice`; every registration is a singleton. Plugins no longer call `AddControllers`, the node
+  adds their controllers.
+- Added: `PluginHostContract.SharedAssemblyPrefixes` and `IsShared`, the one list of assemblies the
+  node shares with plugins (`RIoT2.Core*` and the DI and logging abstractions).
+- Added: `DeviceTemplates.Create(device)`, the configuration template the node returns for a
+  device, moved from the node. Fixed: the default template of a refreshable device had the
+  5-field schedule `0 * * * *`, which Quartz rejects, so the device was never refreshed. It is now
+  `0 * * ? * * *` (every minute).
+- Added: `[RequiresHardware]` for devices that need hardware or a remote service.
+- Added: the `RIoT2.Core.Devices.Testing` package, released with the same version: `PluginTestHost`,
+  `PluginConformance` (the conformance test every plugin runs), `DeviceConfigurationBuilder` and
+  `TestNodeConfigurationService`.
+- Deprecated: `IDevicePlugin.Devices`. The node resolves devices from DI and never read the list;
+  it is removed in the next major release.
+
 ## [1.4.0] - 2026-10-13
 
 Async cleanup, part 1 ([I09](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-0-1.md#i09-async-cleanup-part-1-s), plan M11). Additive: plugins and services built against 1.3.0 or

@@ -27,5 +27,10 @@ jobs:
     with:
       project: RIoT2.Core.csproj
 
+  pack-testing:
+    uses: Revolutionized-IoT2/.github/.github/workflows/nuget-publish.yml@main
+    with:
+      project: Testing/RIoT2.Core.Devices.Testing.csproj
+
   secret-scan:
     uses: Revolutionized-IoT2/.github/.github/workflows/secret-scan.yml@main

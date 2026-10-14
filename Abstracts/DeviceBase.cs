@@ -113,8 +113,12 @@ namespace RIoT2.Core.Abstracts
             }
         }
 
+        // Lets RIoT2.Core.Devices.Testing record which parameter keys a device reads (PluginConformance).
+        internal Action<string> ParameterRead { get; set; }
+
         public T GetConfiguration<T>(string parameter)
         {
+            ParameterRead?.Invoke(parameter);
             if (_configuration.DeviceParameters == null || !_configuration.DeviceParameters.ContainsKey(parameter))
                 return default(T);
 

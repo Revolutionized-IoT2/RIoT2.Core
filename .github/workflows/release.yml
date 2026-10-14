@@ -1,7 +1,8 @@
 name: Release
 
-# Push a x.y.z tag to publish RIoT2.Core <tag> to GitHub Packages. Then bump the consumers
-# (release order: docs/backlog/README.md, MA2 and MA3 in the .github repository).
+# Push a x.y.z tag to publish RIoT2.Core <tag>, then RIoT2.Core.Devices.Testing <tag>, to GitHub
+# Packages. Then bump the consumers (release order: docs/backlog/README.md, MA2 and MA3 in the
+# .github repository).
 
 on:
   push:
@@ -23,5 +24,14 @@ jobs:
     uses: Revolutionized-IoT2/.github/.github/workflows/nuget-publish.yml@main
     with:
       project: RIoT2.Core.csproj
+      push: true
+    secrets: inherit
+
+  # The project reference becomes a dependency on RIoT2.Core <tag>, published by the job above.
+  package-testing:
+    needs: package
+    uses: Revolutionized-IoT2/.github/.github/workflows/nuget-publish.yml@main
+    with:
+      project: Testing/RIoT2.Core.Devices.Testing.csproj
       push: true
     secrets: inherit

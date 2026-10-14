@@ -4,9 +4,10 @@ Shared library for the [RIoT2](https://github.com/Revolutionized-IoT2) platform.
 wire models and MQTT topics, the MQTT client, the device and plugin base classes, and the node
 runtime services used by every .NET component.
 
-- Type: class library, NuGet package `RIoT2.Core` on GitHub Packages
-- Target framework: .NET Standard 2.0
-- Current package version: `1.1.0` (tag `1.0.0` failed CI and was never published)
+- Type: class library, NuGet package `RIoT2.Core` on GitHub Packages. The same tag also publishes
+  `RIoT2.Core.Devices.Testing` (from `Testing/`), the test kit for device plugins.
+- Target framework: .NET Standard 2.0 (the test kit: .NET 10)
+- Versions: [CHANGELOG.md](CHANGELOG.md) (tag `1.0.0` failed CI and was never published)
 - Root namespace: `RIoT2.Core`
 
 How Core fits into the platform: [architecture overview](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/architecture/overview.md).
@@ -19,7 +20,9 @@ How Core fits into the platform: [architecture overview](https://github.com/Revo
 | `Enums.cs` | Shared enumerations (`ValueType`, `MqttTopic`, `NodeType`, `DeviceState`, …) |
 | `Models/` | Messages (`Report`, `Command`, `NodeOnlineMessage`), `ValueModel`, configuration and template models |
 | `Models/Matter/` | Matter endpoint declarations used by `IMatterDevice` |
-| `Abstracts/` | Base classes: `DeviceBase`, `AsyncDeviceBase`, `DeviceServiceBase`, `NodeConfigurationServiceBase` |
+| `Abstracts/` | Base classes: `PluginBase`, `DeviceBase`, `AsyncDeviceBase`, `DeviceServiceBase`, `NodeConfigurationServiceBase` |
+| `Plugins/` | What node and plugins share: `PluginHostContract` (shared assemblies), `DeviceTemplates` (the template a device shows in the UI), `[RequiresHardware]` |
+| `Testing/` | The `RIoT2.Core.Devices.Testing` package: `PluginTestHost`, `PluginConformance`, `DeviceConfigurationBuilder`. Not part of the `RIoT2.Core` package. |
 | `Interfaces/` | Device, message, template and service contracts |
 | `Services/` | `NodeMqttService`, `ReportService`, `DeviceSchedulerService`, `CodeProviderService` |
 | `Utils/` | `Json`, `MqttClient`, `Web` helpers |
@@ -49,8 +52,16 @@ the UI and the firmware tests read them, so a format change fails their CI.
 
 ### Writing devices
 
-- Device plugins implement `IDevicePlugin`, and their devices derive from `AsyncDeviceBase`.
-  Override its async start, stop, command and refresh methods.
+- A plugin derives from `PluginBase` and registers its services and devices in `Register()` with
+  `AddService<TService, TImplementation>()` and `AddDevice<TDevice>()`. Everything is a singleton
+  owned by the node, which also adds the plugin's controllers. `IDevicePlugin.Devices` is obsolete
+  (Core 1.5.0): the node never read it, and it's removed in the next major release.
+- Devices derive from `AsyncDeviceBase`. Override its async start, stop, command and refresh
+  methods.
+- A device that reads parameters implements `IDeviceWithConfiguration` and declares every key it
+  reads in its template, so the UI shows them. `DeviceTemplates.Create(device)` builds what the
+  node returns, with a default template for devices that don't implement it.
+- Mark a device that needs hardware or a remote service with `[RequiresHardware("reason")]`.
 - `DeviceServiceBase` runs one serialized operation queue per device. When a device's
   configuration is replaced, its old work is cancelled and awaited before it starts again.
 - `ReconfigureChangedDevicesAsync` (Core 1.1.0) restarts only the devices whose configuration
@@ -61,6 +72,23 @@ the UI and the firmware tests read them, so a format change fails their CI.
   though, so long-running devices should move to `AsyncDeviceBase`.
 - Read device settings with `GetConfiguration<T>("key")`. Keys are case-sensitive, and the
   configuration download camel-cases them, so use camelCase keys.
+
+### Testing a plugin
+
+Reference `RIoT2.Core.Devices.Testing` from the plugin's test project and run the conformance
+test. Every plugin repository must have it ([ADR 0014](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0014-device-plugin-sdk.md)):
+
+```csharp
+[TestMethod]
+public void PluginConforms() => PluginConformance.Verify(typeof(Plugin));
+```
+
+It loads the plugin as the node does and checks that every device resolves, returns a template
+for its own class with a valid Quartz schedule, and reads only the parameters its template
+declares when initialized with that template. Devices without `[RequiresHardware]` must also
+start and stop. Pass a second argument to replace services, for example hardware transports, with
+fakes. `PluginTestHost` hosts a plugin for device tests: it captures reports and sends commands
+and refreshes the way the node does; `DeviceConfigurationBuilder` builds configurations.
 
 ## Matter device declarations
 

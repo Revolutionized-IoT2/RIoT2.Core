@@ -24,11 +24,13 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.csproj    # Core, Orchestrator and InfluxD
 dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj -c Release    # End-to-end: broker, Orchestrator, Node, Devices plugin
 ```
 
-- To check a consumer against unreleased Core, pack Core into the local feed:
+- To check a consumer against unreleased Core, pack Core (and, for plugin tests, the test kit
+  `.\RIoT2.Core\Testing\RIoT2.Core.Devices.Testing.csproj`) into the local feed:
   `dotnet pack .\RIoT2.Core\RIoT2.Core.csproj -c Release -p:PackageVersion=<next-version> -o .\.localfeed`.
   Then restore the consumer with `.localfeed` as an extra source. A local pack is not a release.
-- Every push runs `.github/workflows/ci.yml` (build, pack smoke test, secret scan). To release,
-  push a git tag `x.y.z`: `release.yml` validates, then packs and pushes to GitHub Packages
+- Every push runs `.github/workflows/ci.yml` (build, pack smoke test of both packages, secret
+  scan). To release, push a git tag `x.y.z`: `release.yml` validates, then packs and pushes
+  `RIoT2.Core` and then `RIoT2.Core.Devices.Testing` to GitHub Packages
   ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)). Core's tests live in RIoT2.Tests.
 - Shared build settings are in `Directory.Build.props` and `.editorconfig`; package versions are
   centralized in `Directory.Packages.props`. `-p:CI=true` enables CI warning treatment locally.
@@ -41,7 +43,9 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj
 | `Enums.cs` | `ValueType`, `MqttTopic`, `NodeType`, `DeviceState`, … (numeric values are wire format) |
 | `Models/` | Wire and configuration models: `Report`, `Command`, `ValueModel`, `NodeOnlineMessage`, `DeviceConfiguration`, templates |
 | `Models/Matter/` | `MatterEndpointTemplate` and its bindings (declarations only, no protocol code) |
-| `Abstracts/` | `DeviceBase`, `AsyncDeviceBase`, `DeviceServiceBase`, `NodeConfigurationServiceBase` |
+| `Abstracts/` | `PluginBase`, `DeviceBase`, `AsyncDeviceBase`, `DeviceServiceBase`, `NodeConfigurationServiceBase` |
+| `Plugins/` | `PluginHostContract` (assemblies the node shares with plugins), `DeviceTemplates` (template the node returns per device), `RequiresHardwareAttribute` |
+| `Testing/` | Separate package `RIoT2.Core.Devices.Testing` (.NET 10): `PluginTestHost`, `PluginConformance`, `DeviceConfigurationBuilder`. Excluded from the Core project by `DefaultItemExcludes` |
 | `Interfaces/` | Device, message, template and service contracts |
 | `Services/` | `NodeMqttService`, `ReportService`, `DeviceSchedulerService`, `CodeProviderService`, … |
 | `Utils/` | `Json` (Newtonsoft with a restricted binder), `MqttClient`, `Web` |
@@ -77,6 +81,11 @@ must stay compatible with it.
   (zip-slip guard) and sanitizing package file names.
 - New device code derives from `AsyncDeviceBase` and overrides the async methods. Don't add
   `async void` lifecycle methods or blocking waits.
+- Plugins derive from `PluginBase`. Keep `PluginHostContract.SharedAssemblyPrefixes` the only list
+  of assemblies the node shares with plugins; the node's `PluginLoadContext` reads it. A change to
+  `PluginConformance` changes what every plugin repository's CI accepts: say so in the CHANGELOG.
+- `DeviceBase.ParameterRead` is the internal hook the test kit uses to record parameter reads
+  (`InternalsVisibleTo RIoT2.Core.Devices.Testing`). Don't make it public.
 - The internal rule engine, its function catalog, its models and NCalc are gone. Don't bring them
   back ([ADR 0003](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0003-elsa-sole-automation-engine.md)).
 - Record every released change in `CHANGELOG.md` under the version being tagged.
@@ -108,8 +117,9 @@ must stay compatible with it.
 - `DeviceServiceBase.ReconfigureChangedDevicesAsync` compares each device's entry, serialized with
   `Json.Serialize`, with the one it was last initialized with. Keep that serialization
   deterministic: a field that changes on every download would restart the device every time.
-- The current Core package is `1.3.0`, and `<Version>` is `1.3.0`. Raise `<Version>` to the next
-  release with the first change after a release.
+- `<Version>` in `RIoT2.Core.csproj` and `Testing/RIoT2.Core.Devices.Testing.csproj` is the latest
+  CHANGELOG heading until the first change after a release; then raise both to the next release.
+  The release workflow passes the tag as the version, so a tagged build always matches the tag.
 - Services read settings only through an options type built with `SettingsReader` (plan M4); no
   service calls `Environment.GetEnvironmentVariable`. Messages keep the format
   `Invalid {component} configuration: …`, which the services' tests pin. Tag `1.0.0` failed CI and was never published: don't
