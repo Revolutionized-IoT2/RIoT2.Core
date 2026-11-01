@@ -6,6 +6,14 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.14.1] - 2026-11-01
+
+- Fixed: `RIoT2.Core.Mqtt` declares its `Microsoft.Bcl.AsyncInterfaces` dependency. A .NET 10
+  service that referenced only `Contracts` and `Mqtt` (Orchestrator 1.13.0, Elsa 1.7.0, connector
+  1.6.0) did not get it, because `System.Threading.Channels` brings it only to netstandard2.0
+  consumers, and failed at start with `FileNotFoundException`. RIoT2.Tests now checks that every
+  package declares what it references outside the shared framework. No API change.
+
 ## [1.14.0] - 2026-11-01
 
 Narrow references and generated models ([I28](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i28-narrow-references-and-generated-models-m), plan M1 steps 4–5). Additive: no

@@ -70,7 +70,8 @@ must stay compatible with it.
 - Keep the packages under `src/` on .NET Standard 2.0. A new type goes into the lowest package
   whose dependencies it needs; `Contracts` takes no dependency beyond the JSON libraries, and
   `Devices` none on MQTTnet, Quartz or Hosting (`CorePackageSplitTests` in RIoT2.Tests checks the
-  layers). Add every new public type to `Facade/TypeForwards.cs`; the same tests fail otherwise.
+  layers). Add every new public type to `Facade/TypeForwards.cs`, and declare a PackageReference for
+  every assembly a package references outside .NET 10 (1.14.1 fix); the same tests check both.
 - Public API changes must be **additive**. Every consumer compiles against a pinned package
   version, and device plugins run inside the Node's Core version.
 - Keep `PackageReference` items versionless; edit `Directory.Packages.props` for package versions.
@@ -148,8 +149,7 @@ must stay compatible with it.
 - `ValueModel` keeps JSON-looking strings and large integers as they are. Path updates
   (`a.b`, `items[0].value`) throw `ArgumentException` when the parent is missing; they don't
   create it.
-- `MqttClient.SetLastWill(topic, payload, retain)` must be called before `Start`. `StopAsync`
-  publishes the same message (the broker sends the last will only when the connection drops).
+- Call `MqttClient.SetLastWill` before `Start`; `StopAsync` publishes the same message.
 - `DeviceServiceBase.ReconfigureChangedDevicesAsync` compares each device's entry, serialized with
   `Json.Serialize`, with the one it was last initialized with. Keep that serialization
   deterministic: a field that changes on every download would restart the device every time.

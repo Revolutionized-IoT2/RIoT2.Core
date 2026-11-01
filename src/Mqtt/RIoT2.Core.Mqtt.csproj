@@ -11,6 +11,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Declared, not left to System.Threading.Channels: its .NET 10 dependency group doesn't bring
+         it, and a .NET 10 service referencing only Contracts and Mqtt failed to start without it. -->
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="MQTTnet" />
