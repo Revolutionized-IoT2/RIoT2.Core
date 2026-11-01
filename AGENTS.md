@@ -50,7 +50,7 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj
 | `Hosting/` | Separate package `RIoT2.Core.Hosting` (.NET 10, ASP.NET Core shared framework, Serilog, OpenTelemetry): `RIoT2Logging.AddRIoT2Logging()`, `StartupLoggerFactory`, `RIoT2Telemetry.AddRIoT2Telemetry()`. Excluded from the Core project by `DefaultItemExcludes` |
 | `Interfaces/` | Device, message, template and service contracts |
 | `Services/` | `NodeMqttService`, `ReportService`, `DeviceSchedulerService`, `CodeProviderService`, … |
-| `Utils/` | `Json` (Newtonsoft with a restricted binder), `MqttClient` (also the `RIoT2.Mqtt` meter), `Web`, `LogScope` |
+| `Utils/` | `Json` on System.Text.Json (`RIoT2JsonOptions`, `JsonConverters.cs`; the `[Obsolete]` Newtonsoft members and binder in `JsonNewtonsoft.cs`), `MqttClient` (also the `RIoT2.Mqtt` meter), `Web`, `LogScope` |
 | `Diagnostics/` | `MeterNames`, `NodeMetrics` (`riot2.node.*`, recorded by `NodeMqttService`, `DeviceServiceBase` and `NodeConfigurationStatus`) |
 | `Configuration/` | `SettingsReader` (reads `RIOT2_*` settings from `IConfiguration`, collects every problem), `MqttOptions`, `LoggingOptions`, `TelemetryOptions`, `ConfigurationValidationException` |
 | `contracts/golden/` | Golden files for every message, response and stored format; read by RIoT2.Tests, Elsa, UI and firmware tests |
@@ -78,16 +78,19 @@ must stay compatible with it.
   `Utils/Json.cs` that alters them must regenerate them (RIoT2.Tests with `RIOT2_UPDATE_GOLDEN=1`),
   and every consumer in [contracts/golden/README.md](contracts/golden/README.md) must still pass.
   Never commit a stored sample before replacing its credentials, tokens, IP and MAC addresses.
+- `Json` writes exactly what Newtonsoft wrote (the configuration hashes are computed over it);
+  `JsonCompatibilityTests` in RIoT2.Tests compares the two. Change `RIoT2JsonOptions` or a converter
+  only with a golden-file update and a new hash for every node configuration.
 - A new optional property on a model must not change existing output: make it nullable and give
-  it both `[JsonProperty(NullValueHandling = NullValueHandling.Ignore)]` (Newtonsoft) and
-  `[System.Text.Json.Serialization.JsonIgnore(Condition = WhenWritingNull)]` (orchestrator
-  controllers), and add it after the existing properties. Don't use `JsonProperty(Order)`: one
+  it both `[System.Text.Json.Serialization.JsonIgnore(Condition = WhenWritingNull)]` and
+  `[JsonProperty(NullValueHandling = NullValueHandling.Ignore)]` (the orchestrator still stores
+  configuration with Newtonsoft until I26), and add it after the existing properties. Don't use `JsonProperty(Order)`: one
   ordered property reorders the whole object. `GoldenAdditiveContractTests` in RIoT2.Tests checks
   both serializers.
 - New golden message files must not start with `command-` or `report-`: the InfluxDB tests and the
   UI read every file with those prefixes as a `Command` or `Report`.
 - `contractVersion` stays 1 (`Contract.Version`) until a breaking change, which needs an ADR.
-- Don't widen `RIoT2SerializationBinder` in `Utils/Json.cs`. `TypeNameHandling` is used on
+- Don't widen `RIoT2SerializationBinder` in `Utils/JsonNewtonsoft.cs`. `TypeNameHandling` is used on
   configuration posted over REST and MQTT, and the binder is what blocks deserialization gadgets.
 - `NodeConfigurationServiceBase` must keep extracting plugin zips only inside `Plugins/`
   (zip-slip guard) and sanitizing package file names.

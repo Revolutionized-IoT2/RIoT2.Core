@@ -32,7 +32,7 @@ namespace RIoT2.Core.Abstracts
                 try
                 {
                     byte[] result = System.IO.File.ReadAllBytes(manifest.FullName);
-                    return Json.DeserializeAutoTypeNameHandling<PackageManifest>(System.Text.Encoding.UTF8.GetString(result));
+                    return Json.Deserialize<PackageManifest>(System.Text.Encoding.UTF8.GetString(result));
                 }
                 catch (Exception e)
                 {

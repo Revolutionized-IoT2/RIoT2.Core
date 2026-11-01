@@ -4,41 +4,55 @@ using Newtonsoft.Json.Serialization;
 using RIoT2.Core.Models;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace RIoT2.Core.Utils
 {
     /// <summary>
-    /// Provides static helper methods for JSON serialization, deserialization, and manipulation
-    /// used across the RIoT2 solution.
+    /// JSON helpers used across RIoT2. Since Core 1.11.0 they run on System.Text.Json with
+    /// <see cref="RIoT2JsonOptions"/> and write what Newtonsoft.Json wrote (plan M2 step 3, I25). The
+    /// members marked <see cref="ObsoleteAttribute"/> still use Newtonsoft.Json.
     /// </summary>
     public static class Json
     {
         private static readonly ISerializationBinder _safeTypeNameBinder = new RIoT2SerializationBinder();
 
         /// <summary>
-        /// Converts a JSON string into a nested dictionary.
+        /// Converts a JSON object into a nested dictionary: objects become dictionaries, arrays
+        /// <c>object[]</c>, integers <see cref="long"/>, other numbers <see cref="double"/>.
         /// </summary>
-        /// <param name="json">The JSON string to convert.</param>
-        /// <returns>A dictionary representing the JSON object, with nested objects and arrays materialized.</returns>
+        /// <param name="json">A JSON object.</param>
+        /// <returns>The dictionary.</returns>
+        /// <exception cref="System.Text.Json.JsonException">The text is not a JSON object.</exception>
         public static IDictionary<string, object> ToDictionary(string json)
         {
-            return ToDictionary(JObject.Parse(json));
+            using (var document = JsonDocument.Parse(json, DocumentOptions))
+                return ObjectToDictionary(document.RootElement);
         }
 
         /// <summary>
-        /// Converts an object into a nested dictionary via its JSON representation.
+        /// Converts an object into a nested dictionary via its JSON, with the member names as declared.
         /// </summary>
         /// <param name="obj">The object to convert.</param>
-        /// <returns>A dictionary representing the object.</returns>
+        /// <returns>The dictionary.</returns>
         public static IDictionary<string, object> ToDictionary(object obj)
         {
-            if (obj is JObject)
-                return ToDictionary(obj as JObject);
-            else
-                return ToDictionary(JObject.FromObject(obj));
+            if (obj == null)
+                throw new ArgumentNullException(nameof(obj));
+#pragma warning disable CS0618 // A JObject keeps its own conversion until JObjects are gone (I26).
+            if (obj is JObject jObject)
+                return ToDictionary(jObject);
+#pragma warning restore CS0618
+            if (obj is JsonElement element)
+                return ObjectToDictionary(element);
+
+            using (var document = JsonSerializer.SerializeToDocument(obj, obj.GetType(), RIoT2JsonOptions.AsDeclared))
+                return ObjectToDictionary(document.RootElement);
         }
 
         /// <summary>
@@ -46,6 +60,7 @@ namespace RIoT2.Core.Utils
         /// </summary>
         /// <param name="jObject">The JSON object to convert.</param>
         /// <returns>A dictionary representing the JSON object, or <c>null</c> if <paramref name="jObject"/> is <c>null</c>.</returns>
+        [Obsolete("Newtonsoft.Json only. Use ToDictionary(string) or ToDictionary(object).")]
         public static IDictionary<string, object> ToDictionary(JObject jObject)
         {
             if (jObject == null)
@@ -71,6 +86,7 @@ namespace RIoT2.Core.Utils
             return result;
         }
 
+#pragma warning disable CS0618
         private static object ConvertToken(JToken token)
         {
             switch (token)
@@ -85,27 +101,30 @@ namespace RIoT2.Core.Utils
                     return token?.ToString();
             }
         }
+#pragma warning restore CS0618
 
         /// <summary>
         /// Deserializes a JSON string into an object of the specified type.
         /// </summary>
         /// <param name="json">The JSON string to deserialize.</param>
         /// <param name="toType">The target type.</param>
-        /// <returns>The deserialized object, or <c>null</c> if <paramref name="json"/> is null or empty.</returns>
+        /// <returns>The deserialized object, or <c>null</c> if <paramref name="json"/> is null or white space.</returns>
         public static object Deserialize(string json, System.Type toType)
         {
-            if (string.IsNullOrEmpty(json))
+            if (string.IsNullOrWhiteSpace(json))
                 return null;
 
-            return JsonConvert.DeserializeObject(json, toType);
+            return JsonSerializer.Deserialize(json, toType, RIoT2JsonOptions.Default);
         }
 
         /// <summary>
-        /// Deserializes a JSON string with automatic type-name handling, allowing polymorphic types to be resolved.
+        /// Deserializes a JSON string with Newtonsoft's automatic type-name handling, allowing
+        /// polymorphic types to be resolved.
         /// </summary>
         /// <typeparam name="T">The target type.</typeparam>
         /// <param name="json">The JSON string to deserialize.</param>
         /// <returns>The deserialized object, or the default of <typeparamref name="T"/> if <paramref name="json"/> is null or empty.</returns>
+        [Obsolete("Newtonsoft.Json only, for stored configuration with $type metadata (removed with typed persistence, I26). Use Deserialize<T>.")]
         public static T DeserializeAutoTypeNameHandling<T>(string json)
         {
             if (string.IsNullOrEmpty(json))
@@ -119,12 +138,13 @@ namespace RIoT2.Core.Utils
         }
 
         /// <summary>
-        /// Serializes an object to JSON using camelCase property names, optionally emitting type information and nulls.
+        /// Serializes an object with Newtonsoft to camelCase JSON, optionally emitting type information and nulls.
         /// </summary>
         /// <param name="obj">The object to serialize.</param>
         /// <param name="autoTypeNameHandling">If <c>true</c>, embeds type information to support polymorphic deserialization.</param>
         /// <param name="includeNulls">If <c>true</c>, includes properties with null values.</param>
         /// <returns>The JSON representation of the object.</returns>
+        [Obsolete("Newtonsoft.Json only, for stored configuration (removed with typed persistence, I26). Use Serialize or SerializeIgnoreNulls.")]
         public static string SerializeAutoTypeNameHandling(object obj, bool autoTypeNameHandling = false, bool includeNulls = false)
         {
             return JsonConvert.SerializeObject(obj, new JsonSerializerSettings()
@@ -137,17 +157,19 @@ namespace RIoT2.Core.Utils
         }
 
         /// <summary>
-        /// Deserializes a JSON string into an object of the specified type, honoring <see cref="ValueModel"/> conversion.
+        /// Deserializes a JSON string into an object of the specified type with
+        /// <see cref="RIoT2JsonOptions"/>.
         /// </summary>
         /// <typeparam name="T">The target type.</typeparam>
         /// <param name="json">The JSON string to deserialize.</param>
-        /// <returns>The deserialized object, or the default of <typeparamref name="T"/> if <paramref name="json"/> is null or empty.</returns>
+        /// <returns>The deserialized object, or the default of <typeparamref name="T"/> if <paramref name="json"/> is null or white space.</returns>
+        /// <exception cref="System.Text.Json.JsonException">The JSON is invalid or doesn't fit <typeparamref name="T"/>.</exception>
         public static T Deserialize<T>(string json)
         {
-            if (string.IsNullOrEmpty(json))
+            if (string.IsNullOrWhiteSpace(json))
                 return default(T);
 
-            return JsonConvert.DeserializeObject<T>(json, new ValueModelConverter());
+            return JsonSerializer.Deserialize<T>(json, RIoT2JsonOptions.Default);
         }
 
         /// <summary>
@@ -156,6 +178,7 @@ namespace RIoT2.Core.Utils
         /// <typeparam name="T">The target type.</typeparam>
         /// <param name="json">The JSON string to deserialize.</param>
         /// <returns>The deserialized object, or the default of <typeparamref name="T"/> if <paramref name="json"/> is null or empty.</returns>
+        [Obsolete("Newtonsoft.Json only. Deserialize<T> matches property names case-insensitively.")]
         public static T DeserializePascal<T>(string json)
         {
             if (string.IsNullOrEmpty(json))
@@ -173,10 +196,11 @@ namespace RIoT2.Core.Utils
         }
 
         /// <summary>
-        /// Deserializes a JSON string into a loosely typed object using PascalCase property naming.
+        /// Deserializes a JSON string into a loosely typed Newtonsoft object using PascalCase property naming.
         /// </summary>
         /// <param name="json">The JSON string to deserialize.</param>
         /// <returns>The deserialized object, the original string if deserialization fails, or <c>null</c> if <paramref name="json"/> is null or empty.</returns>
+        [Obsolete("Newtonsoft.Json only: returns JObject or JArray. Use Deserialize<T>, Deserialize<JsonElement> or ToDictionary.")]
         public static object Deserialize(string json)
         {
             if (string.IsNullOrEmpty(json))
@@ -201,7 +225,7 @@ namespace RIoT2.Core.Utils
         }
 
         /// <summary>
-        /// Serializes an object to camelCase JSON, ignoring properties with null values.
+        /// Serializes an object to camelCase JSON, leaving out null members.
         /// </summary>
         /// <param name="value">The object to serialize.</param>
         /// <returns>The JSON representation, or <c>null</c> if serialization fails.</returns>
@@ -209,12 +233,7 @@ namespace RIoT2.Core.Utils
         {
             try
             {
-                return JsonConvert.SerializeObject(value, new JsonSerializerSettings
-                {
-                    NullValueHandling = NullValueHandling.Ignore,
-                    ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                    Converters = { new ValueModelConverter() }
-                });
+                return JsonSerializer.Serialize(value, value?.GetType() ?? typeof(object), RIoT2JsonOptions.IgnoreNulls);
             }
             catch (Exception x)
             {
@@ -230,13 +249,7 @@ namespace RIoT2.Core.Utils
         /// <returns>The JSON representation of the object.</returns>
         public static string Serialize(object value)
         {
-            var settings = new JsonSerializerSettings
-            {
-                ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                Converters = { new ValueModelConverter() }
-            };
-
-            return JsonConvert.SerializeObject(value, settings);
+            return JsonSerializer.Serialize(value, value?.GetType() ?? typeof(object), RIoT2JsonOptions.Default);
         }
 
         /// <summary>
@@ -245,45 +258,39 @@ namespace RIoT2.Core.Utils
         /// <param name="json">The JSON string to modify.</param>
         /// <param name="attributeName">The name of the attribute to add.</param>
         /// <param name="attributeValue">The value of the attribute to add.</param>
-        /// <returns>The updated JSON string, or the original string if it is not valid JSON.</returns>
+        /// <returns>The updated JSON string, or the original string if it is not a JSON object or already has the attribute.</returns>
         public static string InjectAttributeToJson(string json, string attributeName, string attributeValue)
         {
             try
             {
-                JObject msg = JObject.Parse(json);
+                var msg = ParseObject(json);
                 msg.Add(attributeName, attributeValue);
-                json = Json.Serialize(msg);
+                return msg.ToJsonString(RIoT2JsonOptions.Default);
             }
-            catch
+            catch (Exception x) when (x is System.Text.Json.JsonException || x is ArgumentException || x is InvalidOperationException)
             {
-                //not valid json -> lets use original
+                // Not a JSON object: keep the original.
+                return json;
             }
-            return json;
         }
 
         /// <summary>
         /// Replaces every top-level property whose value matches the specified placeholder with the given value.
         /// </summary>
-        /// <param name="json">The JSON string to modify.</param>
+        /// <param name="json">The JSON object to modify.</param>
         /// <param name="placeholder">The placeholder value to match (case-insensitive).</param>
-        /// <param name="value">The replacement value.</param>
-        /// <returns>The updated JSON string.</returns>
+        /// <param name="value">The replacement value, typed as a boolean, number, object or text.</param>
+        /// <returns>The updated JSON, indented.</returns>
         public static string InjectValueToJson(string json, string placeholder, string value)
         {
-            JObject jObject = JObject.Parse(json);
-            var keys = new List<string>();
-            foreach (var e in jObject)
-            {
-                if (string.Equals(e.Value.ToString(), placeholder, StringComparison.OrdinalIgnoreCase))
-                    keys.Add(e.Key);
-            }
+            var jObject = ParseObject(json);
+            var keys = jObject.Where(e => string.Equals(TokenText(e.Value), placeholder, StringComparison.OrdinalIgnoreCase))
+                .Select(e => e.Key).ToList();
 
-            var jvalue = createJValue(value);
-            //update all properties
-            foreach (string k in keys)
-                jObject[k] = jvalue;
+            foreach (var key in keys)
+                jObject[key] = CreateValue(value);
 
-            return jObject.ToString();
+            return jObject.ToJsonString(RIoT2JsonOptions.Indented);
         }
 
         /// <summary>
@@ -295,124 +302,76 @@ namespace RIoT2.Core.Utils
         /// <returns>The text with placeholders replaced.</returns>
         public static string InjectDataToText(string jsonData, string text, string placeholder)
         {
-            var valueType = getDataType(jsonData, out object value);
-            if (valueType != ValueType.Entity) //if data is not object 
+            var valueType = GetDataType(jsonData, out object value);
+            if (valueType != ValueType.Entity)
                 return text.Replace(placeholder, jsonData);
 
             var injectedText = text;
-            foreach (var e in (value as JObject))
-            {
-                var objectPlaceholder = $"{placeholder}.{e.Key}";
-                injectedText = injectedText.Replace(objectPlaceholder, e.Value.ToString());
-            }
+            foreach (var e in (JsonObject)value)
+                injectedText = injectedText.Replace($"{placeholder}.{e.Key}", TokenText(e.Value));
             return injectedText;
         }
 
-        private static ValueType getDataType(string data, out object value)
-        {
-            if (bool.TryParse(data, out var boolValue))
-            {
-                value = boolValue;
-                return ValueType.Boolean;
-            }
-
-            // Prefer higher-precision numeric types over float to avoid precision loss.
-            // Integers that fit in a long stay integral; fractional/large values use decimal.
-            if (long.TryParse(data, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var longValue))
-            {
-                value = longValue;
-                return ValueType.Number;
-            }
-
-            if (decimal.TryParse(data, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var decimalValue))
-            {
-                value = decimalValue;
-                return ValueType.Number;
-            }
-
-            try
-            {
-                var jObject = JObject.Parse(data);
-                if (jObject.Count > 0)
-                {
-                    value = jObject;
-                    return ValueType.Entity;
-                }
-            }
-            catch (JsonReaderException) { }
-
-            value = data;
-            return ValueType.Text;
-        }
-
-        private static JToken createJValue(string value)
-        {
-            var valueType = getDataType(value, out object typedValue);
-            return new JValue(typedValue);
-        }
-
         /// <summary>
-        /// Gets the string value of a top-level attribute.
+        /// Gets the text of a top-level attribute: a string as it is, <c>True</c>/<c>False</c>, a
+        /// number's digits, or an object's or array's indented JSON.
         /// </summary>
         /// <param name="json">The JSON string to read.</param>
-        /// <param name="attribute">The name of the attribute to read.</param>
-        /// <returns>The attribute value, or <c>null</c> if it is missing or the JSON is invalid.</returns>
+        /// <param name="attribute">The name of the attribute to read (case-sensitive).</param>
+        /// <returns>The attribute value, or <c>null</c> if it is missing or the JSON is not an object.</returns>
         public static string GetValue(string json, string attribute)
         {
             try
             {
-                JObject msg = JObject.Parse(json);
-                if (msg.ContainsKey(attribute))
-                    return msg.GetValue(attribute).ToString();
+                var msg = ParseObject(json);
+                if (msg.TryGetPropertyValue(attribute, out var value))
+                    return TokenText(value);
             }
-            catch
+            catch (Exception x) when (x is System.Text.Json.JsonException || x is InvalidOperationException || x is ArgumentException)
             {
-                //not valid json -> return null;
+                // Not a JSON object.
             }
             return null;
         }
 
         /// <summary>
-        /// Finds a value in a JSON document using a JSONPath expression.
+        /// Finds a value in a JSON object with a JSONPath. Supported: an optional <c>$</c>, member
+        /// names (<c>a.b</c>, <c>['a b']</c>) and array indexes (<c>items[0]</c>); not wildcards,
+        /// filters, slices or recursive descent.
         /// </summary>
-        /// <param name="json">The JSON string to search.</param>
-        /// <param name="path">The JSONPath expression identifying the value.</param>
-        /// <returns>The matched value as a string, or <c>null</c> if not found.</returns>
+        /// <param name="json">The JSON object to search.</param>
+        /// <param name="path">The path.</param>
+        /// <returns>The value's text (as <see cref="GetValue"/>, but objects and arrays compact), or <c>null</c> if not found.</returns>
+        /// <exception cref="ArgumentException">The path uses unsupported JSONPath syntax.</exception>
         public static string FindValue(string json, string path)
         {
-            var token = JObject.Parse(json).SelectToken(path);
-            if (token == null)
+            if (!TrySelect(ParseObject(json), path, out var token, out _, out _) || token == null)
                 return null;
 
-            switch (token.Type)
-            {
-                case JTokenType.Null:
-                    return null;
-                case JTokenType.Object:
-                case JTokenType.Array:
-                    // Return the JSON representation instead of a null cast result.
-                    return token.ToString(Newtonsoft.Json.Formatting.None);
-                default:
-                    return token.ToString();
-            }
+            return token is JsonValue ? TokenText(token) : token.ToJsonString(RIoT2JsonOptions.Default);
         }
 
         /// <summary>
-        /// Sets a value in a JSON document at the location identified by a JSONPath expression.
+        /// Sets a value in a JSON object at the location identified by a JSONPath (see
+        /// <see cref="FindValue"/>).
         /// </summary>
-        /// <param name="json">The JSON string to modify.</param>
-        /// <param name="path">The JSONPath expression identifying the target.</param>
-        /// <param name="value">The value to set.</param>
-        /// <returns>The updated JSON string, or the original JSON if the path was not found.</returns>
+        /// <param name="json">The JSON object to modify.</param>
+        /// <param name="path">The path of an existing value.</param>
+        /// <param name="value">The value to set, serialized with its member names as declared.</param>
+        /// <returns>The updated JSON, indented, or the original JSON if the path was not found.</returns>
         public static string SetValue(string json, string path, object value)
         {
-            var root = JObject.Parse(json);
-            var token = root.SelectToken(path);
-            if (token == null)
+            var root = ParseObject(json);
+            if (!TrySelect(root, path, out _, out var parent, out var key) || parent == null)
                 return json;
 
-            token.Replace(JToken.FromObject(value));
-            return root.ToString();
+            var replacement = JsonSerializer.SerializeToNode(value, value?.GetType() ?? typeof(object), RIoT2JsonOptions.AsDeclared);
+            if (parent is JsonObject asObject)
+                asObject[(string)key] = replacement;
+            else if (parent is JsonArray asArray)
+                asArray[(int)key] = replacement;
+
+            return root.ToJsonString(RIoT2JsonOptions.Indented);
         }
 
         /// <summary>
@@ -429,17 +388,250 @@ namespace RIoT2.Core.Utils
             {
                 try
                 {
-                    var obj = JToken.Parse(str);
-                    return true;
+                    using (JsonDocument.Parse(str, DocumentOptions))
+                        return true;
                 }
-                catch
+                catch (System.Text.Json.JsonException)
                 {
                     return false;
                 }
             }
-            else
+            return false;
+        }
+
+        private static readonly JsonDocumentOptions DocumentOptions = new JsonDocumentOptions
+        {
+            AllowTrailingCommas = true,
+            CommentHandling = JsonCommentHandling.Skip
+        };
+
+        private static readonly JsonNodeOptions NodeOptions = new JsonNodeOptions { PropertyNameCaseInsensitive = false };
+
+        private static JsonObject ParseObject(string json)
+        {
+            if (json == null)
+                throw new ArgumentNullException(nameof(json));
+            using (var document = JsonDocument.Parse(json, DocumentOptions))
+                return ToNode(document.RootElement) as JsonObject
+                    ?? throw new System.Text.Json.JsonException("The JSON is not an object.");
+        }
+
+        // A JsonNode where a repeated property name keeps its last value, as Newtonsoft's JObject did.
+        private static JsonNode ToNode(JsonElement element)
+        {
+            switch (element.ValueKind)
             {
-                return false;
+                case JsonValueKind.Object:
+                    var obj = new JsonObject(NodeOptions);
+                    foreach (var property in element.EnumerateObject())
+                        obj[property.Name] = ToNode(property.Value);
+                    return obj;
+                case JsonValueKind.Array:
+                    var array = new JsonArray(NodeOptions);
+                    foreach (var item in element.EnumerateArray())
+                        array.Add(ToNode(item));
+                    return array;
+                case JsonValueKind.Null:
+                case JsonValueKind.Undefined:
+                    return null;
+                default:
+                    return JsonValue.Create(element.Clone(), NodeOptions);
+            }
+        }
+
+        private static IDictionary<string, object> ObjectToDictionary(JsonElement element)
+        {
+            if (element.ValueKind != JsonValueKind.Object)
+                throw new System.Text.Json.JsonException($"Expected a JSON object, not {element.ValueKind}.");
+            return (IDictionary<string, object>)ToClr(element);
+        }
+
+        // Newtonsoft's materialization: long for integers, double for other numbers.
+        private static object ToClr(JsonElement element)
+        {
+            switch (element.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    var dictionary = new Dictionary<string, object>();
+                    foreach (var property in element.EnumerateObject())
+                        dictionary[property.Name] = ToClr(property.Value);
+                    return dictionary;
+                case JsonValueKind.Array:
+                    return element.EnumerateArray().Select(ToClr).ToArray();
+                case JsonValueKind.String:
+                    return element.GetString();
+                case JsonValueKind.Number:
+                    return element.TryGetInt64(out var integer) ? integer : (object)element.GetDouble();
+                case JsonValueKind.True:
+                    return true;
+                case JsonValueKind.False:
+                    return false;
+                default:
+                    return null;
+            }
+        }
+
+        // The text Newtonsoft's JToken.ToString() gave a value: strings as they are, True/False,
+        // numbers as their digits, null as empty, and objects and arrays as indented JSON.
+        private static string TokenText(JsonNode node)
+        {
+            if (node == null)
+                return string.Empty;
+            if (!(node is JsonValue value))
+                return node.ToJsonString(RIoT2JsonOptions.Indented);
+
+            if (!value.TryGetValue(out JsonElement element))
+                element = JsonSerializer.SerializeToElement(value);
+            switch (element.ValueKind)
+            {
+                case JsonValueKind.String:
+                    return element.GetString();
+                case JsonValueKind.True:
+                    return bool.TrueString;
+                case JsonValueKind.False:
+                    return bool.FalseString;
+                case JsonValueKind.Number:
+                    return element.TryGetInt64(out var integer)
+                        ? integer.ToString(CultureInfo.InvariantCulture)
+                        : element.GetDouble().ToString("R", CultureInfo.InvariantCulture);
+                default:
+                    return string.Empty;
+            }
+        }
+
+        // Follows a JSONPath subset. True when the path exists (its value may be JSON null); parent and
+        // key say where it is. A JSON null before the end of the path means the path doesn't exist.
+        private static bool TrySelect(JsonObject root, string path, out JsonNode value, out JsonNode parent, out object key)
+        {
+            value = root;
+            parent = null;
+            key = null;
+            foreach (var segment in PathSegments(path))
+            {
+                var container = value;
+                bool found;
+                if (segment is string name)
+                {
+                    found = container is JsonObject obj && obj.TryGetPropertyValue(name, out value);
+                }
+                else
+                {
+                    var index = (int)segment;
+                    found = container is JsonArray array && index >= 0 && index < array.Count;
+                    value = found ? ((JsonArray)container)[index] : null;
+                }
+                if (!found)
+                {
+                    value = null;
+                    parent = null;
+                    key = null;
+                    return false;
+                }
+                parent = container;
+                key = segment;
+            }
+            return true;
+        }
+
+        private static IEnumerable<object> PathSegments(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                throw new ArgumentException("The path is empty.", nameof(path));
+
+            var segments = new List<object>();
+            var i = 0;
+            if (path[0] == '$')
+                i = 1;
+            while (i < path.Length)
+            {
+                var c = path[i];
+                if (c == '.')
+                {
+                    if (i + 1 < path.Length && path[i + 1] == '.')
+                        throw Unsupported(path);
+                    i++;
+                    continue;
+                }
+                if (c == '[')
+                {
+                    var end = path.IndexOf(']', i);
+                    if (end < 0)
+                        throw Unsupported(path);
+                    var inner = path.Substring(i + 1, end - i - 1).Trim();
+                    if (inner.Length >= 2 && (inner[0] == '\'' || inner[0] == '"') && inner[inner.Length - 1] == inner[0])
+                        segments.Add(inner.Substring(1, inner.Length - 2));
+                    else if (int.TryParse(inner, NumberStyles.None, CultureInfo.InvariantCulture, out var index))
+                        segments.Add(index);
+                    else
+                        throw Unsupported(path);
+                    i = end + 1;
+                    continue;
+                }
+                var start = i;
+                while (i < path.Length && path[i] != '.' && path[i] != '[')
+                    i++;
+                var name = path.Substring(start, i - start);
+                if (name == "*" || name.Contains("?") || name.Contains("("))
+                    throw Unsupported(path);
+                segments.Add(name);
+            }
+            return segments;
+        }
+
+        private static ArgumentException Unsupported(string path) =>
+            new ArgumentException($"Unsupported JSONPath '{path}': use member names, ['quoted names'] and [index].", nameof(path));
+
+        private static ValueType GetDataType(string data, out object value)
+        {
+            if (bool.TryParse(data, out var boolValue))
+            {
+                value = boolValue;
+                return ValueType.Boolean;
+            }
+
+            // Prefer higher-precision numeric types over float to avoid precision loss.
+            // Integers that fit in a long stay integral; fractional/large values use decimal.
+            if (long.TryParse(data, NumberStyles.Integer, CultureInfo.InvariantCulture, out var longValue))
+            {
+                value = longValue;
+                return ValueType.Number;
+            }
+
+            if (decimal.TryParse(data, NumberStyles.Float, CultureInfo.InvariantCulture, out var decimalValue))
+            {
+                value = decimalValue;
+                return ValueType.Number;
+            }
+
+            try
+            {
+                if (ParseObject(data) is JsonObject jObject && jObject.Count > 0)
+                {
+                    value = jObject;
+                    return ValueType.Entity;
+                }
+            }
+            catch (System.Text.Json.JsonException) { }
+
+            value = data;
+            return ValueType.Text;
+        }
+
+        private static JsonNode CreateValue(string value)
+        {
+            GetDataType(value, out object typedValue);
+            switch (typedValue)
+            {
+                case JsonNode node:
+                    return node;
+                case bool b:
+                    return JsonValue.Create(b);
+                case long l:
+                    return JsonValue.Create(l);
+                case decimal d:
+                    return JsonValue.Create(d);
+                default:
+                    return JsonValue.Create((string)typedValue);
             }
         }
 
@@ -705,515 +897,6 @@ namespace RIoT2.Core.Utils
                 if (!Pretty || IndentSize == 0 || level <= 0) return;
                 Sb.Append(' ', level * IndentSize);
             }
-        }
-    }
-
-    /// <summary>
-    /// Restricts Json.NET type-name handling to RIoT2-owned contract types and simple collection
-    /// shapes so stored polymorphic configuration files remain loadable without allowing arbitrary
-    /// framework types to be constructed from untrusted JSON.
-    /// </summary>
-    public sealed class RIoT2SerializationBinder : ISerializationBinder
-    {
-        private static readonly ISerializationBinder _defaultBinder = new DefaultSerializationBinder();
-
-        public Type BindToType(string assemblyName, string typeName)
-        {
-            var type = _defaultBinder.BindToType(assemblyName, typeName);
-            if (!IsAllowedType(type))
-                throw new JsonSerializationException($"Type '{type.FullName}' from assembly '{type.Assembly.GetName().Name}' is not allowed in RIoT2 JSON type metadata.");
-            return type;
-        }
-
-        public void BindToName(Type serializedType, out string assemblyName, out string typeName)
-        {
-            if (!IsAllowedType(serializedType))
-                throw new JsonSerializationException($"Type '{serializedType.FullName}' from assembly '{serializedType.Assembly.GetName().Name}' is not allowed in RIoT2 JSON type metadata.");
-            _defaultBinder.BindToName(serializedType, out assemblyName, out typeName);
-        }
-
-        private static bool IsAllowedType(Type type)
-        {
-            if (type == null)
-                return false;
-
-            if (type.IsArray)
-                return IsAllowedType(type.GetElementType());
-
-            if (type.IsPrimitive || type == typeof(string) || type == typeof(decimal))
-                return true;
-
-            if (IsRIoT2Assembly(type.Assembly.GetName().Name))
-                return true;
-
-            if (!type.IsGenericType)
-                return false;
-
-            var definition = type.GetGenericTypeDefinition();
-            if (definition != typeof(List<>) &&
-                definition != typeof(Dictionary<,>) &&
-                definition != typeof(HashSet<>))
-                return false;
-
-            return type.GetGenericArguments().All(IsAllowedType);
-        }
-
-        private static bool IsRIoT2Assembly(string assemblyName)
-        {
-            return string.Equals(assemblyName, "RIoT2.Core", StringComparison.Ordinal) ||
-                   assemblyName.StartsWith("RIoT2.", StringComparison.Ordinal);
-        }
-    }
-
-    public class ValueModelConverter : JsonConverter<ValueModel>
-    {
-        public override void WriteJson(JsonWriter writer, ValueModel value, Newtonsoft.Json.JsonSerializer serializer)
-        {
-            writer.WriteRawValue(value.ToJson());
-        }
-
-        public override ValueModel ReadJson(JsonReader reader, Type objectType, ValueModel existingValue, bool hasExistingValue, Newtonsoft.Json.JsonSerializer serializer)
-        {
-            if (reader.TokenType != JsonToken.Null)
-            {
-                JValue jValue = new JValue(reader.Value);
-                switch (reader.TokenType)
-                {
-                    case JsonToken.StartObject:
-                        return new ValueModel(JObject.Load(reader).ToString());
-                    case JsonToken.StartArray:
-                        // Arrays have no scalar reader.Value; load the full array token
-                        // and construct the ValueModel from its JSON representation.
-                        return new ValueModel(JArray.Load(reader).ToString());
-                    case JsonToken.Boolean:
-                        return new ValueModel((bool)jValue);
-                    case JsonToken.Integer:
-                        return new ValueModel(jValue.ToString(Formatting.None));
-                    case JsonToken.Float:
-                        return new ValueModel((double)jValue);
-                    case JsonToken.String:
-                    default:
-                        // reader.Value can be null for token types such as Null/StartArray/EndArray;
-                        // guard against a NullReferenceException.
-                        return reader.Value == null ? null : new ValueModel((object)reader.Value.ToString());
-                }
-            }
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// Wraps a mutable JSON object and provides convenience operations for reading, merging, and
-    /// modifying its properties.
-    /// </summary>
-    public class JsonEntity
-    {
-        private JObject _jobj;
-
-        internal JObject JsonObject { get { return _jobj; } }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="JsonEntity"/> class from a JSON string.
-        /// </summary>
-        /// <param name="json">The JSON string to parse.</param>
-        public JsonEntity(string json)
-        {
-            _jobj = JObject.Parse(json);
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="JsonEntity"/> class from an existing <see cref="JObject"/>.
-        /// </summary>
-        /// <param name="jobject">The JSON object to wrap.</param>
-        public JsonEntity(JObject jobject)
-        {
-            _jobj = jobject;
-        }
-
-        /// <summary>
-        /// Merges the properties of another <see cref="JsonEntity"/> into this one, unioning arrays
-        /// and matching property names case-insensitively.
-        /// </summary>
-        /// <param name="from">The entity whose properties are merged into this instance.</param>
-        public void Merge(JsonEntity from)
-        {
-            _jobj.Merge(from.JsonObject, new JsonMergeSettings
-            {
-                MergeArrayHandling = MergeArrayHandling.Union,
-                PropertyNameComparison = System.StringComparison.InvariantCultureIgnoreCase
-            });
-        }
-
-        /// <summary>
-        /// Returns the JSON representation of the entity.
-        /// </summary>
-        /// <returns>The JSON string.</returns>
-        public override string ToString()
-        {
-            return _jobj.ToString();
-        }
-
-        /// <summary>
-        /// Deserializes the entity into an object of the specified type.
-        /// </summary>
-        /// <typeparam name="T">The target type.</typeparam>
-        /// <returns>The deserialized object.</returns>
-        public T ToObject<T>()
-        {
-            return _jobj.ToObject<T>();
-        }
-
-        /// <summary>
-        /// Removes the specified top-level properties from the entity.
-        /// </summary>
-        /// <param name="properties">The names of the properties to remove.</param>
-        public void RemoveProperties(List<string> properties)
-        {
-            foreach (var k in properties)
-                _jobj.Remove(k);
-        }
-
-        /// <summary>
-        /// Determines whether the entity contains a top-level property with the specified name, ignoring case.
-        /// </summary>
-        /// <param name="property">The property name to look for.</param>
-        /// <returns><c>true</c> if the property exists; otherwise, <c>false</c>.</returns>
-        public bool ContainsPropertyIgnoreCase(string property)
-        {
-            foreach (var e in _jobj)
-            {
-                if (string.Equals(e.Key, property, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-            return false;
-        }
-
-        private string getPropertyIgnoreCase(string property)
-        {
-            foreach (var e in _jobj)
-            {
-                if (string.Equals(e.Key, property, StringComparison.OrdinalIgnoreCase))
-                    return e.Key;
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Gets the names of all top-level properties in the entity.
-        /// </summary>
-        /// <returns>The property names.</returns>
-        public IEnumerable<string> GetProperties()
-        {
-            foreach (var e in _jobj)
-                yield return e.Key;
-        }
-
-        /// <summary>
-        /// Finds a value using a JSONPath expression and converts it to the specified type.
-        /// </summary>
-        /// <typeparam name="T">The type to convert the value to.</typeparam>
-        /// <param name="path">The JSONPath expression identifying the value.</param>
-        /// <returns>The converted value, or the default of <typeparamref name="T"/> if not found.</returns>
-        public T FindValue<T>(string path)
-        {
-            var token = _jobj.SelectToken(path);
-            if (token != null)
-            {
-                if (token.Type == JTokenType.Object)
-                {
-                    return (token as JObject).ToObject<T>();
-                }
-                return token.Value<T>();
-            }
-            return default(T);
-        }
-
-        /// <summary>
-        /// Gets the JSON representation of a top-level property.
-        /// </summary>
-        /// <param name="property">The property name (matched case-insensitively).</param>
-        /// <returns>The property's JSON, or <c>null</c> if it is missing.</returns>
-        public string GetValueAsJson(string property)
-        {
-            try
-            {
-                var token = _jobj.GetValue(property, StringComparison.OrdinalIgnoreCase);
-                if (token == null)
-                    return null;
-
-                return token.ToJson();
-            }
-            catch
-            {
-                //not valid json -> return null;
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Gets the value of a top-level property, converted to its natural CLR type.
-        /// </summary>
-        /// <param name="property">The property name (matched case-insensitively).</param>
-        /// <returns>The property value as a <see cref="bool"/>, <see cref="decimal"/>, <see cref="DateTime"/>, <see cref="int"/>, or string; or <c>null</c> if missing.</returns>
-        public object GetValue(string property)
-        {
-            try
-            {
-                var token = _jobj.GetValue(property, StringComparison.OrdinalIgnoreCase);
-                if (token == null)
-                    return null;
-
-                switch (token.Type)
-                {
-                    case JTokenType.Boolean: return token.Value<bool>();
-                    case JTokenType.Float: return token.Value<decimal>();
-                    case JTokenType.Date: return token.Value<DateTime>();
-                    case JTokenType.Integer: return token.Value<int>();
-                    default: return token.ToString();
-                }
-            }
-            catch
-            {
-                //not valid json -> return null;
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Sets a value at the location identified by a JSONPath expression, creating intermediate
-        /// nodes when the path does not yet exist.
-        /// </summary>
-        /// <param name="path">The JSONPath expression identifying the target.</param>
-        /// <param name="value">The value to set.</param>
-        public void SetValue(string path, object value)
-        {
-            try
-            {
-                var j = _jobj.SelectToken(path);
-                if (j != null)
-                {
-                    j.Replace(JToken.FromObject(value));
-                }
-                else
-                {
-                    updateOrAddInPath(path, value);
-                }
-            }
-            catch
-            {
-                //not valid json -> return null;
-            }
-        }
-
-        /// <summary>
-        /// Removes the specified top-level property, if present.
-        /// </summary>
-        /// <param name="property">The name of the property to remove.</param>
-        public void Remove(string property)
-        {
-            if (_jobj.ContainsKey(property))
-            {
-                _jobj.Remove(property);
-            }
-        }
-
-        /// <summary>
-        /// Recursively replaces every value that matches the specified placeholder with the given value.
-        /// </summary>
-        /// <param name="placeholder">The placeholder value to match (case-insensitive).</param>
-        /// <param name="value">The replacement value.</param>
-        public void ReplacePlaceHolderWithValue(string placeholder, object value)
-        {
-            traverseJObject(placeholder, value, _jobj);
-        }
-
-        private void updateOrAddInPath(string path, object valueToAdd)
-        {
-            var pathParts = path.Split('.');
-            JToken node = _jobj;
-            for (int i = 0; i < pathParts.Length; i++)
-            {
-                var pathPart = pathParts[i];
-                var partNode = node.SelectToken(pathPart);
-
-                // Only JObject nodes can have properties added to them.
-                if (!(node is JObject objectNode))
-                    return;
-
-                if (partNode == null && i < pathParts.Length - 1)
-                {
-                    objectNode.Add(pathPart, new JObject());
-                    partNode = node.SelectToken(pathPart);
-                }
-                else if (partNode == null && i == pathParts.Length - 1)
-                {
-                    objectNode.Add(pathPart, JToken.FromObject(valueToAdd));
-                    partNode = node.SelectToken(pathPart);
-                }
-                node = partNode;
-            }
-        }
-        private void traverseJObject(string placeholder, object value, JObject parent)
-        {
-            foreach (var e in parent)
-            {
-                if (e.Value is JArray arr)
-                {
-                    traverseJArray(placeholder, value, arr);
-                }
-                else if (e.Value is JObject childObj)
-                {
-                    traverseJObject(placeholder, value, childObj);
-                }
-            }
-
-            //Apply top-level replacements after enumeration to avoid modifying the collection while iterating
-            var keysToReplace = new List<string>();
-            foreach (var e in parent)
-            {
-                if (string.Equals(e.Value.ToString(), placeholder, StringComparison.OrdinalIgnoreCase))
-                    keysToReplace.Add(e.Key);
-            }
-            foreach (var key in keysToReplace)
-                parent[key] = new JValue(value);
-        }
-
-        private void traverseJArray(string placeholder, object value, JArray array)
-        {
-            for (int i = 0; i < array.Count; i++)
-            {
-                var element = array[i];
-                if (element is JObject childObj)
-                {
-                    traverseJObject(placeholder, value, childObj);
-                }
-                else if (element is JArray childArr)
-                {
-                    traverseJArray(placeholder, value, childArr);
-                }
-                else if (string.Equals(element.ToString(), placeholder, StringComparison.OrdinalIgnoreCase))
-                {
-                    array[i] = new JValue(value);
-                }
-            }
-        }
-    }
-
-    public class PascalCaseNamingStrategy : NamingStrategy
-    {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PascalCaseNamingStrategy"/> class.
-        /// </summary>
-        /// <param name="processDictionaryKeys">
-        /// A flag indicating whether dictionary keys should be processed.
-        /// </param>
-        /// <param name="overrideSpecifiedNames">
-        /// A flag indicating whether explicitly specified property names should be processed,
-        /// e.g. a property name customized with a <see cref="JsonPropertyAttribute"/>.
-        /// </param>
-        public PascalCaseNamingStrategy(bool processDictionaryKeys, bool overrideSpecifiedNames)
-        {
-            ProcessDictionaryKeys = processDictionaryKeys;
-            OverrideSpecifiedNames = overrideSpecifiedNames;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PascalCaseNamingStrategy"/> class.
-        /// </summary>
-        /// <param name="processDictionaryKeys">
-        /// A flag indicating whether dictionary keys should be processed.
-        /// </param>
-        /// <param name="overrideSpecifiedNames">
-        /// A flag indicating whether explicitly specified property names should be processed,
-        /// e.g. a property name customized with a <see cref="JsonPropertyAttribute"/>.
-        /// </param>
-        /// <param name="processExtensionDataNames">
-        /// A flag indicating whether extension data names should be processed.
-        /// </param>
-        public PascalCaseNamingStrategy(bool processDictionaryKeys, bool overrideSpecifiedNames, bool processExtensionDataNames)
-            : this(processDictionaryKeys, overrideSpecifiedNames)
-        {
-            ProcessExtensionDataNames = processExtensionDataNames;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PascalCaseNamingStrategy"/> class.
-        /// </summary>
-        public PascalCaseNamingStrategy()
-        {
-        }
-
-        /// <summary>
-        /// Resolves the specified property name.
-        /// </summary>
-        /// <param name="name">The property name to resolve.</param>
-        /// <returns>The resolved property name.</returns>
-        protected override string ResolvePropertyName(string name)
-        {
-            return ToPascalCase(name);
-        }
-
-        private static string ToPascalCase(string s)
-        {
-            if (string.IsNullOrEmpty(s) || !char.IsUpper(s[0]))
-            {
-                return s;
-            }
-
-            char[] chars = s.ToCharArray();
-
-            for (int i = 0; i < chars.Length; i++)
-            {
-                if (i == 0 && !char.IsUpper(chars[i]))
-                {
-                    chars[i] = ToUpper(chars[i]);
-                    break;
-                }
-                else if (i == 0)
-                {
-                    break;
-                }
-
-                if (i == 1 && !char.IsUpper(chars[i]))
-                {
-                    break;
-                }
-
-                bool hasNext = (i + 1 < chars.Length);
-                if (i > 0 && hasNext && !char.IsUpper(chars[i + 1]))
-                {
-                    if (char.IsSeparator(chars[i + 1]))
-                    {
-                        chars[i] = ToLower(chars[i]);
-                    }
-
-                    break;
-                }
-
-                chars[i] = ToLower(chars[i]);
-            }
-
-            return new string(chars);
-        }
-
-        private static char ToLower(char c)
-        {
-            #if HAVE_CHAR_TO_LOWER_WITH_CULTURE
-            c = char.ToLower(c, CultureInfo.InvariantCulture);
-            #else
-            c = char.ToLowerInvariant(c);
-            #endif
-            return c;
-        }
-
-        private static char ToUpper(char c)
-        {
-            #if HAVE_CHAR_TO_UPPER_WITH_CULTURE
-            c = char.ToUpper(c, CultureInfo.InvariantCulture);
-            #else
-            c = char.ToUpperInvariant(c);
-            #endif
-            return c;
         }
     }
 }

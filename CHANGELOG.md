@@ -6,9 +6,42 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-11-01
+
+System.Text.Json on the wire ([I25](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i25-systemtextjson-on-the-wire-m), plan M2 steps 2–3,
+[ADR 0015](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0015-system-text-json-typed-persistence.md)).
+The JSON is unchanged: every golden file and configuration hash is the same, and a test compares
+the output with the old Newtonsoft settings byte for byte.
+
+- Changed: `Json.Serialize`, `SerializeIgnoreNulls`, `Deserialize<T>`, `Deserialize(string, Type)`,
+  `ToDictionary(string)`, `ToDictionary(object)`, `GetValue`, `FindValue`, `SetValue`, `IsJson`
+  and the `Inject*` helpers (and the `ToJson`, `ToObj`, `ToDict`, `FindValue` and `SetValue`
+  extensions) run on System.Text.Json with the new `RIoT2JsonOptions`. They write what Newtonsoft
+  wrote (`21.0`, `1.0` for a decimal, camelCase dictionary keys, enums as numbers, interface
+  members with their runtime type) and read what it read (case-insensitive names, numbers in
+  strings and the reverse, enum names, non-ISO dates, `""` as null for a nullable member, the last
+  of duplicate property names). Newtonsoft's `[JsonProperty]` names (camelCased), null handling and
+  non-public `[JsonProperty]` members, its member order (fields first) and `[JsonIgnore]` still
+  apply.
+- Changed, for plugins: an `object` member read from JSON holds a `JsonElement` for an object or
+  array (it was a `JObject`/`JArray`; both give their JSON from `ToString()`); integers are still
+  `long`, other numbers `double`. Invalid JSON throws `System.Text.Json.JsonException`. `FindValue`
+  and `SetValue` support `$`, member names, `['quoted names']` and `[index]`, not wildcards,
+  filters or recursive descent. A character outside the Basic Multilingual Plane (an emoji) is
+  written as a `\u` escape pair.
+- Added: `RIoT2JsonOptions` (`Default`, `IgnoreNulls`, `Create`) and its converters,
+  `ValueModelJsonConverter` among them.
+- Deprecated (`[Obsolete]`, still Newtonsoft): `DeserializeAutoTypeNameHandling`,
+  `SerializeAutoTypeNameHandling` (stored configuration, until typed persistence in I26),
+  `DeserializePascal`, `Deserialize(string)`, `ToDictionary(JObject)` and the Newtonsoft
+  `ValueModelConverter`. `SerializeAutoTypeNameHandling(obj)` without type names is
+  `SerializeIgnoreNulls(obj)`. The Newtonsoft classes (`ValueModelConverter`, `JsonEntity`,
+  `RIoT2SerializationBinder`) move to `Utils/JsonNewtonsoft.cs`.
+- Changed: `ConfigurationBase` reads the package manifest and `DeviceServiceBase` compares device
+  configurations with System.Text.Json.
 - Added: golden files `contracts/golden/http/templates-report.json`, `templates-command.json` and
   `templates-variable.json`: the orchestrator's template listings ([I23](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i23-orchestrator-restructure-m)).
-  Contract files only; the packages are unchanged.
+  Contract files.
 
 ## [1.10.0] - 2026-11-01
 

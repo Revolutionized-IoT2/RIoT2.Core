@@ -165,7 +165,8 @@ endpoints. `RIoT2.Core` itself contains no Matter protocol code.
 
 ## Dependencies
 
-- `Newtonsoft.Json` (wire JSON, with a restricted type binder) and `System.Text.Json` 10.0.12
+- `System.Text.Json` 10.0.12 (wire JSON, `RIoT2JsonOptions`) and `Newtonsoft.Json` (only the `[Obsolete]`
+  stored-configuration helpers, with a restricted type binder, until I26; removed in I45)
 - `MQTTnet` and `MQTTnet.Extensions.ManagedClient`
 - `Microsoft.Extensions.Hosting`, `Microsoft.Extensions.Logging` and `Microsoft.Bcl.AsyncInterfaces` 10.0.12
 - `Quartz` (device refresh scheduling)
