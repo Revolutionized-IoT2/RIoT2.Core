@@ -13,6 +13,9 @@
     <PackageVersion Include="MQTTnet.Extensions.ManagedClient" Version="4.3.7.1207" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageVersion Include="Quartz" Version="3.13.1" />
+    <!-- RIoT2.Core.Hosting only (net10.0); the versions the services used before (template). -->
+    <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="System.Text.Json" Version="10.0.12" />
     <PackageVersion Include="System.Threading.Channels" Version="10.0.12" />
   </ItemGroup>

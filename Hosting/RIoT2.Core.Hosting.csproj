@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Released from the RIoT2.Core tag with the same version; the project reference becomes a
+         package dependency on that RIoT2.Core version. -->
+    <Version>1.9.0</Version>
+    <DebugType>embedded</DebugType>
+    <Description>Hosting for the RIoT2 services: AddRIoT2Logging() (Serilog, design 7.4).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RIoT2.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Sinks.File" />
+  </ItemGroup>
+
+</Project>

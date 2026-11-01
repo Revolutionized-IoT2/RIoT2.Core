@@ -168,6 +168,8 @@ namespace RIoT2.Core.Services
         {
             var command = TryReadCommand(message);
             var correlationId = string.IsNullOrEmpty(command?.CorrelationId) ? null : command.CorrelationId;
+            // The execution started below inherits the scope, so the device's own log lines carry the id.
+            using (_logger.BeginIdScope(LogScope.CorrelationId, correlationId))
             lock (_commandGate)
             {
                 _commands.RemoveAll(task => task.IsCompleted);

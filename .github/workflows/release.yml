@@ -1,6 +1,7 @@
 name: Release
 
-# Push a x.y.z tag to publish RIoT2.Core <tag>, then RIoT2.Core.Devices.Testing <tag>, to GitHub
+# Push a x.y.z tag to publish RIoT2.Core <tag>, then RIoT2.Core.Devices.Testing and RIoT2.Core.Hosting
+# <tag>, to GitHub
 # Packages. Then bump the consumers (release order: docs/backlog/README.md, MA2 and MA3 in the
 # .github repository).
 
@@ -33,5 +34,14 @@ jobs:
     uses: Revolutionized-IoT2/.github/.github/workflows/nuget-publish.yml@main
     with:
       project: Testing/RIoT2.Core.Devices.Testing.csproj
+      push: true
+    secrets: inherit
+
+  # The services' logging (design 7.4); depends on RIoT2.Core <tag> too.
+  package-hosting:
+    needs: package
+    uses: Revolutionized-IoT2/.github/.github/workflows/nuget-publish.yml@main
+    with:
+      project: Hosting/RIoT2.Core.Hosting.csproj
       push: true
     secrets: inherit

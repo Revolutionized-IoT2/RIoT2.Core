@@ -6,6 +6,21 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-11-01
+
+Consistent logging ([I20](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i20-consistent-logging-s), design 7.4 phase 2). Additive.
+
+- Added: the package `RIoT2.Core.Hosting` (from `Hosting/`, .NET 10, released from the same tag)
+  with `AddRIoT2Logging()`: Serilog to the console and `Logs/RIoT2.log` (rolled daily and at 50 MB,
+  14 files kept), readable text or compact JSON, `Microsoft.*` and `System.*` from `Warning`, and
+  the log scope ids on every line. It returns a logger factory for start-up code whose loggers
+  forward to the host's factory once it exists. `RIoT2.Core` itself has no Serilog dependency.
+- Added: `Configuration/LoggingOptions` (`RIOT2_LOG_FORMAT` `text`/`json`, `RIOT2_LOG_LEVEL`),
+  read by every service's options type, and `Utils/LogScope` (`CorrelationId`, `MessageId`,
+  `BeginIdScope`).
+- Changed: `NodeMqttService` runs each command in a `CorrelationId` scope, so the device's own log
+  lines carry the id.
+
 ## [1.8.0] - 2026-10-14
 
 Desired-state configuration on the node ([I16](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i16-desired-state-configuration-for-net-nodes-m), design 7.2 phases 2–3). Additive.

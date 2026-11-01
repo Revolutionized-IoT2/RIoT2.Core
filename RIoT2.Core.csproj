@@ -4,11 +4,11 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <!-- The next release. Keep it at or above the version consumers pin: RIoT2.Tests references this
          project and the Orchestrator package at once, and NuGet picks the higher version. -->
-    <Version>1.8.0</Version>
+    <Version>1.9.0</Version>
     <!-- GitHub Packages has no symbol server: ship the PDB inside the DLL for SourceLink. -->
     <DebugType>embedded</DebugType>
-    <!-- Testing/ is the separate RIoT2.Core.Devices.Testing package. -->
-    <DefaultItemExcludes>$(DefaultItemExcludes);Testing/**</DefaultItemExcludes>
+    <!-- Testing/ and Hosting/ are the separate RIoT2.Core.Devices.Testing and RIoT2.Core.Hosting packages. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);Testing/**;Hosting/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>

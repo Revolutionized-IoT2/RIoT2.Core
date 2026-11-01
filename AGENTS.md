@@ -25,12 +25,13 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj
 ```
 
 - To check a consumer against unreleased Core, pack Core (and, for plugin tests, the test kit
-  `.\RIoT2.Core\Testing\RIoT2.Core.Devices.Testing.csproj`) into the local feed:
+  `.\RIoT2.Core\Testing\RIoT2.Core.Devices.Testing.csproj`; for the services,
+  `.\RIoT2.Core\Hosting\RIoT2.Core.Hosting.csproj`) into the local feed:
   `dotnet pack .\RIoT2.Core\RIoT2.Core.csproj -c Release -p:PackageVersion=<next-version> -o .\.localfeed`.
   Then restore the consumer with `.localfeed` as an extra source. A local pack is not a release.
-- Every push runs `.github/workflows/ci.yml` (build, pack smoke test of both packages, secret
+- Every push runs `.github/workflows/ci.yml` (build, pack smoke test of the three packages, secret
   scan). To release, push a git tag `x.y.z`: `release.yml` validates, then packs and pushes
-  `RIoT2.Core` and then `RIoT2.Core.Devices.Testing` to GitHub Packages
+  `RIoT2.Core` and then `RIoT2.Core.Devices.Testing` and `RIoT2.Core.Hosting` to GitHub Packages
   ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)). Core's tests live in RIoT2.Tests.
 - Shared build settings are in `Directory.Build.props` and `.editorconfig`; package versions are
   centralized in `Directory.Packages.props`. `-p:CI=true` enables CI warning treatment locally.
@@ -46,10 +47,11 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj
 | `Abstracts/` | `PluginBase`, `DeviceBase`, `AsyncDeviceBase`, `DeviceServiceBase`, `NodeConfigurationServiceBase` |
 | `Plugins/` | `PluginHostContract` (assemblies the node shares with plugins), `DeviceTemplates` (template the node returns per device), `RequiresHardwareAttribute` |
 | `Testing/` | Separate package `RIoT2.Core.Devices.Testing` (.NET 10): `PluginTestHost`, `PluginConformance`, `DeviceConfigurationBuilder`. Excluded from the Core project by `DefaultItemExcludes` |
+| `Hosting/` | Separate package `RIoT2.Core.Hosting` (.NET 10, ASP.NET Core shared framework, Serilog): `RIoT2Logging.AddRIoT2Logging()`, `StartupLoggerFactory`. Excluded from the Core project by `DefaultItemExcludes` |
 | `Interfaces/` | Device, message, template and service contracts |
 | `Services/` | `NodeMqttService`, `ReportService`, `DeviceSchedulerService`, `CodeProviderService`, … |
-| `Utils/` | `Json` (Newtonsoft with a restricted binder), `MqttClient`, `Web` |
-| `Configuration/` | `SettingsReader` (reads `RIOT2_*` settings from `IConfiguration`, collects every problem), `MqttOptions`, `ConfigurationValidationException` |
+| `Utils/` | `Json` (Newtonsoft with a restricted binder), `MqttClient`, `Web`, `LogScope` |
+| `Configuration/` | `SettingsReader` (reads `RIOT2_*` settings from `IConfiguration`, collects every problem), `MqttOptions`, `LoggingOptions`, `ConfigurationValidationException` |
 | `contracts/golden/` | Golden files for every message, response and stored format; read by RIoT2.Tests, Elsa, UI and firmware tests |
 
 ## Contracts implemented here
@@ -144,9 +146,13 @@ must stay compatible with it.
 - `DeviceServiceBase.ReconfigureChangedDevicesAsync` compares each device's entry, serialized with
   `Json.Serialize`, with the one it was last initialized with. Keep that serialization
   deterministic: a field that changes on every download would restart the device every time.
-- `<Version>` in `RIoT2.Core.csproj` and `Testing/RIoT2.Core.Devices.Testing.csproj` is the latest
-  CHANGELOG heading until the first change after a release; then raise both to the next release.
+- `<Version>` in `RIoT2.Core.csproj`, `Testing/RIoT2.Core.Devices.Testing.csproj` and
+  `Hosting/RIoT2.Core.Hosting.csproj` is the latest
+  CHANGELOG heading until the first change after a release; then raise all three to the next release.
   The release workflow passes the tag as the version, so a tagged build always matches the tag.
+- Keep Serilog and the ASP.NET Core framework out of `RIoT2.Core`: device plugins reference it.
+  Service-only hosting code goes in `Hosting/`. Use `LogScope` names for ids in log scopes, so the
+  text format shows them.
 - Services read settings only through an options type built with `SettingsReader` (plan M4); no
   service calls `Environment.GetEnvironmentVariable`. Messages keep the format
   `Invalid {component} configuration: …`, which the services' tests pin. Tag `1.0.0` failed CI and was never published: don't
