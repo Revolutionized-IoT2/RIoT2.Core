@@ -6,6 +6,10 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+- Added: golden files `contracts/golden/http/templates-report.json`, `templates-command.json` and
+  `templates-variable.json`: the orchestrator's template listings ([I23](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i23-orchestrator-restructure-m)).
+  Contract files only; the packages are unchanged.
+
 ## [1.10.0] - 2026-11-01
 
 Metrics ([I22](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i22-metrics-m), design 7.4 phase 4). Additive.

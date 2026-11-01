@@ -1,0 +1,64 @@
+[
+  {
+    "nodeId": "golden-orchestrator",
+    "node": "Orchestrator",
+    "deviceId": "",
+    "device": "Variable",
+    "id": "185de74f-91b3-4a72-ba9c-fda1db7e5054",
+    "name": "arr test",
+    "address": "",
+    "model": [
+      "tt",
+      "yy",
+      "zz"
+    ],
+    "type": 4
+  },
+  {
+    "nodeId": "golden-orchestrator",
+    "node": "Orchestrator",
+    "deviceId": "",
+    "device": "Variable",
+    "id": "26fa8ae7-3bae-4f1c-b613-f91d85db1f9d",
+    "name": "boolean-2",
+    "address": "",
+    "model": false,
+    "type": 0
+  },
+  {
+    "nodeId": "golden-orchestrator",
+    "node": "Orchestrator",
+    "deviceId": "",
+    "device": "Variable",
+    "id": "9a1b41e9-0524-4e6b-a17e-3670cffb77ab",
+    "name": "num test 2",
+    "address": "",
+    "model": 66.9,
+    "type": 2
+  },
+  {
+    "nodeId": "golden-orchestrator",
+    "node": "Orchestrator",
+    "deviceId": "",
+    "device": "Variable",
+    "id": "b94b7833-df6b-458d-8af7-9f183833f481",
+    "name": "text test",
+    "address": "",
+    "model": "Test value ",
+    "type": 1
+  },
+  {
+    "nodeId": "golden-orchestrator",
+    "node": "Orchestrator",
+    "deviceId": "",
+    "device": "Variable",
+    "id": "ba0fa3d9-e089-438e-b06e-a62de71d254d",
+    "name": "entity test",
+    "address": "",
+    "model": {
+      "test": 123,
+      "qwerty": "jou"
+    },
+    "type": 3
+  }
+]

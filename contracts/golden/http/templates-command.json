@@ -1,0 +1,188 @@
+[
+  {
+    "nodeId": "083AF2681900",
+    "node": "M5Core2 Test Node",
+    "deviceId": "view-alert",
+    "device": "Doorbell Alert",
+    "id": "doorbell-alert-cmd",
+    "name": "Doorbell Alert",
+    "address": "doorbell-1",
+    "model": {
+      "title": "Doorbell",
+      "message": "Someone is at the front door",
+      "subHeader": "tap to acknowledge",
+      "soundEnabled": true
+    },
+    "type": 3
+  },
+  {
+    "nodeId": "083AF2681900",
+    "node": "M5Core2 Test Node",
+    "deviceId": "view-buttons",
+    "device": "Living Room Lights",
+    "id": "btn-bedroom-cmd",
+    "name": "Bedroom",
+    "address": "btn-3",
+    "model": false,
+    "type": 0
+  },
+  {
+    "nodeId": "083AF2681900",
+    "node": "M5Core2 Test Node",
+    "deviceId": "view-buttons",
+    "device": "Living Room Lights",
+    "id": "btn-kitchen-cmd",
+    "name": "Kitchen",
+    "address": "btn-2",
+    "model": false,
+    "type": 0
+  },
+  {
+    "nodeId": "083AF2681900",
+    "node": "M5Core2 Test Node",
+    "deviceId": "view-buttons",
+    "device": "Living Room Lights",
+    "id": "btn-livingroom-cmd",
+    "name": "Living Room",
+    "address": "btn-1",
+    "model": false,
+    "type": 0
+  },
+  {
+    "nodeId": "083AF2681900",
+    "node": "M5Core2 Test Node",
+    "deviceId": "view-colorscheme",
+    "device": "Office Lamp Color",
+    "id": "lamp-color-cmd",
+    "name": "Office Lamp Color",
+    "address": "lamp-1",
+    "model": "#000000",
+    "type": 1
+  },
+  {
+    "nodeId": "083AF2681900",
+    "node": "M5Core2 Test Node",
+    "deviceId": "view-energygauge",
+    "device": "Whole-Home Power",
+    "id": "power-reading-cmd",
+    "name": "Whole-Home Power",
+    "address": "power-1",
+    "model": 0,
+    "type": 2
+  },
+  {
+    "nodeId": "083AF2681900",
+    "node": "M5Core2 Test Node",
+    "deviceId": "view-notification",
+    "device": "Status Notice",
+    "id": "status-notice-cmd",
+    "name": "Status Notice",
+    "address": "notice-1",
+    "model": {
+      "title": "Washing machine",
+      "message": "Cycle complete",
+      "subHeader": "read on-device, auto-dismisses",
+      "soundEnabled": true
+    },
+    "type": 3
+  },
+  {
+    "nodeId": "083AF2681900",
+    "node": "M5Core2 Test Node",
+    "deviceId": "view-percentage",
+    "device": "Bedroom Dimmer",
+    "id": "dimmer-cmd",
+    "name": "Bedroom Dimmer",
+    "address": "dimmer-1",
+    "model": 0,
+    "type": 2
+  },
+  {
+    "nodeId": "083AF2681900",
+    "node": "M5Core2 Test Node",
+    "deviceId": "view-slider",
+    "device": "Fan Speed",
+    "id": "fan-speed-cmd",
+    "name": "Fan Speed",
+    "address": "fan-1",
+    "model": 0,
+    "type": 2
+  },
+  {
+    "nodeId": "083AF2681900",
+    "node": "M5Core2 Test Node",
+    "deviceId": "view-timer",
+    "device": "Kitchen Timer",
+    "id": "kitchen-timer-cmd",
+    "name": "Kitchen Timer",
+    "address": "timer-1",
+    "model": false,
+    "type": 2
+  },
+  {
+    "nodeId": "083AF2681900",
+    "node": "M5Core2 Test Node",
+    "deviceId": "view-toggle",
+    "device": "Porch Relay",
+    "id": "porch-relay-cmd",
+    "name": "Porch Relay",
+    "address": "relay-1",
+    "model": false,
+    "type": 0
+  },
+  {
+    "nodeId": "083AF2681900",
+    "node": "M5Core2 Test Node",
+    "deviceId": "view-values",
+    "device": "Weather Station",
+    "id": "humidity-cmd",
+    "name": "Humidity",
+    "address": "humidity-1",
+    "model": "99",
+    "type": 2
+  },
+  {
+    "nodeId": "083AF2681900",
+    "node": "M5Core2 Test Node",
+    "deviceId": "view-values",
+    "device": "Weather Station",
+    "id": "temperature-cmd",
+    "name": "Temperature",
+    "address": "temp-1",
+    "model": "21",
+    "type": 2
+  },
+  {
+    "nodeId": "F811B5A0-E978-45BB-ADD3-584655DF21BF",
+    "node": "raspi",
+    "deviceId": "c31e5440-088f-4bed-bd72-b27671883da6",
+    "device": "Fibaro Smart Implant FGBS-222",
+    "id": "13260fb6-ef2c-4848-a38e-ae63aeb39952",
+    "name": "Switch output 1",
+    "address": "out1",
+    "model": false,
+    "type": 0
+  },
+  {
+    "nodeId": "F811B5A0-E978-45BB-ADD3-584655DF21BF",
+    "node": "raspi",
+    "deviceId": "c31e5440-088f-4bed-bd72-b27671883da6",
+    "device": "Fibaro Smart Implant FGBS-222",
+    "id": "be72abf0-6fbb-4a59-80ce-1221d9b9db7f",
+    "name": "Switch output 2",
+    "address": "out2",
+    "model": false,
+    "type": 0
+  },
+  {
+    "nodeId": "F811B5A0-E978-45BB-ADD3-584655DF21BF",
+    "node": "raspi",
+    "deviceId": "dd9ab4fc-7c7b-42f6-91f6-f1f5e784c0fe",
+    "device": "Fibaro Wall Plug - FGWPF-102",
+    "id": "6d6de805-c56a-47be-8520-7b40cc519996",
+    "name": "Switch",
+    "address": "state",
+    "model": false,
+    "type": 0
+  }
+]
