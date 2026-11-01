@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>RIoT2.Core</RootNamespace>
+    <Description>RIoT2 node runtime: NodeMqttService, the device service and scheduler, configuration and command handling.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Devices\RIoT2.Core.Devices.csproj" />
+    <ProjectReference Include="..\Mqtt\RIoT2.Core.Mqtt.csproj" />
+    <ProjectReference Include="..\Http\RIoT2.Core.Http.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Quartz" />
+    <PackageReference Include="System.Threading.Channels" />
+  </ItemGroup>
+
+</Project>

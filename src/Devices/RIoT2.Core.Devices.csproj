@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>RIoT2.Core</RootNamespace>
+    <Description>RIoT2 device plugin SDK: DeviceBase, AsyncDeviceBase, PluginBase, the device interfaces and the plugin host contract.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Contracts\RIoT2.Core.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- PluginConformance reads DeviceBase.ParameterRead. -->
+    <InternalsVisibleTo Include="RIoT2.Core.Devices.Testing" />
+  </ItemGroup>
+
+</Project>

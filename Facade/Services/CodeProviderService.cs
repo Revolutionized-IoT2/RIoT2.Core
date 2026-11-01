@@ -10,6 +10,7 @@ namespace RIoT2.Core.Services
     /// In-memory <see cref="ICodeProviderService"/> implementation that issues and validates
     /// time- and usage-limited codes.
     /// </summary>
+    [Obsolete("Not used by any RIoT2 repository. Removed in Core 2.0 (I45).")]
     public class CodeProviderService : ICodeProviderService
     {
         private readonly List<DeviceCode> _codes;

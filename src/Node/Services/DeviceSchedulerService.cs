@@ -175,7 +175,7 @@ namespace RIoT2.Core.Services
                 if (!(device is IRefreshableReportDevice))
                     continue;
 
-                var deviceTrigger = device.Configuration?.GetDeviceRefreshSchedule();
+                var deviceTrigger = RefreshTrigger(device.Configuration);
                 if (deviceTrigger != null)
                 {
                     _logger.LogInformation($"Adding scheduler trigger for device {device.Configuration.Name} with schedule {deviceTrigger.CronSchedule}");
@@ -270,6 +270,21 @@ namespace RIoT2.Core.Services
             {
                 _logger.LogError(x, $"Could not create scheduler trigger");
             }
+        }
+
+        // The device's refresh trigger, when its RefreshSchedule is a valid Quartz cron expression.
+        internal static SchedulerTrigger RefreshTrigger(DeviceConfiguration configuration)
+        {
+            if (configuration == null || String.IsNullOrWhiteSpace(configuration.RefreshSchedule)
+                || !CronExpression.IsValidExpression(configuration.RefreshSchedule))
+                return null;
+
+            return new SchedulerTrigger()
+            {
+                CronSchedule = configuration.RefreshSchedule,
+                Group = configuration.Id,
+                Name = configuration.Id
+            };
         }
 
         private sealed class Update

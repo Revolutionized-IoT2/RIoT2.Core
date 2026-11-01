@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>RIoT2.Core</RootNamespace>
+    <Description>RIoT2 HTTP helpers (Web).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Contracts\RIoT2.Core.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

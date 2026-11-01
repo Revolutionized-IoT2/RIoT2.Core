@@ -1,9 +1,9 @@
 name: Release
 
-# Push a x.y.z tag to publish RIoT2.Core <tag>, then RIoT2.Core.Devices.Testing and RIoT2.Core.Hosting
-# <tag>, to GitHub
-# Packages. Then bump the consumers (release order: docs/backlog/README.md, MA2 and MA3 in the
-# .github repository).
+# Push a x.y.z tag to publish every RIoT2.Core package with that version to GitHub Packages: the
+# packages under src/, the RIoT2.Core facade, RIoT2.Core.Devices.Testing and RIoT2.Core.Hosting
+# (plan M1 step 2). Project references become dependencies on the same version. Then bump the
+# consumers (release order: docs/increments/README.md in the .github repository).
 
 on:
   push:
@@ -22,26 +22,20 @@ jobs:
 
   package:
     needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - src/Contracts/RIoT2.Core.Contracts.csproj
+          - src/Mqtt/RIoT2.Core.Mqtt.csproj
+          - src/Http/RIoT2.Core.Http.csproj
+          - src/Devices/RIoT2.Core.Devices.csproj
+          - src/Node/RIoT2.Core.Node.csproj
+          - RIoT2.Core.csproj
+          - Testing/RIoT2.Core.Devices.Testing.csproj
+          - Hosting/RIoT2.Core.Hosting.csproj
     uses: Revolutionized-IoT2/.github/.github/workflows/nuget-publish.yml@main
     with:
-      project: RIoT2.Core.csproj
-      push: true
-    secrets: inherit
-
-  # The project reference becomes a dependency on RIoT2.Core <tag>, published by the job above.
-  package-testing:
-    needs: package
-    uses: Revolutionized-IoT2/.github/.github/workflows/nuget-publish.yml@main
-    with:
-      project: Testing/RIoT2.Core.Devices.Testing.csproj
-      push: true
-    secrets: inherit
-
-  # The services' logging (design 7.4); depends on RIoT2.Core <tag> too.
-  package-hosting:
-    needs: package
-    uses: Revolutionized-IoT2/.github/.github/workflows/nuget-publish.yml@main
-    with:
-      project: Hosting/RIoT2.Core.Hosting.csproj
+      project: ${{ matrix.project }}
       push: true
     secrets: inherit

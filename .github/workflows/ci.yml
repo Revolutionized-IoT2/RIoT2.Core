@@ -22,20 +22,23 @@ jobs:
       build: RIoT2.Core.sln
       github-packages: false
 
+  # Packaging smoke test for every package the release publishes.
   pack:
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - src/Contracts/RIoT2.Core.Contracts.csproj
+          - src/Mqtt/RIoT2.Core.Mqtt.csproj
+          - src/Http/RIoT2.Core.Http.csproj
+          - src/Devices/RIoT2.Core.Devices.csproj
+          - src/Node/RIoT2.Core.Node.csproj
+          - RIoT2.Core.csproj
+          - Testing/RIoT2.Core.Devices.Testing.csproj
+          - Hosting/RIoT2.Core.Hosting.csproj
     uses: Revolutionized-IoT2/.github/.github/workflows/nuget-publish.yml@main
     with:
-      project: RIoT2.Core.csproj
-
-  pack-testing:
-    uses: Revolutionized-IoT2/.github/.github/workflows/nuget-publish.yml@main
-    with:
-      project: Testing/RIoT2.Core.Devices.Testing.csproj
-
-  pack-hosting:
-    uses: Revolutionized-IoT2/.github/.github/workflows/nuget-publish.yml@main
-    with:
-      project: Hosting/RIoT2.Core.Hosting.csproj
+      project: ${{ matrix.project }}
 
   secret-scan:
     uses: Revolutionized-IoT2/.github/.github/workflows/secret-scan.yml@main

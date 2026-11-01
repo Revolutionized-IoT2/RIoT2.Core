@@ -2,32 +2,23 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <!-- NewtonsoftJsonEncoder overrides TextEncoder's pointer-based members. -->
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- The next release. Keep it at or above the version consumers pin: RIoT2.Tests references this
-         project and the Orchestrator package at once, and NuGet picks the higher version. -->
-    <Version>1.12.0</Version>
-    <!-- GitHub Packages has no symbol server: ship the PDB inside the DLL for SourceLink. -->
-    <DebugType>embedded</DebugType>
-    <!-- Testing/ and Hosting/ are the separate RIoT2.Core.Devices.Testing and RIoT2.Core.Hosting packages. -->
-    <DefaultItemExcludes>$(DefaultItemExcludes);Testing/**;Hosting/**</DefaultItemExcludes>
+    <Description>Compatibility facade: references every RIoT2.Core package and forwards the types that moved there (plan M1), so existing plugins and services keep working. Removed in Core 2.0.</Description>
+    <!-- The facade's own sources are Facade/; the packages are under src/, the test kit under
+         Testing/ and the services' hosting under Hosting/. -->
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Facade/**/*.cs" />
     <None Remove=".gitignore" />
-    <InternalsVisibleTo Include="RIoT2.Core.Devices.Testing" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" />
-    <PackageReference Include="Microsoft.Extensions.Logging" />
-    <PackageReference Include="MQTTnet" />
-    <PackageReference Include="MQTTnet.Extensions.ManagedClient" />
-    <PackageReference Include="Newtonsoft.Json" />
-    <PackageReference Include="Quartz" />
-    <PackageReference Include="System.Text.Json" />
-    <PackageReference Include="System.Threading.Channels" />
+    <ProjectReference Include="src\Contracts\RIoT2.Core.Contracts.csproj" />
+    <ProjectReference Include="src\Mqtt\RIoT2.Core.Mqtt.csproj" />
+    <ProjectReference Include="src\Http\RIoT2.Core.Http.csproj" />
+    <ProjectReference Include="src\Devices\RIoT2.Core.Devices.csproj" />
+    <ProjectReference Include="src\Node\RIoT2.Core.Node.csproj" />
   </ItemGroup>
 
 </Project>

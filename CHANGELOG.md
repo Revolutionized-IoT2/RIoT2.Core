@@ -6,6 +6,38 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-11-01
+
+Core package split ([I27](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i27-core-package-split-m), plan M1 steps 1–3, [ADR 0005](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0005-split-core-packages.md)).
+Source and binary compatible: namespaces are unchanged, and `RIoT2.Core` forwards every moved type,
+so services and plugins built against an older `RIoT2.Core` keep working.
+
+- Added: five packages, released from the same tag with the same version as `RIoT2.Core`:
+  - `RIoT2.Core.Contracts`: models, topics, enums, the message, template and `IStoredObject`
+    interfaces, `Json`, `RIoT2JsonOptions`, `ConfigurationHash`, `MeterNames`. Depends on
+    System.Text.Json and, until Core 2.0, Newtonsoft.Json.
+  - `RIoT2.Core.Mqtt`: `MqttClient`, `MqttEventArgs`, `LogScope`, and the service settings
+    (`SettingsReader`, `MqttOptions`, `LoggingOptions`, `TelemetryOptions`,
+    `ConfigurationValidationException`).
+  - `RIoT2.Core.Http`: `Web`.
+  - `RIoT2.Core.Devices`, the plugin SDK: `PluginBase`, `DeviceBase`, `AsyncDeviceBase`, the device
+    and plugin interfaces, `ICommandService`, `IReportService`, `INodeConfigurationService`,
+    `PluginHostContract`, `DeviceTemplates`. No MQTTnet, Quartz or Hosting.
+  - `RIoT2.Core.Node`, the node runtime: `NodeMqttService`, `DeviceServiceBase`,
+    `NodeConfigurationServiceBase`, `DeviceSchedulerService`, `CommandService`, `ReportService`,
+    `NodeConfigurationStatus`, `NodeMetrics`, `CorrelationCache`.
+- Changed: `RIoT2.Core` is a facade that references the five packages and forwards their types
+  (`Facade/TypeForwards.cs`). It now depends on the hosting, logging and configuration
+  abstractions instead of `Microsoft.Extensions.Hosting` and `Microsoft.Extensions.Logging`.
+  `RIoT2.Core.Devices.Testing` depends on `RIoT2.Core.Node`, `RIoT2.Core.Hosting` on
+  `RIoT2.Core.Mqtt`.
+- Deprecated: the orchestrator-only `IOrchestratorConfigurationService`, `IOrchestratorMqttService`,
+  `IMessageStateService` and `MessageStateService` (the orchestrator has its own since 1.12.0), and
+  the unused `ICodeProviderService` and `CodeProviderService`. They stay in the facade until Core 2.0.
+- Deprecated: `DeviceConfiguration.GetDeviceRefreshSchedule()`. It no longer validates the cron
+  expression (the contract package has no Quartz); the node's scheduler does, and skips an invalid one.
+- Changed: the sources moved into `src/<Package>/` and the version into `Directory.Build.repo.props`.
+
 ## [1.12.0] - 2026-11-01
 
 Typed persistence ([I26](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i26-typed-persistence-m), plan M2 steps 4–5), for Orchestrator 1.11.0. Additive.

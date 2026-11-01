@@ -1,4 +1,5 @@
-﻿using RIoT2.Core.Models;
+﻿using System;
+using RIoT2.Core.Models;
 using System.Threading.Tasks;
 
 namespace RIoT2.Core.Interfaces.Services
@@ -6,6 +7,7 @@ namespace RIoT2.Core.Interfaces.Services
     /// <summary>
     /// Provides MQTT connectivity and messaging for the orchestrator.
     /// </summary>
+    [Obsolete("Orchestrator-only; the orchestrator has its own copy since Orchestrator 1.12.0 (plan M1 step 1). Removed in Core 2.0 (I45).")]
     public interface IOrchestratorMqttService
     {
         /// <summary>

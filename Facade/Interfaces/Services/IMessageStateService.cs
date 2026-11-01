@@ -1,4 +1,5 @@
-﻿using RIoT2.Core.Models;
+﻿using System;
+using RIoT2.Core.Models;
 using System.Collections.Generic;
 
 namespace RIoT2.Core.Interfaces.Services
@@ -7,6 +8,7 @@ namespace RIoT2.Core.Interfaces.Services
     /// This service maintain the current state of each IO
     /// Maintains history of the suitable IO's
     /// </summary>
+    [Obsolete("Orchestrator-only; the orchestrator has its own copy since Orchestrator 1.12.0 (plan M1 step 1). Removed in Core 2.0 (I45).")]
     public interface IMessageStateService
     {
         /// <summary>

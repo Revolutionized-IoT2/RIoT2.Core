@@ -1,5 +1,4 @@
-﻿using Quartz;
-using RIoT2.Core.Models.Matter;
+﻿using RIoT2.Core.Models.Matter;
 using System;
 using System.Collections.Generic;
 
@@ -33,22 +32,23 @@ namespace RIoT2.Core.Models
         /// <summary>
         /// Builds a scheduler trigger from the configured refresh schedule.
         /// </summary>
-        /// <returns>A <see cref="SchedulerTrigger"/> when <c>RefreshSchedule</c> is a valid cron expression; otherwise, <c>null</c>.</returns>
-        public SchedulerTrigger GetDeviceRefreshSchedule() 
+        /// <returns>
+        /// A <see cref="SchedulerTrigger"/> when <c>RefreshSchedule</c> is set; otherwise, <c>null</c>.
+        /// Since 1.13.0 the cron expression is not validated here (the contract package has no Quartz):
+        /// the node's scheduler skips an invalid one.
+        /// </returns>
+        [Obsolete("The node's scheduler builds the trigger and validates the cron expression; removed in Core 2.0 (I45).")]
+        public SchedulerTrigger GetDeviceRefreshSchedule()
         {
-            if (!String.IsNullOrEmpty(RefreshSchedule)) 
+            if (String.IsNullOrWhiteSpace(RefreshSchedule))
+                return null;
+
+            return new SchedulerTrigger()
             {
-                if (CronExpression.IsValidExpression(RefreshSchedule))
-                {
-                    return new SchedulerTrigger()
-                    {
-                        CronSchedule = RefreshSchedule,
-                        Group = Id,
-                        Name = Id
-                    };
-                } 
-            }
-            return null;
+                CronSchedule = RefreshSchedule,
+                Group = Id,
+                Name = Id
+            };
         }
 
     }

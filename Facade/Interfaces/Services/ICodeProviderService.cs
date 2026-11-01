@@ -5,6 +5,7 @@ namespace RIoT2.Core.Interfaces.Services
     /// <summary>
     /// Issues and validates time- and usage-limited codes, typically used for device onboarding.
     /// </summary>
+    [Obsolete("Not used by any RIoT2 repository. Removed in Core 2.0 (I45).")]
     public interface ICodeProviderService
     {
         /// <summary>

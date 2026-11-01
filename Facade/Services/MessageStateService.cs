@@ -10,6 +10,7 @@ namespace RIoT2.Core.Services
     /// Default <see cref="IMessageStateService"/> implementation that keeps the latest report and
     /// command states in memory and maintains a bounded history per report.
     /// </summary>
+    [Obsolete("Orchestrator-only; the orchestrator has its own copy since Orchestrator 1.12.0 (plan M1 step 1). Removed in Core 2.0 (I45).")]
     public class MessageStateService : IMessageStateService
     {
         private List<Command> _commands;
