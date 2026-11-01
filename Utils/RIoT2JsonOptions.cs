@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -59,7 +58,8 @@ namespace RIoT2.Core.Utils
                 ReadCommentHandling = JsonCommentHandling.Skip,
                 AllowTrailingCommas = true,
                 // Newtonsoft escaped only quotes, backslashes and control characters.
-                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                // Newtonsoft's escaping, so emoji keep their bytes in stored files and hashes.
+                Encoder = NewtonsoftJsonEncoder.Instance,
                 WriteIndented = indented,
                 TypeInfoResolver = new DefaultJsonTypeInfoResolver { Modifiers = { typeInfo => ApplyNewtonsoftConventions(typeInfo, camelCase) } }
             };

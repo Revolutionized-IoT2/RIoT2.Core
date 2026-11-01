@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- NewtonsoftJsonEncoder overrides TextEncoder's pointer-based members. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- The next release. Keep it at or above the version consumers pin: RIoT2.Tests references this
          project and the Orchestrator package at once, and NuGet picks the higher version. -->
     <Version>1.12.0</Version>

@@ -18,6 +18,10 @@ Typed persistence ([I26](https://github.com/Revolutionized-IoT2/.github/blob/mai
   looks like a date stays a string.
 - Deprecated: `IStoredObjectService` and `StoredObjectEventHandler` (`dynamic`). Only the
   orchestrator used them, and it has its own typed store; they are removed in Core 2.0 (I45).
+- Fixed: `RIoT2JsonOptions` escapes exactly what Newtonsoft escaped (`NewtonsoftJsonEncoder`). Since
+  1.11.0 an emoji was written as a `\u` escape pair and DEL as `\u007f`; they are written as they
+  are again, and other control characters use lowercase hex, as before 1.11.0. A node
+  configuration with an emoji gets its pre-1.11.0 hash back.
 
 ## [1.11.0] - 2026-11-01
 
