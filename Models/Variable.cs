@@ -1,8 +1,9 @@
-﻿using System;
+﻿using RIoT2.Core.Interfaces;
+using System;
 
 namespace RIoT2.Core.Models
 {
-    public class Variable
+    public class Variable : IStoredObject
     {
         private ValueModel _value = new ValueModel(null);
         public string Id { get; set; }

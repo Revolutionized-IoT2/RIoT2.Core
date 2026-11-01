@@ -6,6 +6,19 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-11-01
+
+Typed persistence ([I26](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i26-typed-persistence-m), plan M2 steps 4–5), for Orchestrator 1.11.0. Additive.
+
+- Added: `Interfaces/IStoredObject` (`string Id`), implemented by `Variable`,
+  `NodeDeviceConfiguration` and `DashboardConfiguration`: the types the orchestrator stores.
+- Added: `ExpandoObjectJsonConverter` in `RIoT2JsonOptions`. An `ExpandoObject` (such as
+  `DashboardElement.Properties`) is read as Newtonsoft read it: nested objects are
+  `ExpandoObject`s, arrays `List<object>`, integers `long` and other numbers `double`. A string that
+  looks like a date stays a string.
+- Deprecated: `IStoredObjectService` and `StoredObjectEventHandler` (`dynamic`). Only the
+  orchestrator used them, and it has its own typed store; they are removed in Core 2.0 (I45).
+
 ## [1.11.0] - 2026-11-01
 
 System.Text.Json on the wire ([I25](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i25-systemtextjson-on-the-wire-m), plan M2 steps 2–3,

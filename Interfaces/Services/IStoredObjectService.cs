@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace RIoT2.Core.Interfaces.Services
 {
+    [Obsolete("Orchestrator-only; the orchestrator has its own typed store since 1.11.0 (I26). Removed with Newtonsoft (I45).")]
     public interface IStoredObjectService
     {
         /// <summary>

@@ -68,6 +68,7 @@ namespace RIoT2.Core.Utils
             options.Converters.Add(new NewtonsoftTokenConverterFactory());
             options.Converters.Add(new ValueModelJsonConverter());
             options.Converters.Add(new LooseObjectConverter());
+            options.Converters.Add(new ExpandoObjectJsonConverter());
             options.Converters.Add(new LenientStringConverter());
             options.Converters.Add(new LenientBooleanConverter());
             options.Converters.Add(new NewtonsoftDoubleConverter());

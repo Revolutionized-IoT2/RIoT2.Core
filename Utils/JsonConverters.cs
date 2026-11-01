@@ -1,6 +1,8 @@
 using RIoT2.Core.Models;
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Dynamic;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
@@ -86,6 +88,52 @@ namespace RIoT2.Core.Utils
                 return;
             }
             JsonSerializer.Serialize(writer, value, type, options);
+        }
+    }
+
+    /// <summary>
+    /// Reads an <see cref="ExpandoObject"/> as Newtonsoft's ExpandoObjectConverter did: nested objects are
+    /// ExpandoObjects, arrays are <c>List&lt;object&gt;</c>, integers are longs and other numbers doubles.
+    /// Unlike Newtonsoft, a string that looks like a date stays a string.
+    /// </summary>
+    public sealed class ExpandoObjectJsonConverter : JsonConverter<ExpandoObject>
+    {
+        public override ExpandoObject Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType != JsonTokenType.StartObject)
+                throw new JsonException($"Expected an object for an ExpandoObject, not {reader.TokenType}.");
+            using (var document = JsonDocument.ParseValue(ref reader))
+                return (ExpandoObject)ToValue(document.RootElement);
+        }
+
+        public override void Write(Utf8JsonWriter writer, ExpandoObject value, JsonSerializerOptions options) =>
+            JsonSerializer.Serialize(writer, (IDictionary<string, object>)value, options);
+
+        private static object ToValue(JsonElement element)
+        {
+            switch (element.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    IDictionary<string, object> expando = new ExpandoObject();
+                    foreach (var property in element.EnumerateObject())
+                        expando[property.Name] = ToValue(property.Value);
+                    return expando;
+                case JsonValueKind.Array:
+                    var list = new List<object>();
+                    foreach (var item in element.EnumerateArray())
+                        list.Add(ToValue(item));
+                    return list;
+                case JsonValueKind.String:
+                    return element.GetString();
+                case JsonValueKind.Number:
+                    return element.TryGetInt64(out var integer) ? integer : (object)element.GetDouble();
+                case JsonValueKind.True:
+                    return true;
+                case JsonValueKind.False:
+                    return false;
+                default:
+                    return null;
+            }
         }
     }
 

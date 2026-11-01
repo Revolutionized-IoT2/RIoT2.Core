@@ -90,8 +90,10 @@ must stay compatible with it.
 - New golden message files must not start with `command-` or `report-`: the InfluxDB tests and the
   UI read every file with those prefixes as a `Command` or `Report`.
 - `contractVersion` stays 1 (`Contract.Version`) until a breaking change, which needs an ADR.
-- Don't widen `RIoT2SerializationBinder` in `Utils/JsonNewtonsoft.cs`. `TypeNameHandling` is used on
-  configuration posted over REST and MQTT, and the binder is what blocks deserialization gadgets.
+- Don't widen `RIoT2SerializationBinder` in `Utils/JsonNewtonsoft.cs`: it blocks deserialization
+  gadgets in the `[Obsolete]` `*AutoTypeNameHandling` helpers, which only old plugins still call.
+- A type the orchestrator stores implements `IStoredObject`; its storage format is pinned by the
+  `stored-saved/` golden files.
 - `NodeConfigurationServiceBase` must keep extracting plugin zips only inside `Plugins/`
   (zip-slip guard) and sanitizing package file names.
 - New device code derives from `AsyncDeviceBase` and overrides the async methods. Don't add
