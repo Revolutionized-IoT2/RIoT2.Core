@@ -72,6 +72,7 @@
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.NodeType))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.OperationType))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.ServiceEvent))]
+[assembly: TypeForwardedTo(typeof(RIoT2.Core.Schema.ContractSchemas))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Utils.ConfigurationHash))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Utils.EmptyStringAsNullConverterFactory))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Utils.ExpandoObjectJsonConverter))]

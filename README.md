@@ -18,6 +18,10 @@ component.
   | `RIoT2.Core.Devices.Testing` | The plugin test kit (.NET 10) | Node |
   | `RIoT2.Core.Hosting` | The services' logging and metrics (.NET 10, Serilog, OpenTelemetry) | Mqtt |
 
+  Reference the narrowest packages (since 1.14.0, [I28](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i28-narrow-references-and-generated-models-m)): a service
+  `Contracts` and `Mqtt` (plus `Http` if it calls `Web`), a plugin `Devices` (plus `Http` or `Mqtt`
+  if its devices use them), the node `Node`. Only binaries built before 1.13.0 need the facade.
+
 - Target framework: .NET Standard 2.0 (the test kit and Hosting: .NET 10)
 - Versions: [CHANGELOG.md](CHANGELOG.md) (tag `1.0.0` failed CI and was never published)
 - Root namespace: `RIoT2.Core`
@@ -28,7 +32,7 @@ How Core fits into the platform: [architecture overview](https://github.com/Revo
 
 | Path | Contents |
 | --- | --- |
-| `src/Contracts/` | `Constants.cs` (topic templates, API URLs, topic helpers), `Contract.cs` (`Contract.Version`, capability names), `Enums.cs`, `Models/` (messages such as `Report`, `Command`, `NodeOnlineMessage`, `CommandResult`, `NodeStatusMessage`; `ValueModel`; configuration, template and Matter models), the message and template interfaces, `Utils/` (`Json`, `RIoT2JsonOptions`, `ConfigurationHash`), `Diagnostics/MeterNames.cs` |
+| `src/Contracts/` | `Constants.cs` (topic templates, API URLs, topic helpers), `Contract.cs` (`Contract.Version`, capability names), `Enums.cs`, `Models/` (messages such as `Report`, `Command`, `NodeOnlineMessage`, `CommandResult`, `NodeStatusMessage`; `ValueModel`; configuration, template and Matter models), the message and template interfaces, `Utils/` (`Json`, `RIoT2JsonOptions`, `ConfigurationHash`), `Schema/ContractSchemas.cs` (the JSON Schema export), `Diagnostics/MeterNames.cs` |
 | `src/Mqtt/` | `MqttClient`, `LogScope` (the `CorrelationId` and `MessageId` log scopes), and `Configuration/`: how every service reads and validates its `RIOT2_*` settings |
 | `src/Http/` | `Web` helpers |
 | `src/Devices/` | `PluginBase`, `DeviceBase`, `AsyncDeviceBase`, the device and plugin interfaces, `Plugins/` (`PluginHostContract`, `DeviceTemplates`, `[RequiresHardware]`) |
@@ -37,6 +41,8 @@ How Core fits into the platform: [architecture overview](https://github.com/Revo
 | `Testing/` | `RIoT2.Core.Devices.Testing`: `PluginTestHost`, `PluginConformance`, `DeviceConfigurationBuilder` |
 | `Hosting/` | `RIoT2.Core.Hosting` for the services (not plugins): `AddRIoT2Logging()`, Serilog to the console and `Logs/RIoT2.log`, text or JSON ([design 7.4](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/operations.md)), and `AddRIoT2Telemetry()` |
 | `contracts/golden/` | Golden files: the JSON on MQTT, in orchestrator responses and in `StoredObjects`. Not part of a package. See [contracts/golden/README.md](contracts/golden/README.md). |
+| `contracts/schemas/` | `riot2-contracts.schema.json`: the JSON Schema of the contract types, written by `tools/SchemaExport` on every build. The UI generates its TypeScript models from it. See [contracts/schemas/README.md](contracts/schemas/README.md). |
+| `tools/SchemaExport/` | The console tool that writes `contracts/schemas/` (not packed) |
 
 The topics and payloads that these types implement are specified in the platform contracts:
 
@@ -44,7 +50,9 @@ The topics and payloads that these types implement are specified in the platform
 - [Node configuration, templates and plugins](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/configuration.md)
 
 The [golden files](contracts/golden/README.md) are examples of each format. RIoT2.Tests, Elsa,
-the UI and the firmware tests read them, so a format change fails their CI.
+the UI and the firmware tests read them, so a format change fails their CI. The
+[JSON Schema](contracts/schemas/README.md) describes the same types; RIoT2.Tests validates every
+golden file against it.
 
 ## Using Core
 
@@ -103,9 +111,8 @@ listens. Every `riot2.*` instrument is in the platform's
 - `DeviceServiceBase` runs one serialized operation queue per device. When a device's
   configuration is replaced, its old work is cancelled and awaited before it starts again.
 - `ReconfigureChangedDevicesAsync` (Core 1.1.0) restarts only the devices whose configuration
-  entry was added, changed or removed, plus configured devices that are not running. An identical
-  configuration, as sent after every reconnect, starts and stops nothing.
-  `ReconfigureDevicesAsync` still restarts every device.
+  entry changed, plus configured devices that are not running; an identical configuration starts
+  and stops nothing. `ReconfigureDevicesAsync` still restarts every device.
 - Existing synchronous devices (`DeviceBase`) still work. Their calls can't be interrupted,
   though, so long-running devices should move to `AsyncDeviceBase`.
 - Read device settings with `GetConfiguration<T>("key")`. Keys are case-sensitive, and the
@@ -192,7 +199,9 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.csproj
 dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj -c Release
 ```
 
-Add `-p:CI=true` to `dotnet build` to reproduce CI analyzer settings locally. Shared build
+Building the solution rewrites `contracts/schemas/` from the contract types; commit the result
+with the change (CI fails when the build changes it). Add `-p:CI=true` to `dotnet build` to
+reproduce CI analyzer settings locally. Shared build
 settings come from `Directory.Build.props`, `.editorconfig` and `Directory.Packages.props`; package
 versions are centralized in `Directory.Packages.props`.
 
@@ -213,7 +222,8 @@ run the RIoT2.Tests suite with `RIOT2_UPDATE_GOLDEN=1`, review the diff, and com
 - To try an unreleased Core in a consumer, pack every project of `RIoT2.Core.sln` into
   `C:\Src\RIoT2\.localfeed` and restore with that folder as an extra source. A local pack is not a release.
 - Keep the public API additive. Consumers pin package versions, and device plugins run inside the
-  Node's Core version, so the Node image and the plugin packages must be released together.
+  Node's Core version: a plugin built against a newer Core than the node's doesn't load, so release
+  the Node image first, then the plugins.
 
 ## Contributing
 

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Writes contracts/schemas/ from RIoT2.Core.Contracts on every build (plan M1 step 5). CI fails
+       when the build changes the committed schema (dotnet-validate verify-generated). Not packed. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <SchemaDirectory>$(MSBuildThisFileDirectory)../../contracts/schemas</SchemaDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Contracts\RIoT2.Core.Contracts.csproj" />
+  </ItemGroup>
+
+  <Target Name="ExportContractSchemas" AfterTargets="Build" Condition="'$(DesignTimeBuild)' != 'true'">
+    <Exec Command="dotnet &quot;$(TargetPath)&quot; &quot;$(SchemaDirectory)&quot;" />
+  </Target>
+
+</Project>

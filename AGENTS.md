@@ -14,8 +14,8 @@ depending only on the ones below it: `RIoT2.Core.Contracts` (wire models, topics
 `.Mqtt` (MQTT client and service settings), `.Http`, `.Devices` (the plugin SDK) and `.Node` (the
 node runtime). `RIoT2.Core` is a facade over all five that forwards their types, so binaries
 built against an older `RIoT2.Core` keep working until Core 2.0 (I45). `RIoT2.Core.Devices.Testing`
-and `RIoT2.Core.Hosting` are .NET 10. Consumers reference **packages**; RIoT2.Tests is the only
-project reference.
+and `RIoT2.Core.Hosting` are .NET 10. Consumers reference the narrowest **packages** (I28); RIoT2.Tests
+is the only project reference.
 
 ## Commands
 
@@ -42,7 +42,7 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj
 
 | Path | Contents |
 |---|---|
-| `src/Contracts/` | `RIoT2.Core.Contracts` (Newtonsoft.Json only until I45): `Constants` (topics, URLs), `Enums` (numbers are wire format), `Models/`, message and template interfaces, `Json` with `RIoT2JsonOptions` and its converters (`[Obsolete]` Newtonsoft parts in `JsonNewtonsoft.cs`), `ConfigurationHash`, `MeterNames` |
+| `src/Contracts/` | `RIoT2.Core.Contracts` (Newtonsoft.Json only until I45): `Constants` (topics, URLs), `Enums` (numbers are wire format), `Models/`, message and template interfaces, `Json` with `RIoT2JsonOptions` and its converters (`[Obsolete]` Newtonsoft parts in `JsonNewtonsoft.cs`), `ConfigurationHash`, `MeterNames`, `Schema/ContractSchemas` (JSON Schema export) |
 | `src/Mqtt/` | `RIoT2.Core.Mqtt`: `MqttClient` (and the `RIoT2.Mqtt` meter), `MqttEventArgs`, `LogScope`, and `Configuration/`: `SettingsReader`, `MqttOptions`, `LoggingOptions`, `TelemetryOptions` |
 | `src/Http/` | `RIoT2.Core.Http`: `Web` |
 | `src/Devices/` | `RIoT2.Core.Devices`, the plugin SDK: `PluginBase`, `DeviceBase`, `AsyncDeviceBase`, device and service interfaces, `PluginHostContract`, `DeviceTemplates` |
@@ -52,6 +52,7 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj
 | `Hosting/` | `RIoT2.Core.Hosting` (.NET 10, Serilog, OpenTelemetry): `AddRIoT2Logging()`, `AddRIoT2Telemetry()` |
 | `Directory.Build.repo.props` | The one version of every package |
 | `contracts/golden/` | Golden files for every message, response and stored format; read by RIoT2.Tests, Elsa, UI and firmware tests |
+| `contracts/schemas/`, `tools/SchemaExport/` | The contract JSON Schema, written by the tool on every build; the UI generates its models from it |
 
 ## Contracts implemented here
 
@@ -78,7 +79,8 @@ must stay compatible with it.
 - The files in `contracts/golden/` define the formats. A change to `Models/`, `ValueModel` or
   `src/Contracts/Utils/Json.cs` that alters them must regenerate them (RIoT2.Tests with `RIOT2_UPDATE_GOLDEN=1`),
   and every consumer in [contracts/golden/README.md](contracts/golden/README.md) must still pass.
-  Never commit a stored sample before replacing its credentials, tokens, IP and MAC addresses.
+  `contracts/schemas/` is generated: commit what the build writes (CI fails otherwise), and new
+  root types go into `ContractSchemas.RootTypes`. Never commit a stored sample before replacing its credentials, tokens, IP and MAC addresses.
 - `Json` writes exactly what Newtonsoft wrote (the configuration hashes are computed over it);
   `JsonCompatibilityTests` in RIoT2.Tests compares the two. Change `RIoT2JsonOptions` or a converter
   only with a golden-file update and a new hash for every node configuration.
@@ -104,8 +106,7 @@ must stay compatible with it.
   `PluginConformance` changes what every plugin repository's CI accepts: say so in the CHANGELOG.
 - `DeviceBase.ParameterRead` is the internal hook the test kit uses to record parameter reads
   (`InternalsVisibleTo RIoT2.Core.Devices.Testing`). Don't make it public.
-- The internal rule engine, its function catalog, its models and NCalc are gone. Don't bring them
-  back ([ADR 0003](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0003-elsa-sole-automation-engine.md)).
+- The internal rule engine and NCalc are gone. Don't bring them back ([ADR 0003](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0003-elsa-sole-automation-engine.md)).
 - Record every released change in `CHANGELOG.md` under the version being tagged.
 
 ## Pitfalls
@@ -120,15 +121,15 @@ must stay compatible with it.
 - Don't expose MQTTnet types from Core's public API: `MqttQos`, `MqttSubscription` and
   `MqttEventArgs` stand in for them, so a later MQTTnet 5 migration only touches `MqttClient`
   ([M10](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m10-mqtt-client-robustness.md)).
-- MQTT receive callbacks are serialized: one worker per client calls the handlers in order, each
-  in its own `try/catch`, and receiving pauses when 1,000 messages wait. Don't await device I/O
-  inside them: a configuration message must be able to cancel a stalled command. `NodeMqttService` starts command dispatch at
-  admission, tracks at most 64 commands, and awaits them at shutdown.
-- A command with a `correlationId` must get exactly one `CommandResult` from `NodeMqttService`,
+- MQTT receive callbacks are serialized (one worker per client, each handler in its own
+  `try/catch`; receiving pauses at 1,000 waiting). Don't await device I/O inside them: a
+  configuration must be able to cancel a stalled command. `NodeMqttService` tracks at most 64
+  commands and awaits them at shutdown.
+- A command with a `correlationId` gets exactly one `CommandResult` from `NodeMqttService`,
   except when shutdown cancels it (then none, and the id is forgotten so the redelivery runs). A
-  redelivery never runs: it gets nothing while the first runs, then `duplicate` after `executed`, or
-  the first `failed`/`unknownCommand` again (`CorrelationCache.Complete` before publishing). Any
-  other cancellation is `failed`: never run a command against a replacement configuration.
+  redelivery never runs: nothing while the first runs, then `duplicate` after `executed`, or the
+  first `failed`/`unknownCommand` again. Any other cancellation is `failed`: never run a command
+  against a replacement configuration.
   Answer `rejected`, and forget the id, whenever the command didn't run and may run later
   (`DeviceNotReadyException`, a configuration still being applied, the 64-command limit). Throw
   `UnknownCommandException` for a command no device owns; the node advertises `command-result/1`
@@ -147,9 +148,8 @@ must stay compatible with it.
 - `ValueModel` keeps JSON-looking strings and large integers as they are. Path updates
   (`a.b`, `items[0].value`) throw `ArgumentException` when the parent is missing; they don't
   create it.
-- `MqttClient.SetLastWill(topic, payload, retain)` replaces the default last will and must be
-  called before `Start`. `StopAsync` publishes the same message, because the broker sends the last
-  will only when the connection drops. The orchestrator uses it for its retained presence.
+- `MqttClient.SetLastWill(topic, payload, retain)` must be called before `Start`. `StopAsync`
+  publishes the same message (the broker sends the last will only when the connection drops).
 - `DeviceServiceBase.ReconfigureChangedDevicesAsync` compares each device's entry, serialized with
   `Json.Serialize`, with the one it was last initialized with. Keep that serialization
   deterministic: a field that changes on every download would restart the device every time.
@@ -168,12 +168,12 @@ must stay compatible with it.
   unchanged configuration.
 - Services read settings only through an options type built with `SettingsReader` (plan M4); no
   service calls `Environment.GetEnvironmentVariable`. Messages keep the format
-  `Invalid {component} configuration: …`, which the services' tests pin. Tag `1.0.0` failed CI and was never published: don't
-  reference it. A tag whose CI run fails publishes nothing.
+  `Invalid {component} configuration: …`, which the services' tests pin. Tag `1.0.0` was never
+  published: don't reference it.
 
 ## Related work
 
-- [M1](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m01-split-core-packages.md): the package split (steps 1–3 done in I27; narrower consumer references are I28).
+- [M1](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m01-split-core-packages.md): the package split (steps 1–3 in I27, 4–5 in I28; removing the facade is I45).
 - [M2](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m02-system-text-json-persistence.md): one JSON stack.
 - [M10](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m10-mqtt-client-robustness.md): MQTT client robustness (TLS: I34, I51).
 - [M11](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m11-async-cleanup.md): remaining blocking code.

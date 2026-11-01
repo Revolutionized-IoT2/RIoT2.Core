@@ -81,6 +81,28 @@ namespace RIoT2.Core.Utils
             return options;
         }
 
+        /// <summary>
+        /// <see cref="Default"/>'s contract (names, order, ignored members) without the lenient
+        /// converters for strings, booleans, numbers, dates, enums and nullables, so that the schema
+        /// exporter sees their types (<see cref="Schema.ContractSchemas"/>). Not for serializing.
+        /// </summary>
+        internal static JsonSerializerOptions CreateForSchema()
+        {
+            var options = Create();
+            options.NumberHandling = JsonNumberHandling.Strict;
+            for (var i = options.Converters.Count - 1; i >= 0; i--)
+            {
+                var converter = options.Converters[i];
+                if (converter is EmptyStringAsNullConverterFactory || converter is LenientStringConverter
+                    || converter is LenientBooleanConverter || converter is NewtonsoftDoubleConverter
+                    || converter is NewtonsoftSingleConverter || converter is NewtonsoftDecimalConverter
+                    || converter is LenientDateTimeConverter || converter is LenientDateTimeOffsetConverter
+                    || converter is LenientEnumConverterFactory)
+                    options.Converters.RemoveAt(i);
+            }
+            return ReadOnly(options);
+        }
+
         private static JsonSerializerOptions ReadOnly(JsonSerializerOptions options)
         {
             options.MakeReadOnly();

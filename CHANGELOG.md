@@ -6,6 +6,27 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-11-01
+
+Narrow references and generated models ([I28](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i28-narrow-references-and-generated-models-m), plan M1 steps 4–5). Additive: no
+wire, storage or hash change.
+
+- Added: `RIoT2.Core.Schema.ContractSchemas` in `RIoT2.Core.Contracts` exports the JSON Schema
+  (draft 2020-12) of the contract types with System.Text.Json's `JsonSchemaExporter`: one `$defs`
+  entry per type (the MQTT messages, the node configuration with its templates and Matter
+  declarations, the template listings, `Variable`, `DashboardConfiguration`, `DeviceStatus` and the
+  enums with their names). It describes what `RIoT2JsonOptions.Default` writes; members left out
+  while null are optional. See [contracts/schemas/README.md](contracts/schemas/README.md).
+- Added: `contracts/schemas/riot2-contracts.schema.json`, written on every build by
+  `tools/SchemaExport` (not packed). CI fails when the build changes it. The UI generates its
+  TypeScript models from it, and RIoT2.Tests validates every golden file against it.
+- Changed: consumers reference the narrowest packages: Elsa and the InfluxDB connector `Contracts`
+  and `Mqtt`, the Orchestrator also `Http` (with its own Quartz reference for cron expressions),
+  the plugins `Devices` (RIoT2.Net.Devices also `Http` and `Mqtt`), the node `Node`, with the
+  facade kept only at run time for plugins built before 1.13.0.
+- Note: a plugin built against 1.14.0 needs a node on Core 1.14.0 or later (Node 1.10.0): the
+  runtime does not load a newer `RIoT2.Core.*` assembly version than the node ships.
+
 ## [1.13.0] - 2026-11-01
 
 Core package split ([I27](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i27-core-package-split-m), plan M1 steps 1–3, [ADR 0005](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0005-split-core-packages.md)).

@@ -1,0 +1,1270 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Revolutionized-IoT2/RIoT2.Core/blob/main/contracts/schemas/riot2-contracts.schema.json",
+  "title": "RIoT2 contracts",
+  "description": "The RIoT2 MQTT messages and HTTP models, exported from RIoT2.Core.Contracts (ContractSchemas). Generated; do not edit.",
+  "x-contractVersion": 1,
+  "$defs": {
+    "JsonValue": {
+      "title": "JsonValue",
+      "description": "Any JSON value: a report, command or variable value, or a template's default model."
+    },
+    "Command": {
+      "title": "Command",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "value": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "correlationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "contractVersion": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      }
+    },
+    "CommandResult": {
+      "title": "CommandResult",
+      "type": "object",
+      "properties": {
+        "correlationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "commandId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "timeStamp": {
+          "type": "integer"
+        },
+        "contractVersion": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "timeStamp"
+      ]
+    },
+    "CommandTemplate": {
+      "title": "CommandTemplate",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "address": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "type": {
+          "$ref": "#/$defs/ValueType"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "ConfigurationCommand": {
+      "title": "ConfigurationCommand",
+      "type": "object",
+      "properties": {
+        "apiBaseUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "revision": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "contractVersion": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      }
+    },
+    "DashboardComponent": {
+      "title": "DashboardComponent",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "icon": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type": {
+          "$ref": "#/$defs/DashboardComponentType"
+        },
+        "size": {
+          "$ref": "#/$defs/DashboardComponentSize"
+        },
+        "elements": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/DashboardElement"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "size"
+      ]
+    },
+    "DashboardComponentSize": {
+      "title": "DashboardComponentSize",
+      "type": "integer",
+      "enum": [
+        3,
+        6,
+        9,
+        12
+      ],
+      "x-enumNames": [
+        "Small",
+        "Half",
+        "Large",
+        "Full"
+      ]
+    },
+    "DashboardComponentType": {
+      "title": "DashboardComponentType",
+      "type": "integer",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "x-enumNames": [
+        "Button",
+        "Chart_line",
+        "Chart_bar",
+        "Chart_doughnut",
+        "Chart_pie",
+        "NumericValue",
+        "Image",
+        "Timeline",
+        "SlideButton",
+        "State",
+        "Switch"
+      ]
+    },
+    "DashboardConfiguration": {
+      "title": "DashboardConfiguration",
+      "type": "object",
+      "properties": {
+        "pages": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/DashboardPage"
+          }
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "DashboardElement": {
+      "title": "DashboardElement",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "icon": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "numberOfPreviousReports": {
+          "type": "integer"
+        },
+        "reportTemplate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReportTemplate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "commandTemplate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CommandTemplate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "previousReports": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/Report"
+          }
+        },
+        "properties": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        }
+      },
+      "required": [
+        "numberOfPreviousReports"
+      ]
+    },
+    "DashboardPage": {
+      "title": "DashboardPage",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "icon": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "components": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/DashboardComponent"
+          }
+        }
+      }
+    },
+    "DeviceConfiguration": {
+      "title": "DeviceConfiguration",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "classFullName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "commandTemplates": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/CommandTemplate"
+          }
+        },
+        "reportTemplates": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/ReportTemplate"
+          }
+        },
+        "deviceParameters": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "refreshSchedule": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "matterEndpoints": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/MatterEndpointTemplate"
+          }
+        },
+        "hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "classFullName",
+        "commandTemplates",
+        "reportTemplates",
+        "deviceParameters",
+        "refreshSchedule",
+        "matterEndpoints"
+      ]
+    },
+    "DeviceState": {
+      "title": "DeviceState",
+      "type": "integer",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "x-enumNames": [
+        "Unknown",
+        "Stopped",
+        "Initialized",
+        "Running",
+        "Error"
+      ]
+    },
+    "DeviceStatus": {
+      "title": "DeviceStatus",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "message": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "state": {
+          "$ref": "#/$defs/DeviceState"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "message",
+        "state"
+      ]
+    },
+    "FailedDevice": {
+      "title": "FailedDevice",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "message": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "MatterAttribute": {
+      "title": "MatterAttribute",
+      "type": "integer",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "x-enumNames": [
+        "OnOff",
+        "CurrentLevel",
+        "CurrentHue",
+        "CurrentSaturation",
+        "ColorTemperatureMireds",
+        "TemperatureMeasuredValue",
+        "HumidityMeasuredValue",
+        "IlluminanceMeasuredValue",
+        "Occupancy",
+        "BooleanStateValue",
+        "LocalTemperature",
+        "OccupiedHeatingSetpoint",
+        "OccupiedCoolingSetpoint",
+        "ThermostatSystemMode"
+      ]
+    },
+    "MatterAttributeBinding": {
+      "title": "MatterAttributeBinding",
+      "type": "object",
+      "properties": {
+        "attribute": {
+          "$ref": "#/$defs/MatterAttribute"
+        },
+        "reportTemplateId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "valuePath": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "filter": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scale": {
+          "$ref": "#/$defs/MatterValueScale"
+        }
+      },
+      "required": [
+        "attribute",
+        "reportTemplateId",
+        "valuePath",
+        "filter",
+        "scale"
+      ]
+    },
+    "MatterCommandBinding": {
+      "title": "MatterCommandBinding",
+      "type": "object",
+      "properties": {
+        "attribute": {
+          "$ref": "#/$defs/MatterAttribute"
+        },
+        "commandTemplateId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "valuePath": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "valueTemplateJson": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scale": {
+          "$ref": "#/$defs/MatterValueScale"
+        }
+      },
+      "required": [
+        "attribute",
+        "commandTemplateId",
+        "valuePath",
+        "valueTemplateJson",
+        "scale"
+      ]
+    },
+    "MatterDeviceType": {
+      "title": "MatterDeviceType",
+      "type": "integer",
+      "enum": [
+        21,
+        256,
+        257,
+        262,
+        263,
+        266,
+        267,
+        268,
+        269,
+        769,
+        770,
+        775
+      ],
+      "x-enumNames": [
+        "ContactSensor",
+        "OnOffLight",
+        "DimmableLight",
+        "LightSensor",
+        "OccupancySensor",
+        "OnOffPlugInUnit",
+        "DimmablePlugInUnit",
+        "ColorTemperatureLight",
+        "ExtendedColorLight",
+        "Thermostat",
+        "TemperatureSensor",
+        "HumiditySensor"
+      ]
+    },
+    "MatterEndpointTemplate": {
+      "title": "MatterEndpointTemplate",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "deviceType": {
+          "$ref": "#/$defs/MatterDeviceType"
+        },
+        "vendorName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "productName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "attributes": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/MatterAttributeBinding"
+          }
+        },
+        "commands": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/MatterCommandBinding"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "deviceType",
+        "vendorName",
+        "productName",
+        "attributes",
+        "commands"
+      ]
+    },
+    "MatterValueScale": {
+      "title": "MatterValueScale",
+      "type": "integer",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "x-enumNames": [
+        "None",
+        "InvertBoolean",
+        "Percent0To100ToLevel0To254",
+        "Fraction0To1ToLevel0To254",
+        "Degrees0To360ToHue0To254",
+        "Percent0To100ToSaturation0To254",
+        "KelvinToMireds",
+        "CelsiusToHundredths",
+        "PercentToHundredths",
+        "LuxToLogScale"
+      ]
+    },
+    "NodeCommandTemplate": {
+      "title": "NodeCommandTemplate",
+      "type": "object",
+      "properties": {
+        "nodeId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "node": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "deviceId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "device": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "address": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "type": {
+          "$ref": "#/$defs/ValueType"
+        }
+      },
+      "required": [
+        "nodeId",
+        "node",
+        "deviceId",
+        "device",
+        "id",
+        "name",
+        "address",
+        "model",
+        "type"
+      ]
+    },
+    "NodeDeviceConfiguration": {
+      "title": "NodeDeviceConfiguration",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pluginPackageUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "deviceConfigurations": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/DeviceConfiguration"
+          }
+        },
+        "revision": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "id",
+        "pluginPackageUrl",
+        "deviceConfigurations"
+      ]
+    },
+    "NodeOnlineMessage": {
+      "title": "NodeOnlineMessage",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "isOnline": {
+          "type": "boolean"
+        },
+        "nodeBaseUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "grpcBaseUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "nodeType": {
+          "$ref": "#/$defs/NodeType"
+        },
+        "manifest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PackageManifest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pluginManifest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PackageManifest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "capabilities": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "contractVersion": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "isOnline",
+        "nodeType"
+      ]
+    },
+    "NodeReportTemplate": {
+      "title": "NodeReportTemplate",
+      "type": "object",
+      "properties": {
+        "nodeId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "node": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "deviceId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "device": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type": {
+          "$ref": "#/$defs/ValueType"
+        },
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "address": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "parameters": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "filters": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "maintainHistory": {
+          "type": "boolean"
+        },
+        "model": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      },
+      "required": [
+        "nodeId",
+        "node",
+        "deviceId",
+        "device",
+        "type",
+        "id",
+        "name",
+        "address",
+        "parameters",
+        "filters",
+        "maintainHistory",
+        "model"
+      ]
+    },
+    "NodeStatusMessage": {
+      "title": "NodeStatusMessage",
+      "type": "object",
+      "properties": {
+        "appliedRevision": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "appliedHash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "state": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "failedDevices": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/FailedDevice"
+          }
+        },
+        "pluginManifest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PackageManifest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "timeStamp": {
+          "type": "integer"
+        },
+        "contractVersion": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "timeStamp"
+      ]
+    },
+    "NodeType": {
+      "title": "NodeType",
+      "type": "integer",
+      "enum": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "x-enumNames": [
+        "Unknown",
+        "Device",
+        "Dashboard",
+        "Workflow"
+      ]
+    },
+    "PackageManifest": {
+      "title": "PackageManifest",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "installedPackageFilename": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "Report": {
+      "title": "Report",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "timeStamp": {
+          "type": "integer"
+        },
+        "filter": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "value": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "contractVersion": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "timeStamp"
+      ]
+    },
+    "ReportTemplate": {
+      "title": "ReportTemplate",
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/ValueType"
+        },
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "address": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "parameters": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "filters": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "maintainHistory": {
+          "type": "boolean"
+        },
+        "model": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      },
+      "required": [
+        "type",
+        "maintainHistory"
+      ]
+    },
+    "ValueType": {
+      "title": "ValueType",
+      "type": "integer",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "x-enumNames": [
+        "Boolean",
+        "Text",
+        "Number",
+        "Entity",
+        "TextArray"
+      ]
+    },
+    "Variable": {
+      "title": "Variable",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "isPersistant": {
+          "type": "boolean"
+        },
+        "valueAsJson": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type": {
+          "$ref": "#/$defs/ValueType"
+        },
+        "model": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "value": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      },
+      "required": [
+        "isPersistant",
+        "type"
+      ]
+    }
+  }
+}

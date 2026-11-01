@@ -21,6 +21,8 @@ jobs:
     with:
       build: RIoT2.Core.sln
       github-packages: false
+      # tools/SchemaExport rewrites contracts/schemas on every build; it must be committed as built.
+      verify-generated: true
 
   # Packaging smoke test for every package the release publishes.
   pack:
