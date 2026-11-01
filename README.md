@@ -6,7 +6,7 @@ runtime services used by every .NET component.
 
 - Type: class library, NuGet package `RIoT2.Core` on GitHub Packages. The same tag also publishes
   `RIoT2.Core.Devices.Testing` (from `Testing/`), the test kit for device plugins, and
-  `RIoT2.Core.Hosting` (from `Hosting/`, since 1.9.0), the services' shared logging.
+  `RIoT2.Core.Hosting` (from `Hosting/`, since 1.9.0), the services' shared logging and, since 1.10.0, metrics.
 - Target framework: .NET Standard 2.0 (the test kit and Hosting: .NET 10)
 - Versions: [CHANGELOG.md](CHANGELOG.md) (tag `1.0.0` failed CI and was never published)
 - Root namespace: `RIoT2.Core`
@@ -29,7 +29,8 @@ How Core fits into the platform: [architecture overview](https://github.com/Revo
 | `Interfaces/` | Device, message, template and service contracts |
 | `Services/` | `NodeMqttService`, `ReportService`, `DeviceSchedulerService`, `CodeProviderService` |
 | `Utils/` | `Json`, `MqttClient`, `Web` helpers, `LogScope` (the `CorrelationId` and `MessageId` log scopes) |
-| `Configuration/` | `SettingsReader`, `MqttOptions`, `LoggingOptions` and `ConfigurationValidationException`: how every service reads and validates its `RIOT2_*` settings |
+| `Diagnostics/` | `MeterNames` (one meter per service) and `NodeMetrics`, the node's instruments (`riot2.node.*`) |
+| `Configuration/` | `SettingsReader`, `MqttOptions`, `LoggingOptions`, `TelemetryOptions` and `ConfigurationValidationException`: how every service reads and validates its `RIOT2_*` settings |
 | `contracts/golden/` | Golden files: the JSON on MQTT, in orchestrator responses and in `StoredObjects`. Not part of the package. See [contracts/golden/README.md](contracts/golden/README.md). |
 
 The topics and payloads that these types implement are specified in the platform contracts:
@@ -71,6 +72,16 @@ example to report invalid settings), and reads `LoggingOptions.Read(settings)` i
 so an invalid `RIOT2_LOG_FORMAT` or `RIOT2_LOG_LEVEL` is reported with its other settings. Use
 `logger.BeginIdScope(LogScope.CorrelationId, id)` (or `MessageId`) around work for one message:
 every line logged inside it, by any logger, ends with the id.
+
+### Metrics in a service
+
+A service calls `builder.AddRIoT2Telemetry("<service>", id, MeterNames.<Service>)` after the logging, and
+reads `TelemetryOptions.Read(settings)` in its options type. Nothing is exported until
+`OTEL_EXPORTER_OTLP_ENDPOINT` is set; then the service's meter, `RIoT2.Mqtt` (`riot2.mqtt.connected`,
+`reconnects`, `dropped`), ASP.NET Core and the runtime go over OTLP, and with `RIOT2_TRACING=true` also
+traces. Instruments use `System.Diagnostics.Metrics` directly, which costs nothing while no one
+listens. Every `riot2.*` instrument is in the platform's
+[metrics contract](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/metrics.md).
 
 ### Writing devices
 
@@ -158,8 +169,9 @@ endpoints. `RIoT2.Core` itself contains no Matter protocol code.
 - `MQTTnet` and `MQTTnet.Extensions.ManagedClient`
 - `Microsoft.Extensions.Hosting`, `Microsoft.Extensions.Logging` and `Microsoft.Bcl.AsyncInterfaces` 10.0.12
 - `Quartz` (device refresh scheduling)
-- `RIoT2.Core.Hosting` only: `Serilog.AspNetCore` 10.0.0 and `Serilog.Sinks.File` 7.0.0, and the
-  ASP.NET Core shared framework
+- `RIoT2.Core.Hosting` only: `Serilog.AspNetCore` 10.0.0, `Serilog.Sinks.File` 7.0.0, OpenTelemetry
+  1.20.1 (hosting, OTLP exporter, ASP.NET Core, HTTP and runtime instrumentation), and the ASP.NET
+  Core shared framework
 
 Automation is handled by [RIoT2.Elsa](https://github.com/Revolutionized-IoT2/RIoT2.Elsa), not
 by Core.

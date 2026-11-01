@@ -47,11 +47,12 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj
 | `Abstracts/` | `PluginBase`, `DeviceBase`, `AsyncDeviceBase`, `DeviceServiceBase`, `NodeConfigurationServiceBase` |
 | `Plugins/` | `PluginHostContract` (assemblies the node shares with plugins), `DeviceTemplates` (template the node returns per device), `RequiresHardwareAttribute` |
 | `Testing/` | Separate package `RIoT2.Core.Devices.Testing` (.NET 10): `PluginTestHost`, `PluginConformance`, `DeviceConfigurationBuilder`. Excluded from the Core project by `DefaultItemExcludes` |
-| `Hosting/` | Separate package `RIoT2.Core.Hosting` (.NET 10, ASP.NET Core shared framework, Serilog): `RIoT2Logging.AddRIoT2Logging()`, `StartupLoggerFactory`. Excluded from the Core project by `DefaultItemExcludes` |
+| `Hosting/` | Separate package `RIoT2.Core.Hosting` (.NET 10, ASP.NET Core shared framework, Serilog, OpenTelemetry): `RIoT2Logging.AddRIoT2Logging()`, `StartupLoggerFactory`, `RIoT2Telemetry.AddRIoT2Telemetry()`. Excluded from the Core project by `DefaultItemExcludes` |
 | `Interfaces/` | Device, message, template and service contracts |
 | `Services/` | `NodeMqttService`, `ReportService`, `DeviceSchedulerService`, `CodeProviderService`, … |
-| `Utils/` | `Json` (Newtonsoft with a restricted binder), `MqttClient`, `Web`, `LogScope` |
-| `Configuration/` | `SettingsReader` (reads `RIOT2_*` settings from `IConfiguration`, collects every problem), `MqttOptions`, `LoggingOptions`, `ConfigurationValidationException` |
+| `Utils/` | `Json` (Newtonsoft with a restricted binder), `MqttClient` (also the `RIoT2.Mqtt` meter), `Web`, `LogScope` |
+| `Diagnostics/` | `MeterNames`, `NodeMetrics` (`riot2.node.*`, recorded by `NodeMqttService`, `DeviceServiceBase` and `NodeConfigurationStatus`) |
+| `Configuration/` | `SettingsReader` (reads `RIOT2_*` settings from `IConfiguration`, collects every problem), `MqttOptions`, `LoggingOptions`, `TelemetryOptions`, `ConfigurationValidationException` |
 | `contracts/golden/` | Golden files for every message, response and stored format; read by RIoT2.Tests, Elsa, UI and firmware tests |
 
 ## Contracts implemented here
@@ -151,8 +152,12 @@ must stay compatible with it.
   CHANGELOG heading until the first change after a release; then raise all three to the next release.
   The release workflow passes the tag as the version, so a tagged build always matches the tag.
 - Keep Serilog and the ASP.NET Core framework out of `RIoT2.Core`: device plugins reference it.
-  Service-only hosting code goes in `Hosting/`. Use `LogScope` names for ids in log scopes, so the
-  text format shows them.
+  Service-only hosting code goes in `Hosting/`, and so does OpenTelemetry: Core instruments use
+  `System.Diagnostics.Metrics` only. Use `LogScope` names for ids in log scopes, so the text format shows them.
+- A new, renamed or removed `riot2.*` instrument changes the
+  [metrics contract](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/metrics.md) and the Grafana dashboard in the hub's `deploy/`;
+  RIoT2.Tests `MetricsTests` pins the names. `riot2.node.device_restarts` must stay at zero for an
+  unchanged configuration.
 - Services read settings only through an options type built with `SettingsReader` (plan M4); no
   service calls `Environment.GetEnvironmentVariable`. Messages keep the format
   `Invalid {component} configuration: …`, which the services' tests pin. Tag `1.0.0` failed CI and was never published: don't

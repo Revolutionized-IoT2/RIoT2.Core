@@ -1,3 +1,4 @@
+using RIoT2.Core.Diagnostics;
 using RIoT2.Core.Interfaces;
 using RIoT2.Core.Interfaces.Services;
 using RIoT2.Core.Models;
@@ -29,6 +30,7 @@ namespace RIoT2.Core.Abstracts
             _logger = logger;
             _configurationService = configurationService;
             Devices = devices;
+            NodeMetrics.Track(this);
         }
 
         public virtual List<IDevice> Devices { get; private set; }
@@ -92,7 +94,11 @@ namespace RIoT2.Core.Abstracts
             try
             {
                 lock (_applied) _applied.Clear();
+                // Operations are cancelled already, so whether a device ran is read from its state.
+                var restarted = Devices.Count(d => d.State == DeviceState.Running);
                 await StopCoreAsync(cancellationToken).ConfigureAwait(false);
+                if (restarted > 0)
+                    NodeMetrics.DeviceRestarts.Add(restarted);
                 var configured = new List<IDevice>();
                 foreach (var device in Devices)
                 {
@@ -132,10 +138,13 @@ namespace RIoT2.Core.Abstracts
                 var stopped = new List<IDevice>();
                 foreach (var device in changed)
                 {
+                    var wasRunning = device.State == DeviceState.Running;
                     try
                     {
                         await Runtime(device).StopAsync(cancellationToken).ConfigureAwait(false);
                         stopped.Add(device);
+                        if (wasRunning)
+                            NodeMetrics.DeviceRestarts.Add(1);
                     }
                     catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
                     catch (Exception error)
@@ -341,6 +350,7 @@ namespace RIoT2.Core.Abstracts
         {
             if (Interlocked.Exchange(ref _disposed, 1) != 0)
                 return;
+            NodeMetrics.Untrack(this);
             await StopAllDevicesAsync(CancellationToken.None).ConfigureAwait(false);
             foreach (var runtime in _runtimes.Values)
                 runtime.Dispose();

@@ -1,4 +1,5 @@
-﻿using RIoT2.Core.Interfaces.Services;
+﻿using RIoT2.Core.Diagnostics;
+using RIoT2.Core.Interfaces.Services;
 using RIoT2.Core.Models;
 using RIoT2.Core.Services;
 using RIoT2.Core.Utils;
@@ -75,6 +76,7 @@ namespace RIoT2.Core.Abstracts
             {
                 if (ConfigurationStatus.IsApplied(command.Hash))
                 {
+                    NodeMetrics.ConfigApplies.Add(1, NodeMetrics.Tag("result", NodeMetrics.Unchanged));
                     ConfigurationStatus.Republish();
                     return;
                 }
@@ -107,7 +109,10 @@ namespace RIoT2.Core.Abstracts
                 {
                     // Unchanged: report again, or apply it again (devices not running, or not applied yet).
                     if (ConfigurationStatus.IsApplied(held))
+                    {
+                        NodeMetrics.ConfigApplies.Add(1, NodeMetrics.Tag("result", NodeMetrics.Unchanged));
                         ConfigurationStatus.Republish();
+                    }
                     else
                         SetDeviceConfiguration(current);
                     return;

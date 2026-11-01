@@ -28,6 +28,8 @@ namespace RIoT2.Core.Utils
     /// <item>Messages published while the broker is unreachable wait in a bounded queue
     /// (<see cref="MqttConfiguration.MaxPendingMessages"/>). When it is full, the oldest message is
     /// dropped, counted (<see cref="DroppedMessages"/>, metric <c>riot2.mqtt.dropped</c>) and logged.</item>
+    /// <item>Metrics (meter <c>RIoT2.Mqtt</c>, tag <c>client</c>): <c>riot2.mqtt.connected</c> is 1 while a
+    /// started client is connected, and <c>riot2.mqtt.reconnects</c> counts every connect after the first.</item>
     /// <item>Received messages go through a bounded queue to one worker, which calls every handler in
     /// arrival order, each in its own <c>try/catch</c>. When the queue is full, receiving waits.</item>
     /// </list>
@@ -37,9 +39,12 @@ namespace RIoT2.Core.Utils
         /// <summary>Received messages that may wait for the handlers before receiving pauses.</summary>
         public const int ReceiveQueueCapacity = 1000;
 
-        private static readonly Meter Meter = new Meter("RIoT2.Mqtt");
+        private static readonly Meter Meter = new Meter(Diagnostics.MeterNames.Mqtt);
         private static readonly Counter<long> DroppedCounter = Meter.CreateCounter<long>(
-            "riot2.mqtt.dropped", description: "Outgoing MQTT messages dropped because the pending queue was full.");
+            "riot2.mqtt.dropped", "{message}", "Outgoing MQTT messages dropped because the pending queue was full.");
+        private static readonly Counter<long> ReconnectCounter = Meter.CreateCounter<long>(
+            "riot2.mqtt.reconnects", "{connection}", "Connections to the broker after a client's first one.");
+        private static readonly List<WeakReference<MqttClient>> StartedClients = new List<WeakReference<MqttClient>>();
         private static readonly TimeSpan DropWarningInterval = TimeSpan.FromMinutes(1);
         private static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(5);
 
@@ -55,6 +60,13 @@ namespace RIoT2.Core.Utils
         private long _dropped;
         private long _lastDropWarning;
         private int _connected;
+        private int _connects;
+
+        static MqttClient()
+        {
+            Meter.CreateObservableGauge("riot2.mqtt.connected", ObserveConnected, null,
+                "1 while a started client is connected to the broker, 0 while it is not.");
+        }
 
         /// <summary>Raised for every received message, after the previous message's handlers finished.</summary>
         public event MqttMessageReceivedHandler MessageReceived;
@@ -172,6 +184,7 @@ namespace RIoT2.Core.Utils
             client.ConnectedAsync += OnConnectedAsync;
             client.DisconnectedAsync += OnDisconnectedAsync;
             client.ApplicationMessageSkippedAsync += OnSkippedAsync;
+            Track(true);
 
             if (filters.Count > 0)
                 await client.SubscribeAsync(filters).ConfigureAwait(false);
@@ -247,6 +260,7 @@ namespace RIoT2.Core.Utils
                 }
                 finally
                 {
+                    Track(false);
                     await client.StopAsync().ConfigureAwait(false);
                     await StopReceivingAsync().ConfigureAwait(false);
                 }
@@ -316,6 +330,8 @@ namespace RIoT2.Core.Utils
 
         private async Task OnConnectedAsync(MqttClientConnectedEventArgs _)
         {
+            if (Interlocked.Increment(ref _connects) > 1)
+                ReconnectCounter.Add(1, new KeyValuePair<string, object>("client", _settings.ClientId));
             SetConnected(true);
             var handlers = ConnectedAsync;
             if (handlers == null)
@@ -399,6 +415,25 @@ namespace RIoT2.Core.Utils
                 client.Dispose();
                 _client = null;
             }
+        }
+
+        // Started clients are measured by riot2.mqtt.connected until they stop.
+        private void Track(bool started)
+        {
+            lock (StartedClients)
+            {
+                StartedClients.RemoveAll(reference => !reference.TryGetTarget(out var target) || ReferenceEquals(target, this));
+                if (started)
+                    StartedClients.Add(new WeakReference<MqttClient>(this));
+            }
+        }
+
+        private static IEnumerable<Measurement<int>> ObserveConnected()
+        {
+            List<MqttClient> clients;
+            lock (StartedClients)
+                clients = StartedClients.Select(reference => reference.TryGetTarget(out var target) ? target : null).Where(c => c != null).ToList();
+            return clients.Select(c => new Measurement<int>(Volatile.Read(ref c._connected), new KeyValuePair<string, object>("client", c._settings.ClientId)));
         }
 
         public static bool IsMatch(string topic, string topicFilter)

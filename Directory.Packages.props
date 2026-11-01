@@ -12,6 +12,12 @@
     <PackageVersion Include="MQTTnet" Version="4.3.7.1207" />
     <PackageVersion Include="MQTTnet.Extensions.ManagedClient" Version="4.3.7.1207" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
+    <!-- RIoT2.Core.Hosting only: AddRIoT2Telemetry() (design 7.4 phase 4). -->
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.20.1" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.20.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.20.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.20.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.20.1" />
     <PackageVersion Include="Quartz" Version="3.13.1" />
     <!-- RIoT2.Core.Hosting only (net10.0); the versions the services used before (template). -->
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />

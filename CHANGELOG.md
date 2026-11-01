@@ -6,6 +6,21 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-11-01
+
+Metrics ([I22](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i22-metrics-m), design 7.4 phase 4). Additive.
+
+- Added: `RIoT2.Core.Hosting`'s `AddRIoT2Telemetry(service, id, meters)`: the service's meters,
+  `RIoT2.Mqtt`, ASP.NET Core and runtime metrics over OTLP, and traces with `RIOT2_TRACING=true`,
+  only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set (OpenTelemetry 1.20.1). `Configuration/TelemetryOptions`
+  reads and validates both settings.
+- Added: `Diagnostics/MeterNames` and the node's instruments in `NodeMetrics`:
+  `riot2.node.devices` (by state), `device_restarts` (running devices stopped by a configuration
+  change), `commands` (by outcome), `reports.published`, `reports.dropped` and `config_applies`
+  (applied, failed or unchanged).
+- Added: `MqttClient` measures `riot2.mqtt.connected` and `riot2.mqtt.reconnects` per client, next to
+  `riot2.mqtt.dropped`.
+
 ## [1.9.0] - 2026-11-01
 
 Consistent logging ([I20](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i20-consistent-logging-s), design 7.4 phase 2). Additive.

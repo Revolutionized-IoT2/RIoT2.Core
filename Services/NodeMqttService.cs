@@ -1,4 +1,5 @@
-﻿using RIoT2.Core.Interfaces.Services;
+using RIoT2.Core.Diagnostics;
+using RIoT2.Core.Interfaces.Services;
 using RIoT2.Core.Models;
 using RIoT2.Core.Utils;
 using RIoT2.Core.Interfaces;
@@ -179,6 +180,8 @@ namespace RIoT2.Core.Services
                     if (correlationId != null)
                         _ = PublishResultAsync(command, CommandResultStatus.Rejected,
                             _acceptingCommands ? $"More than {MaxPendingCommands} commands are pending." : "The node is stopping.");
+                    else
+                        CountUncorrelated(CommandResultStatus.Rejected);
                     return;
                 }
                 if (correlationId != null && !_correlations.TryAdd(correlationId))
@@ -235,6 +238,8 @@ namespace RIoT2.Core.Services
                 }
                 if (correlated != null)
                     await CompleteAsync(correlated, CommandResultStatus.Executed).ConfigureAwait(false);
+                else
+                    CountUncorrelated(CommandResultStatus.Executed);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -252,6 +257,8 @@ namespace RIoT2.Core.Services
                 if (correlated != null)
                     await CompleteAsync(correlated, CommandResultStatus.Failed,
                         "The command was cancelled, because its device was stopped or reconfigured or timed out; it may have run.").ConfigureAwait(false);
+                else
+                    CountUncorrelated(CommandResultStatus.Failed);
             }
             catch (DeviceNotReadyException error) when (correlated != null)
             {
@@ -266,14 +273,22 @@ namespace RIoT2.Core.Services
                 _logger.LogWarning("Node MQTT command {CommandId} has no device on this node", error.CommandId);
                 if (correlated != null)
                     await CompleteAsync(correlated, CommandResultStatus.UnknownCommand, error.Message).ConfigureAwait(false);
+                else
+                    CountUncorrelated(CommandResultStatus.UnknownCommand);
             }
             catch (Exception error)
             {
                 _logger.LogError(error, "Could not execute node MQTT command");
                 if (correlated != null)
                     await CompleteAsync(correlated, CommandResultStatus.Failed, error.GetBaseException().Message).ConfigureAwait(false);
+                else
+                    CountUncorrelated(CommandResultStatus.Failed);
             }
         }
+
+        // Commands without a correlationId get no result message, so they are counted here.
+        private static void CountUncorrelated(string outcome) =>
+            NodeMetrics.Commands.Add(1, NodeMetrics.Tag("outcome", outcome));
 
         // Remembers the outcome for redeliveries, then answers.
         private Task CompleteAsync(Command command, string status, string error = null)
@@ -302,6 +317,7 @@ namespace RIoT2.Core.Services
 
         private async Task PublishResultAsync(Command command, string status, string error = null)
         {
+            NodeMetrics.Commands.Add(1, NodeMetrics.Tag("outcome", status));
             var client = _resultClient;
             if (client == null)
                 return;
@@ -394,6 +410,7 @@ namespace RIoT2.Core.Services
                     try
                     {
                         await client.PublishAsync(_reportTopic, Json.SerializeIgnoreNulls(report)).ConfigureAwait(false);
+                        NodeMetrics.ReportsPublished.Add(1);
                     }
                     catch (Exception x)
                     {
@@ -406,6 +423,7 @@ namespace RIoT2.Core.Services
 
         private void OnReportDropped(Report report)
         {
+            NodeMetrics.ReportsDropped.Add(1);
             var dropped = Interlocked.Increment(ref _droppedReports);
             var now = DateTime.UtcNow.Ticks;
             var last = Interlocked.Read(ref _lastDropWarning);

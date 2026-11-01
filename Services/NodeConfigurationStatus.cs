@@ -1,3 +1,4 @@
+using RIoT2.Core.Diagnostics;
 using RIoT2.Core.Models;
 using System;
 using System.Collections.Generic;
@@ -61,22 +62,30 @@ namespace RIoT2.Core.Services
         /// from an orchestrator before 1.5.0) is applied. Devices that didn't start are listed, but the
         /// configuration itself counts as applied (design 7.2, decision 5).
         /// </summary>
-        public void Applied(int? revision, string hash, IEnumerable<FailedDevice> failedDevices = null) => Update(status =>
+        public void Applied(int? revision, string hash, IEnumerable<FailedDevice> failedDevices = null)
         {
-            var failed = failedDevices?.Where(d => d != null).ToList();
-            status.State = NodeConfigurationState.Applied;
-            status.AppliedRevision = revision;
-            status.AppliedHash = hash;
-            status.Error = null;
-            status.FailedDevices = failed == null || failed.Count == 0 ? null : failed;
-        });
+            NodeMetrics.ConfigApplies.Add(1, NodeMetrics.Tag("result", NodeMetrics.Applied));
+            Update(status =>
+            {
+                var failed = failedDevices?.Where(d => d != null).ToList();
+                status.State = NodeConfigurationState.Applied;
+                status.AppliedRevision = revision;
+                status.AppliedHash = hash;
+                status.Error = null;
+                status.FailedDevices = failed == null || failed.Count == 0 ? null : failed;
+            });
+        }
 
         /// <summary>The configuration could not be fetched or applied; the node keeps running the previous one.</summary>
-        public void Failed(string error) => Update(status =>
+        public void Failed(string error)
         {
-            status.State = NodeConfigurationState.Failed;
-            status.Error = string.IsNullOrEmpty(error) ? "The configuration could not be applied." : error;
-        });
+            NodeMetrics.ConfigApplies.Add(1, NodeMetrics.Tag("result", NodeMetrics.Failed));
+            Update(status =>
+            {
+                status.State = NodeConfigurationState.Failed;
+                status.Error = string.IsNullOrEmpty(error) ? "The configuration could not be applied." : error;
+            });
+        }
 
         /// <summary>A new plugin package is installed when the node restarts.</summary>
         public void PendingRestart() => Update(status =>
