@@ -2,7 +2,8 @@
 # RIoT2.Core.Devices.Templates into a private template hive, runs "dotnet new riot2-plugin", and checks that the
 # generated plugin builds without warnings (CI settings), passes its tests (PluginConformance included) and that
 # "dotnet publish" writes the node's plugin zip with its manifest and sidecar. Loading the zip into the node is
-# RIoT2.Net.Node's TemplatePluginInstallsAndLoadsIntoNode.
+# RIoT2.Net.Node's TemplatePluginInstallsAndLoadsIntoNode. Quote -p: arguments: PowerShell splits an unquoted
+# -p:Name=value passed to a function into "-p:" and "Name=value".
 #
 #   pwsh tools/verify-plugin-template.ps1            # CI (Core's ci.yml), or Windows PowerShell 5.1
 #   pwsh tools/verify-plugin-template.ps1 -Feed C:\Src\RIoT2\.localfeed   # reuse packed packages
@@ -40,8 +41,8 @@ foreach ($file in @("README.md", "AGENTS.md", "CHANGELOG.md", "CLAUDE.md", ".edi
 }
 
 $sources = "-p:RestoreAdditionalProjectSources=$Feed"
-Invoke-Dotnet test (Join-Path $plugin "Acme.Smoke.sln") -c Release -p:CI=true $sources --nologo
-Invoke-Dotnet publish (Join-Path $plugin "Acme.Smoke.csproj") -c Release -p:CI=true $sources --nologo
+Invoke-Dotnet test (Join-Path $plugin "Acme.Smoke.sln") -c Release "-p:CI=true" $sources --nologo
+Invoke-Dotnet publish (Join-Path $plugin "Acme.Smoke.csproj") -c Release "-p:CI=true" $sources --nologo
 
 $zip = Get-ChildItem (Join-Path $plugin "bin/plugin") -Filter "Acme.Smoke_*.zip" | Select-Object -First 1
 if (-not $zip) { throw "dotnet publish wrote no plugin zip." }
