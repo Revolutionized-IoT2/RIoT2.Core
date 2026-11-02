@@ -14,7 +14,8 @@ namespace RIoT2.Core.Interfaces.Services
         NodeOnlineMessage? OnlineMessage { get; set; }
 
         /// <summary>
-        /// Installs plugin package for device if there is any donwloaded. Deletes the package after installation. If there is an error during installation, it will throw exception with details of the error.
+        /// At start, before plugins load: installs a package staged by <see cref="DownloadPluginPackageAsync"/>, keeping the
+        /// previous plugins for one rollback (design 7.2). Throws when the install fails.
         /// </summary>
         void InstallPluginPackage();
 
@@ -26,7 +27,8 @@ namespace RIoT2.Core.Interfaces.Services
         void DownloadPluginPackage(string url);
 
         /// <summary>
-        /// Asynchronously downloads a plugin package from the specified URL into the Data folder. The package can be installed by calling InstallPluginPackage.
+        /// Downloads the plugin package at <paramref name="url"/>, verifies it (its <c>.sha256</c> sidecar and
+        /// <c>coreVersion</c>) and stages it; <see cref="InstallPluginPackage"/> installs it at the next start.
         /// </summary>
         /// <param name="url">The URL of the plugin package to download.</param>
         Task DownloadPluginPackageAsync(string url);

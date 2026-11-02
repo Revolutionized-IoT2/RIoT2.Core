@@ -1,12 +1,13 @@
-﻿using RIoT2.Core.Diagnostics;
+﻿using Microsoft.Extensions.Logging;
+using RIoT2.Core.Diagnostics;
 using RIoT2.Core.Interfaces.Services;
 using RIoT2.Core.Models;
+using RIoT2.Core.Plugins;
 using RIoT2.Core.Security;
 using RIoT2.Core.Services;
 using RIoT2.Core.Utils;
 using System;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -23,6 +24,7 @@ namespace RIoT2.Core.Abstracts
     {
         private readonly object _pendingGate = new object();
         private string? _pendingHash;
+        private PluginPackageInstaller? _pluginPackages;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NodeConfigurationServiceBase"/> class with no device configuration loaded.
@@ -213,32 +215,65 @@ namespace RIoT2.Core.Abstracts
 #pragma warning restore VSTHRD002
         }
 
-        /// <inheritdoc/>
-        public virtual async Task DownloadPluginPackageAsync(string url)
+        /// <summary>The folder plugins load from: <c>Plugins</c> in the application folder.</summary>
+        protected virtual string PluginsFolder => getSafeApplicationPath("Plugins");
+
+        /// <summary>Where the plugin installer keeps its journal and the refused package: the folder of <see cref="AppliedConfigurationPath"/>.</summary>
+        protected virtual string PluginDataFolder => Path.GetDirectoryName(AppliedConfigurationPath)!;
+
+        /// <summary>The logger of <see cref="PluginPackages"/>; none by default.</summary>
+        protected virtual ILogger? PluginLogger => null;
+
+        /// <summary>Verifies, stages, installs and rolls back plugin packages (design 7.2 phase 4).</summary>
+        public PluginPackageInstaller PluginPackages
         {
-            var file = await Utils.Web.DownloadFile(url, OutboundPurposes.Plugin);
-            if (file != null)
+            get
             {
-                saveFile(Path.Combine("Data", Path.GetFileName(file.Name)), file.Content);
+                lock (_pendingGate)
+                    return _pluginPackages ??= new PluginPackageInstaller(PluginsFolder, PluginDataFolder, PluginCompatibility.HostCoreVersion, PluginLogger);
             }
         }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Downloads the package at <paramref name="url"/>, verifies it against its <c>.sha256</c> sidecar and its
+        /// <c>coreVersion</c>, and stages it in <c>Plugins.new/</c>; <see cref="InstallPluginPackage"/> installs it at the
+        /// next start. Throws <see cref="InvalidOperationException"/> when the package is refused or unavailable.
+        /// </summary>
+        public virtual async Task DownloadPluginPackageAsync(string url)
+        {
+            var result = await PluginPackages.UpdateAsync(url, null, false,
+                (request, token) => Web.SendAsync(request, OutboundPurposes.Plugin, 300000, token)).ConfigureAwait(false);
+            if (result.Outcome != PluginUpdateOutcome.Staged)
+                throw new InvalidOperationException(result.Message ?? "The plugin package was not staged.");
+        }
+
+        /// <summary>
+        /// At start, before plugins load: installs the staged package (<see cref="PluginPackageInstaller.PromoteStaged"/>),
+        /// keeping the previous plugins in <c>Plugins.previous/</c>, and reads its manifest. A zip that a node before
+        /// 1.14.0 downloaded into <c>Data/</c> is verified and installed the same way. The host then calls
+        /// <see cref="PluginPackageInstaller.ConfirmStartup"/>.
+        /// </summary>
         public virtual void InstallPluginPackage()
         {
             try 
             {
-                var packageName = getPluginPackage();
-                if(string.IsNullOrEmpty(packageName))
-                    return; 
-
-                var file = loadFile("Data/" + packageName);
-                if (file != null && file.Exists) 
+                // First finish an interrupted install or rollback, or install the staged package.
+                var installed = PluginPackages.PromoteStaged();
+                var legacyPackage = getPluginPackage();
+                if (!string.IsNullOrEmpty(legacyPackage))
                 {
-                    deleteFolderContent("Plugins");
-                    extractZipFile(file, Path.Combine(Configuration.ApplicationFolder, "Plugins"));
-                    deleteFile("Data/" + packageName); //delete package after intallation
+                    var path = getSafeApplicationPath(Path.Combine("Data", legacyPackage));
+                    try
+                    {
+                        if (installed == null)
+                        {
+                            PluginPackages.Stage(path, legacyPackage!);
+                            PluginPackages.PromoteStaged();
+                        }
+                    }
+                    finally { deleteFile(Path.Combine("Data", legacyPackage)); }
                 }
+                Configuration.ReloadPluginManifest();
             } 
             catch(Exception x) 
             {
@@ -261,19 +296,6 @@ namespace RIoT2.Core.Abstracts
             return null;
         }
 
-        private void deleteFolderContent(string directory)
-        {
-            var fullPath = getSafeApplicationPath(directory);
-            if (Directory.Exists(fullPath))
-            {
-                DirectoryInfo di = new DirectoryInfo(fullPath);
-                foreach (var f in di.GetFiles())
-                    f.Delete();
-                foreach (var d in di.GetDirectories())
-                    d.Delete(true);
-            }
-        }
-
         private void deleteFile(string filename)
         {
             var fullPath = getSafeApplicationPath(filename);
@@ -281,55 +303,6 @@ namespace RIoT2.Core.Abstracts
             {
                 FileInfo fi = new FileInfo(fullPath);
                 fi.Delete();
-            }
-        }
-
-        private void saveFile(string filename, byte[] content) 
-        {
-            var fullPath = getSafeApplicationPath(filename);
-            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
-            FileInfo fi = new FileInfo(fullPath);
-            if (fi.Exists)
-                fi.Delete();
-            
-            File.WriteAllBytes(fullPath, content);
-        }
-
-        private FileInfo? loadFile(string filename)
-        {
-            var fullPath = getSafeApplicationPath(filename);
-            FileInfo f = new FileInfo(fullPath);
-
-            if (!f.Exists)
-                return null;
-
-            return f;
-        }
-
-        private void extractZipFile(FileInfo file, string destination)
-        {
-            Directory.CreateDirectory(destination);
-            var destinationRoot = Path.GetFullPath(destination);
-            if (!destinationRoot.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
-                destinationRoot += Path.DirectorySeparatorChar;
-
-            using (var archive = ZipFile.OpenRead(file.FullName))
-            {
-                foreach (var entry in archive.Entries)
-                {
-                    var fullPath = Path.GetFullPath(Path.Combine(destinationRoot, entry.FullName));
-                    if (!fullPath.StartsWith(destinationRoot, StringComparison.OrdinalIgnoreCase))
-                        throw new InvalidOperationException("Plugin package contains an entry outside the plugin folder.");
-
-                    if (string.IsNullOrEmpty(entry.Name))
-                    {
-                        Directory.CreateDirectory(fullPath);
-                        continue;
-                    }
-
-                    Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
-                    entry.ExtractToFile(fullPath, true);
-                }
             }
         }
 

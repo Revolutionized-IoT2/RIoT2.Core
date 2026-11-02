@@ -1175,6 +1175,18 @@
             "string",
             "null"
           ]
+        },
+        "coreVersion": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sha256": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     },

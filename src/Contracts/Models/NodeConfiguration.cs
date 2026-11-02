@@ -16,6 +16,12 @@ namespace RIoT2.Core.Models
         }
 
         public PackageManifest? PluginManifest { get; private set; }
+
+        /// <summary>Reads <c>Plugins/PluginManifest.json</c> again, after a plugin package was installed.</summary>
+        public void ReloadPluginManifest()
+        {
+            PluginManifest = LoadManifest("Plugins/PluginManifest.json");
+        }
         public PackageManifest? Manifest { get; private set; }
 
         public override string ApplicationFolder { get => _configurationFolder.FullName; }

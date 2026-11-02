@@ -37,7 +37,7 @@ How Core fits into the platform: [architecture overview](https://github.com/Revo
 | `src/Mqtt/` | `MqttClient`, `LogScope` (the `CorrelationId` and `MessageId` log scopes), and `Configuration/`: how every service reads and validates its `RIOT2_*` settings |
 | `src/Http/` | `Web` helpers; `Security/`: `ApiKeyHandler` (`X-RIoT2-Key`), `IOutboundUrlPolicy` |
 | `src/Devices/` | `PluginBase`, `DeviceBase(<TOptions>)`, `AsyncDeviceBase(<TOptions>)`, the device and plugin interfaces, `Plugins/` (`PluginHostContract`, `DeviceTemplates`, `DeviceOptions`, `[DeviceParameter]`, `[RequiresHardware]`) |
-| `src/Node/` | `NodeMqttService`, `DeviceServiceBase`, `NodeConfigurationServiceBase`, `DeviceSchedulerService`, `CommandService`, `ReportService`, `NodeConfigurationStatus`, `NodeMetrics` (`riot2.node.*`) |
+| `src/Node/` | `NodeMqttService`, `DeviceServiceBase`, `NodeConfigurationServiceBase`, `DeviceSchedulerService`, `CommandService`, `ReportService`, `NodeConfigurationStatus`, `NodeMetrics` (`riot2.node.*`), `Plugins/` (`PluginPackageInstaller`) |
 | `RIoT2.Core.csproj`, `Facade/` | The `RIoT2.Core` facade: type forwards and the `[Obsolete]` orchestrator-only types |
 | `src/Devices.Build/` | `RIoT2.Core.Devices.Build`: the `RIoT2PluginPack` target and its task (`PluginPackager`); compiles `PluginHostContract.cs` from `src/Devices/` |
 | `Testing/` | `RIoT2.Core.Devices.Testing`: `PluginTestHost`, `PluginConformance`, `DeviceConfigurationBuilder` |
@@ -141,7 +141,7 @@ and refreshes the way the node does; `DeviceConfigurationBuilder` builds configu
 
 Reference `RIoT2.Core.Devices.Build` with `PrivateAssets="all"` and set `RIoT2PluginName`. Then
 `dotnet publish -p:Version=x.y.z` also writes `bin/plugin/<AssemblyName>_x.y.z.zip`, the zip the
-node installs, and its `.sha256` sidecar (`sha256sum` format). The zip holds the plugin's top-level
+node verifies and installs, and its `.sha256` sidecar (`sha256sum` format). The zip holds the plugin's top-level
 assemblies and native libraries without the ones the node shares (`PluginHostContract`) or ships
 (`RIoT2PluginExclude`), plus `PluginManifest.json` with `coreVersion`, the `RIoT2.Core.Devices`
 version the plugin uses. `plugin-release.yml` only checks and uploads it. Other properties:

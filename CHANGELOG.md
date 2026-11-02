@@ -6,6 +6,32 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.19.0] - 2026-11-02
+
+Verified plugin updates on the node ([I35](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-3-4.md#i35-verified-plugin-updates-m), [design 7.2](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/desired-state-configuration.md) phase 4, backlog item 5).
+Additive; the golden file `node-status-plugin-rejected` is new and the schema gains two optional
+members.
+
+- Added (`RIoT2.Core.Contracts`): `PackageManifest.CoreVersion` and `Sha256`, omitted when `null`.
+  The node writes `sha256` (of the installed zip) into `Plugins/PluginManifest.json`, so both reach
+  the status topic's `pluginManifest`. `NodeConfiguration.ReloadPluginManifest()`.
+- Added (`RIoT2.Core.Node`, namespace `RIoT2.Core.Plugins`): `PluginPackageInstaller`.
+  `UpdateAsync` compares the package's `.sha256` sidecar with the installed `sha256` (the file name
+  without a sidecar, or for packages installed before), downloads a changed package, verifies its
+  hash, extracts it into `Plugins.new/` and checks its `coreVersion`; a refused package never
+  touches `Plugins/`. `PromoteStaged` (at start) moves the contents of `Plugins/` to
+  `Plugins.previous/` and of `Plugins.new/` to `Plugins/`, resuming after an interruption
+  (`Data/plugins.install.json`); a swap that fails puts the previous plugins back and refuses the
+  package. `ConfirmStartup` keeps the package, or rolls it back once when it doesn't load (a first
+  install, with nothing to go back to, stays). Packages refused for good (incompatible, unsafe, not loadable) are remembered in
+  `Data/plugins.rejected.json` and not downloaded again. `PluginCompatibility.IsCompatible`: the
+  same Core major and a minor no newer than the node's. `PluginUpdateResult`,
+  `PluginStartupResult`, `PluginRejection`, `PluginPackageException`.
+- Changed: `NodeConfigurationServiceBase.PluginPackages`; `InstallPluginPackage()` installs the
+  staged package (and a zip an older node left in `Data/`, verified the same way) instead of
+  emptying `Plugins/`; `DownloadPluginPackageAsync` verifies and stages, and throws when the package
+  is refused. New overridables `PluginsFolder`, `PluginDataFolder` and `PluginLogger`.
+
 ## [1.18.0] - 2026-11-02
 
 The optional security mode's seams ([I34](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i34-security-seams-with-the-mode-fixed-at-off-m), [design 7.5](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/security-mode.md) phase S0). Additive: with the default mode `off`

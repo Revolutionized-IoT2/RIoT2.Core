@@ -42,7 +42,7 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj
 | `src/Mqtt/` | `RIoT2.Core.Mqtt`: `MqttClient` (and the `RIoT2.Mqtt` meter), `MqttEventArgs`, `LogScope`, and `Configuration/`: `SettingsReader`, `MqttOptions`, `LoggingOptions`, `TelemetryOptions`, `SecurityOptions` |
 | `src/Http/` | `RIoT2.Core.Http`: `Web`, `Security/` (`ApiKeyHandler`, the outbound URL policy) |
 | `src/Devices/` | `RIoT2.Core.Devices`, the plugin SDK: `PluginBase`, `DeviceBase`, `AsyncDeviceBase`, device and service interfaces, `PluginHostContract`, `DeviceTemplates` |
-| `src/Node/` | `RIoT2.Core.Node`, the node runtime: `NodeMqttService`, `DeviceServiceBase`, `NodeConfigurationServiceBase`, `DeviceSchedulerService` (Quartz), `NodeMetrics`, `CorrelationCache` |
+| `src/Node/` | `RIoT2.Core.Node`, the node runtime: `NodeMqttService`, `DeviceServiceBase`, `NodeConfigurationServiceBase`, `PluginPackageInstaller`, `DeviceSchedulerService` (Quartz), `NodeMetrics`, `CorrelationCache` |
 | `RIoT2.Core.csproj`, `Facade/` | The facade: `TypeForwards.cs` (every public type of the packages) and the `[Obsolete]` orchestrator-only and unused types, removed in I45 |
 | `src/Devices.Build/` | `RIoT2.Core.Devices.Build`: `build/*.targets` (`RIoT2PluginPack`, after `Publish`), the `PackPlugin` task and `PluginPackager` |
 | `Testing/` | `RIoT2.Core.Devices.Testing` (.NET 10): `PluginTestHost`, `PluginConformance`, `DeviceConfigurationBuilder` |
@@ -92,8 +92,8 @@ must stay compatible with it.
 - Don't widen `RIoT2SerializationBinder` in `src/Contracts/Utils/JsonNewtonsoft.cs`: it blocks deserialization
   gadgets in the `[Obsolete]` `*AutoTypeNameHandling` helpers, which only old plugins still call.
 - A stored type implements `IStoredObject`; `stored-saved/` golden files pin its format.
-- `NodeConfigurationServiceBase` must keep extracting plugin zips only inside `Plugins/`
-  (zip-slip guard) and sanitizing package file names.
+- `PluginPackageInstaller` extracts only into `Plugins.new/` (zip-slip guard); refusals never
+  touch `Plugins/`.
 - New device code derives from `AsyncDeviceBase`. No `async void` or blocking waits (the threading
   analyzers fail CI); a deliberate wait needs a `#pragma` with its reason.
 - Nullable is on (I32): optional or omitted-when-null contract members are `?`; rules in the hub's
