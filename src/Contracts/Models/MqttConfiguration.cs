@@ -6,6 +6,7 @@
     public class MqttConfiguration
     {
         public const int DefaultPort = 1883;
+        public const int DefaultTlsPort = 8883;
         public const int DefaultKeepAliveSeconds = 15;
         public const int DefaultMaxPendingMessages = 10000;
 
@@ -16,6 +17,16 @@
 
         /// <summary>Broker TCP port (<c>RIOT2_MQTT_PORT</c>).</summary>
         public int Port { get; set; } = DefaultPort;
+
+        /// <summary>Connect over TLS (<c>RIOT2_MQTT_TLS</c>); plain TCP when false.</summary>
+        public bool UseTls { get; set; }
+
+        /// <summary>
+        /// A PEM or DER CA certificate file (<c>RIOT2_MQTT_CA_FILE</c>) that the broker's certificate must
+        /// chain to, for a private CA. <c>null</c> trusts the operating system's CAs. Used only with
+        /// <see cref="UseTls"/>.
+        /// </summary>
+        public string? CaFile { get; set; }
 
         /// <summary>Seconds between keep-alive pings when nothing else is sent.</summary>
         public int KeepAliveSeconds { get; set; } = DefaultKeepAliveSeconds;

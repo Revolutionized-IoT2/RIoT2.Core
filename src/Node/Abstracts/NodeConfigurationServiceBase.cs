@@ -1,6 +1,7 @@
 ﻿using RIoT2.Core.Diagnostics;
 using RIoT2.Core.Interfaces.Services;
 using RIoT2.Core.Models;
+using RIoT2.Core.Security;
 using RIoT2.Core.Services;
 using RIoT2.Core.Utils;
 using System;
@@ -53,6 +54,12 @@ namespace RIoT2.Core.Abstracts
         protected virtual int ConfigurationFetchTimeoutMilliseconds => 30000;
 
         /// <summary>
+        /// The node's <c>RIOT2_API_KEY</c>, sent in <c>X-RIoT2-Key</c> when it fetches its configuration
+        /// (design 7.5); <c>null</c> sends none.
+        /// </summary>
+        protected virtual string? ServiceApiKey => null;
+
+        /// <summary>
         /// Where the last applied configuration is kept, so the node can start with it when the
         /// orchestrator is down (design 7.2, decision 4).
         /// </summary>
@@ -93,9 +100,10 @@ namespace RIoT2.Core.Abstracts
             {
                 if (!string.IsNullOrEmpty(held))
                     request.Headers.IfNoneMatch.Add(new EntityTagHeaderValue("\"" + held + "\""));
+                Security.ServiceApiKey.Apply(request, ServiceApiKey);
                 try
                 {
-                    response = await Web.SendAsync(request, ConfigurationFetchTimeoutMilliseconds).ConfigureAwait(false);
+                    response = await Web.SendAsync(request, OutboundPurposes.Orchestrator, ConfigurationFetchTimeoutMilliseconds).ConfigureAwait(false);
                 }
                 catch (Exception error)
                 {
@@ -208,7 +216,7 @@ namespace RIoT2.Core.Abstracts
         /// <inheritdoc/>
         public virtual async Task DownloadPluginPackageAsync(string url)
         {
-            var file = await Utils.Web.DownloadFile(url);
+            var file = await Utils.Web.DownloadFile(url, OutboundPurposes.Plugin);
             if (file != null)
             {
                 saveFile(Path.Combine("Data", Path.GetFileName(file.Name)), file.Content);

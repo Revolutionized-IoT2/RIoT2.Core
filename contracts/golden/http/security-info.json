@@ -1,0 +1,6 @@
+{
+  "mode": "off",
+  "features": [],
+  "loginRequired": false,
+  "realtime": "mqtt"
+}

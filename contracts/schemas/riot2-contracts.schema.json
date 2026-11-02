@@ -1266,6 +1266,42 @@
         "maintainHistory"
       ]
     },
+    "SecurityInfo": {
+      "title": "SecurityInfo",
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "features": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "loginRequired": {
+          "type": "boolean"
+        },
+        "realtime": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "mode",
+        "features",
+        "loginRequired",
+        "realtime"
+      ]
+    },
     "ValueType": {
       "title": "ValueType",
       "type": "integer",

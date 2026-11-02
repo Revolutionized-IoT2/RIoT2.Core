@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Description>Hosting for the RIoT2 services: AddRIoT2Logging() (Serilog) and AddRIoT2Telemetry() (OpenTelemetry), design 7.4.</Description>
+    <Description>Hosting for the RIoT2 services: AddRIoT2Logging() (Serilog) and AddRIoT2Telemetry() (OpenTelemetry), design 7.4, and the optional security mode's seams, AddRIoT2Security() (design 7.5).</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\Mqtt\RIoT2.Core.Mqtt.csproj" />
+    <!-- RIoT2Security: the service API key, the outbound URL policy and Web (design 7.5). -->
+    <ProjectReference Include="..\src\Http\RIoT2.Core.Http.csproj" />
   </ItemGroup>
 
   <ItemGroup>

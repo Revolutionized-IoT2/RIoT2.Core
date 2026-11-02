@@ -1,4 +1,5 @@
 ﻿using RIoT2.Core.Models;
+using RIoT2.Core.Security;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,12 +18,44 @@ namespace RIoT2.Core.Utils
         // Shared HttpClient instances to avoid socket exhaustion (SocketException) caused by
         // creating/disposing an HttpClient per request. Per-request timeouts are applied via
         // CancellationTokenSource so the shared instance's Timeout is never mutated.
-        private static readonly HttpClient _httpClient = new HttpClient();
+        // Every request passes the outbound URL policy first (design 7.5).
+        private static readonly HttpClient _httpClient = new HttpClient(new PolicyHandler(new HttpClientHandler()));
 
-        private static readonly HttpClient _insecureHttpClient = new HttpClient(new HttpClientHandler
+        private static readonly HttpClient _insecureHttpClient = new HttpClient(new PolicyHandler(new HttpClientHandler
         {
             ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
-        });
+        }));
+
+        private const string PurposeProperty = "RIoT2.OutboundPurpose";
+        private static IOutboundUrlPolicy _outboundUrlPolicy = AllowAllOutboundUrlPolicy.Instance;
+
+        /// <summary>
+        /// The policy every request of these helpers is checked against, with purpose
+        /// <see cref="OutboundPurposes.Device"/> unless a method takes another one. A refused request
+        /// throws <see cref="OutboundUrlRejectedException"/> (wrapped like other errors by the methods
+        /// that wrap them). The service host sets it; the default allows everything (design 7.5).
+        /// </summary>
+        public static IOutboundUrlPolicy OutboundUrlPolicy
+        {
+            get => _outboundUrlPolicy;
+            set => _outboundUrlPolicy = value ?? throw new ArgumentNullException(nameof(value));
+        }
+
+        /// <summary>
+        /// Sends <paramref name="request"/> like <see cref="SendAsync(HttpRequestMessage, int, CancellationToken)"/>,
+        /// checked against <see cref="OutboundUrlPolicy"/> for <paramref name="purpose"/> (one of
+        /// <see cref="OutboundPurposes"/>).
+        /// </summary>
+        public static Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, string purpose,
+            int timeOutMilliseconds = defaultTimeOutMilliseconds, CancellationToken cancellationToken = default)
+        {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+            if (string.IsNullOrEmpty(purpose))
+                throw new ArgumentException("A purpose is required.", nameof(purpose));
+            request.Properties[PurposeProperty] = purpose;
+            return SendAsync(request, timeOutMilliseconds, cancellationToken);
+        }
 
         /// <summary>
         /// Sends <paramref name="request"/> on the shared client, cancelled after
@@ -41,13 +74,18 @@ namespace RIoT2.Core.Utils
             }
         }
 
-        public static async Task<WebFile> DownloadFile(string url)
+        public static Task<WebFile> DownloadFile(string url) => DownloadFile(url, OutboundPurposes.Device);
+
+        /// <summary>Downloads <paramref name="url"/>, checked against <see cref="OutboundUrlPolicy"/> for <paramref name="purpose"/>.</summary>
+        public static async Task<WebFile> DownloadFile(string url, string purpose)
         {
             try
             {
+                using (var request = new HttpRequestMessage(HttpMethod.Get, url))
                 using (var cancel = new CancellationTokenSource(defaultTimeOutMilliseconds))
                 {
-                    var response = await _httpClient.GetAsync(url, cancel.Token);
+                    request.Properties[PurposeProperty] = purpose;
+                    var response = await _httpClient.SendAsync(request, cancel.Token);
                     response.EnsureSuccessStatusCode();
                     var filename = response.Content.Headers.ContentDisposition != null && !String.IsNullOrEmpty(response.Content.Headers.ContentDisposition.FileName) ?
                         response.Content.Headers.ContentDisposition.FileName.Trim('"') :
@@ -337,6 +375,20 @@ namespace RIoT2.Core.Utils
             catch (Exception ex)
             {
                 throw new Exception("Error in Web.GetResponseAsync", ex);
+            }
+        }
+
+        private sealed class PolicyHandler : DelegatingHandler
+        {
+            public PolicyHandler(HttpMessageHandler inner) : base(inner)
+            {
+            }
+
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                var purpose = request.Properties.TryGetValue(PurposeProperty, out var value) && value is string text ? text : OutboundPurposes.Device;
+                OutboundUrlPolicyHandler.Check(_outboundUrlPolicy, request.RequestUri, purpose);
+                return base.SendAsync(request, cancellationToken);
             }
         }
 

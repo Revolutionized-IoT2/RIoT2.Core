@@ -10,6 +10,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Channels;
@@ -111,12 +113,46 @@ namespace RIoT2.Core.Utils
                 Username = configuration.Username,
                 Password = configuration.Password,
                 Port = configuration.Port,
+                UseTls = configuration.UseTls,
+                CaFile = configuration.CaFile,
                 KeepAliveSeconds = configuration.KeepAliveSeconds,
                 MaxPendingMessages = configuration.MaxPendingMessages
             };
             _logger = logger;
             _willTopic = Constants.Get(_settings.ClientId, MqttTopic.NodeOnline);
             _willPayload = Json.Serialize(new NodeOnlineMessage() { NodeBaseUrl = "", IsOnline = false });
+        }
+
+        // TLS (RIOT2_MQTT_TLS, design 7.5): the broker's certificate must match its host name and chain
+        // to the operating system's CAs or, with RIOT2_MQTT_CA_FILE, to that CA.
+        private void ConfigureTls(MqttClientTlsOptionsBuilder tls)
+        {
+            tls.UseTls().WithTargetHost(_settings.ServerUrl);
+            if (string.IsNullOrEmpty(_settings.CaFile))
+                return;
+            var ca = new X509Certificate2(_settings.CaFile!);
+            tls.WithCertificateValidationHandler(e => IsTrustedBrokerCertificate(e.Certificate, e.SslPolicyErrors, ca));
+        }
+
+        /// <summary>
+        /// Whether a broker certificate is trusted with a private CA: its name matches, and it chains to
+        /// <paramref name="ca"/> (which needn't be installed) without other errors.
+        /// </summary>
+        internal static bool IsTrustedBrokerCertificate(X509Certificate? certificate, SslPolicyErrors errors, X509Certificate2 ca)
+        {
+            if (certificate == null || (errors & ~SslPolicyErrors.RemoteCertificateChainErrors) != SslPolicyErrors.None)
+                return false;
+            using (var chain = new X509Chain())
+            using (var leaf = new X509Certificate2(certificate))
+            {
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+                chain.ChainPolicy.ExtraStore.Add(ca);
+                if (!chain.Build(leaf))
+                    return false;
+                var root = chain.ChainElements[chain.ChainElements.Count - 1].Certificate;
+                return root.RawData.SequenceEqual(ca.RawData);
+            }
         }
 
         /// <summary>Outgoing messages dropped since this client was created, because the pending queue was full.</summary>
@@ -163,19 +199,22 @@ namespace RIoT2.Core.Utils
             _received = received;
             _receiveWorker = Task.Run(() => ProcessReceivedAsync(received.Reader));
 
+            var clientOptions = new MqttClientOptionsBuilder()
+                .WithClientId(_settings.ClientId)
+                .WithTcpServer(_settings.ServerUrl, _settings.Port)
+                .WithKeepAlivePeriod(TimeSpan.FromSeconds(_settings.KeepAliveSeconds))
+                .WithWillTopic(_willTopic)
+                .WithWillPayload(Encoding.UTF8.GetBytes(_willPayload))
+                .WithWillQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
+                .WithWillRetain(_willRetain)
+                .WithCredentials(_settings.Username, _settings.Password);
+            if (_settings.UseTls)
+                clientOptions = clientOptions.WithTlsOptions(ConfigureTls);
             var options = new ManagedMqttClientOptionsBuilder()
                 .WithAutoReconnectDelay(TimeSpan.FromSeconds(5))
                 .WithMaxPendingMessages(_settings.MaxPendingMessages)
                 .WithPendingMessagesOverflowStrategy(MQTTnet.Server.MqttPendingMessagesOverflowStrategy.DropOldestQueuedMessage)
-                .WithClientOptions(new MqttClientOptionsBuilder()
-                    .WithClientId(_settings.ClientId)
-                    .WithTcpServer(_settings.ServerUrl, _settings.Port)
-                    .WithKeepAlivePeriod(TimeSpan.FromSeconds(_settings.KeepAliveSeconds))
-                    .WithWillTopic(_willTopic)
-                    .WithWillPayload(Encoding.UTF8.GetBytes(_willPayload))
-                    .WithWillQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
-                    .WithWillRetain(_willRetain)
-                    .WithCredentials(_settings.Username, _settings.Password))
+                .WithClientOptions(clientOptions)
                 .Build();
 
             var client = new MqttFactory().CreateManagedMqttClient();

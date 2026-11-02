@@ -6,6 +6,33 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.18.0] - 2026-11-02
+
+The optional security mode's seams ([I34](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i34-security-seams-with-the-mode-fixed-at-off-m), [design 7.5](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/security-mode.md) phase S0). Additive: with the default mode `off`
+nothing is enforced and nothing behaves differently. Golden files and hashes are unchanged; the
+schema gains `SecurityInfo`.
+
+- Added (`RIoT2.Core.Mqtt`): `SecurityOptions` reads `RIOT2_SECURITY_MODE`,
+  `RIOT2_SECURITY_FEATURES`, `RIOT2_API_KEY` and `RIOT2_CORS_ORIGINS`. Only `off` is accepted
+  (`SupportedModes`); `audit` or `on` is a configuration error until they are implemented.
+- Added (`RIoT2.Core.Mqtt`): MQTT over TLS. `RIOT2_MQTT_TLS=true` (`MqttOptions.UseTls`,
+  `MqttConfiguration.UseTls`) connects with TLS and host-name validation, port 8883 by default;
+  `RIOT2_MQTT_CA_FILE` (`CaFile`) makes the broker's certificate chain to a private CA.
+- Added (`RIoT2.Core.Http`, namespace `RIoT2.Core.Security`): `ServiceApiKey` and `ApiKeyHandler`
+  send `X-RIoT2-Key`; `IOutboundUrlPolicy`, `AllowAllOutboundUrlPolicy`, `OutboundUrlPolicyHandler`,
+  `OutboundPurposes` and `OutboundUrlRejectedException` check outbound URLs. `Web` checks every
+  request against `Web.OutboundUrlPolicy` (allow-all by default), and has `SendAsync` and
+  `DownloadFile` overloads that take a purpose.
+- Added (`RIoT2.Core.Contracts`): `SecurityInfo`, the body of `GET /api/security/info`, in the
+  contract schema; golden file `http/security-info.json`.
+- Added (`RIoT2.Core.Hosting`, which now depends on `RIoT2.Core.Http`): `AddRIoT2Security()`,
+  `UseRIoT2Security()`, `MapRIoT2SecurityInfo()`, the `Viewer`/`Operator`/`Admin` policies
+  (`SecurityPolicies`) with the `RIoT2LocalTrust` scheme (`LocalTrustAuthenticationHandler`),
+  `DefaultPolicyConvention` for MVC actions without a policy, and
+  `RIoT2Security.EndpointsWithoutPolicy()` for tests.
+- Changed (`RIoT2.Core.Node`): `NodeConfigurationServiceBase` sends the node's key
+  (`ServiceApiKey`, override it) when it fetches its configuration, and downloads plugin packages
+  with the `plugin` purpose.
 - Build: `renovate.json` extends the shared Renovate preset ([I33](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i33-supply-chain-s)). Renovate opens grouped
   update pull requests once the app is installed (MA7).
 - Release: every package gets `<package>.<version>.spdx.json`, an SPDX SBOM of its dependencies, on

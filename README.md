@@ -10,14 +10,14 @@ component.
   | Package | Contents | Depends on |
   | --- | --- | --- |
   | `RIoT2.Core.Contracts` | Wire models, topics, enums, `Json` | System.Text.Json, Newtonsoft.Json (until Core 2.0) |
-  | `RIoT2.Core.Mqtt` | `MqttClient`, `LogScope`, the service settings (`SettingsReader`, `MqttOptions`, …) | Contracts, MQTTnet |
-  | `RIoT2.Core.Http` | `Web` | Contracts |
+  | `RIoT2.Core.Mqtt` | `MqttClient` (TLS optional), `LogScope`, the service settings (`SettingsReader`, `MqttOptions`, `SecurityOptions`, …) | Contracts, MQTTnet |
+  | `RIoT2.Core.Http` | `Web`, `ApiKeyHandler`, the outbound URL policy | Contracts |
   | `RIoT2.Core.Devices` | The plugin SDK: `PluginBase`, `AsyncDeviceBase`, `DeviceBase`, typed options, device interfaces | Contracts, DI and logging abstractions |
   | `RIoT2.Core.Node` | The node runtime: `NodeMqttService`, `DeviceServiceBase`, the scheduler | all of the above, Quartz |
   | `RIoT2.Core` | Facade: references all five and forwards their types, so code built against an older `RIoT2.Core` keeps working; removed in Core 2.0 | all five |
   | `RIoT2.Core.Devices.Testing` | The plugin test kit (.NET 10) | Node |
   | `RIoT2.Core.Devices.Build` | MSBuild target that packs the plugin zip on `dotnet publish` | none |
-  | `RIoT2.Core.Hosting` | The services' logging and metrics (.NET 10, Serilog, OpenTelemetry) | Mqtt |
+  | `RIoT2.Core.Hosting` | The services' logging, metrics and security seams (.NET 10, Serilog, OpenTelemetry) | Mqtt, Http |
 
   Reference the narrowest packages (since 1.14.0, [I28](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i28-narrow-references-and-generated-models-m)): a service
   `Contracts` and `Mqtt` (plus `Http` if it calls `Web`), a plugin `Devices` (plus `Http` or `Mqtt`
@@ -35,13 +35,13 @@ How Core fits into the platform: [architecture overview](https://github.com/Revo
 | --- | --- |
 | `src/Contracts/` | `Constants.cs` (topics, API URLs), `Contract.cs` (`Contract.Version`, capability names), `Enums.cs`, `Models/` (the messages, `ValueModel`, configuration, template and Matter models), the message and template interfaces, `Utils/` (`Json`, `RIoT2JsonOptions`, `ConfigurationHash`), `Schema/ContractSchemas.cs` (the JSON Schema export), `Diagnostics/MeterNames.cs` |
 | `src/Mqtt/` | `MqttClient`, `LogScope` (the `CorrelationId` and `MessageId` log scopes), and `Configuration/`: how every service reads and validates its `RIOT2_*` settings |
-| `src/Http/` | `Web` helpers |
+| `src/Http/` | `Web` helpers; `Security/`: `ApiKeyHandler` (`X-RIoT2-Key`), `IOutboundUrlPolicy` |
 | `src/Devices/` | `PluginBase`, `DeviceBase(<TOptions>)`, `AsyncDeviceBase(<TOptions>)`, the device and plugin interfaces, `Plugins/` (`PluginHostContract`, `DeviceTemplates`, `DeviceOptions`, `[DeviceParameter]`, `[RequiresHardware]`) |
 | `src/Node/` | `NodeMqttService`, `DeviceServiceBase`, `NodeConfigurationServiceBase`, `DeviceSchedulerService`, `CommandService`, `ReportService`, `NodeConfigurationStatus`, `NodeMetrics` (`riot2.node.*`) |
 | `RIoT2.Core.csproj`, `Facade/` | The `RIoT2.Core` facade: type forwards and the `[Obsolete]` orchestrator-only types |
 | `src/Devices.Build/` | `RIoT2.Core.Devices.Build`: the `RIoT2PluginPack` target and its task (`PluginPackager`); compiles `PluginHostContract.cs` from `src/Devices/` |
 | `Testing/` | `RIoT2.Core.Devices.Testing`: `PluginTestHost`, `PluginConformance`, `DeviceConfigurationBuilder` |
-| `Hosting/` | `RIoT2.Core.Hosting` for the services (not plugins): `AddRIoT2Logging()`, Serilog to the console and `Logs/RIoT2.log`, text or JSON ([design 7.4](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/operations.md)), and `AddRIoT2Telemetry()` |
+| `Hosting/` | `RIoT2.Core.Hosting` for the services (not plugins): `AddRIoT2Logging()`, Serilog, text or JSON ([design 7.4](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/operations.md)), `AddRIoT2Telemetry()`, and `AddRIoT2Security()` with the role policies and `/api/security/info` ([design 7.5](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/security-mode.md)) |
 | `contracts/golden/` | Golden files: the JSON on MQTT, in orchestrator responses and in `StoredObjects`. Not part of a package. See [contracts/golden/README.md](contracts/golden/README.md). |
 | `contracts/schemas/` | `riot2-contracts.schema.json`: the JSON Schema of the contract types, written by `tools/SchemaExport` on every build. The UI generates its TypeScript models from it. See [contracts/schemas/README.md](contracts/schemas/README.md). |
 | `tools/SchemaExport/` | The console tool that writes `contracts/schemas/` (not packed) |
@@ -68,10 +68,8 @@ golden file against it.
   JSON-looking strings as they are.
 - Build topic strings with `Constants.Get(id, MqttTopic.Report)`, and read the id back with
   `Constants.GetTopicId`.
-- Contract additions are optional properties, omitted while unset, so older readers and the
-  golden files don't see them (since 1.6.0: `Command.CorrelationId`, `NodeOnlineMessage.Capabilities`,
-  the configuration `Revision`/`Hash`, `contractVersion`). Check a node's capabilities with
-  `NodeOnlineMessage.HasCapability` before you rely on `CommandResult` or `NodeStatusMessage`.
+- Contract additions are optional properties, omitted while unset, so older readers don't see
+  them. Check `NodeOnlineMessage.HasCapability` before you rely on `CommandResult` or `NodeStatusMessage`.
 - Desired state (1.8.0): `ConfigurationHash.Stamp` computes the hashes, `NodeConfigurationStatus`
   holds the node's status, and `NodeConfigurationServiceBase` skips a configuration it already
   runs and saves and loads the applied one.
@@ -94,22 +92,25 @@ reads `TelemetryOptions.Read(settings)` in its options type. Nothing is exported
 traces. Instruments cost nothing while no one listens. Every `riot2.*` instrument is in the platform's
 [metrics contract](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/metrics.md).
 
+### Security seams in a service
+
+A service reads `SecurityOptions.Read(settings)`, calls `services.AddRIoT2Security(options)` and
+`app.UseRIoT2Security()`, and gives every endpoint a `SecurityPolicies` policy or
+`[AllowAnonymous]`. Clients that call other RIoT2 services get `ApiKeyHandler` and an
+`OutboundUrlPolicyHandler`. With the mode `off`, the only one yet, nothing is enforced (1.18.0).
+
 ### Writing devices
 
 - A plugin derives from `PluginBase` and registers its services and devices in `Register()` with
   `AddService<TService, TImplementation>()` and `AddDevice<TDevice>()`. Everything is a singleton
-  owned by the node, which also adds the plugin's controllers. `IDevicePlugin.Devices` is obsolete
-  (Core 1.5.0): the node never read it, and it's removed in the next major release.
+  owned by the node, which also adds the plugin's controllers. `IDevicePlugin.Devices` is obsolete.
 - Devices derive from `AsyncDeviceBase`. Override its async start, stop, command and refresh
   methods.
 - A device that reads parameters implements `IDeviceWithConfiguration` and declares every key it
-  reads in its template, so the UI shows them. `DeviceTemplates.Create(device)` builds what the
-  node returns, with a default template for devices that don't implement it.
+  reads in its template; `DeviceTemplates.Create(device)` builds what the node returns.
 - Mark a device needing hardware or a remote service with `[RequiresHardware("reason")]`.
-- `DeviceServiceBase` runs one serialized operation queue per device. When a device's
-  configuration is replaced, its old work is cancelled and awaited before it starts again.
-- `ReconfigureChangedDevicesAsync` (Core 1.1.0) restarts only the devices whose configuration
-  entry changed, plus configured devices that are not running.
+- `DeviceServiceBase` runs one serialized operation queue per device; a replaced configuration
+  cancels and awaits the old work. Only devices whose configuration changed restart.
 - Synchronous devices (`DeviceBase`) work, but their calls can't be interrupted.
 - Nullable-annotated since 1.17.0: `Refresh`/`RefreshAsync` take `ReportTemplate?` (null: the
   whole device).
@@ -149,10 +150,9 @@ version the plugin uses. `plugin-release.yml` only checks and uploads it. Other 
 
 ## Matter device declarations
 
-A device plugin opts in to being bridged to a Matter ecosystem (for example Google Home) by
-implementing `IMatterDevice` in addition to `IDeviceWithConfiguration`. The device returns one
-`MatterEndpointTemplate` per endpoint it wants exposed, describing the Matter device type and how its
-report and command templates map onto Matter cluster attributes:
+A device is bridged to a Matter ecosystem (for example Google Home) when it implements
+`IMatterDevice` as well as `IDeviceWithConfiguration`, and returns one `MatterEndpointTemplate`
+per endpoint: the Matter device type, and how its templates map onto cluster attributes:
 
 ```csharp
 public IEnumerable<MatterEndpointTemplate> GetMatterEndpoints(DeviceConfiguration configuration)
@@ -171,13 +171,10 @@ public IEnumerable<MatterEndpointTemplate> GetMatterEndpoints(DeviceConfiguratio
 }
 ```
 
-The declaration must be built against the `DeviceConfiguration` instance passed in, because devices
-that mint template ids per call would otherwise reference ids that are never persisted. A binding's
-`Scale` (for example `Percent0To100ToLevel0To254` for `CurrentLevel`) is declared in the
-RIoT-to-Matter direction; the bridge applies the inverse on the command path.
-
-The templates reach the orchestrator's Matter bridge on `DeviceConfiguration.MatterEndpoints`.
-`RIoT2.Core` itself contains no Matter protocol code.
+Build the declaration from the `DeviceConfiguration` passed in, so its template ids are the
+persisted ones. A binding's `Scale` (for example `Percent0To100ToLevel0To254`) is declared in the
+RIoT-to-Matter direction; the bridge inverts it for commands. The templates reach the
+orchestrator's bridge on `DeviceConfiguration.MatterEndpoints`; Core has no Matter protocol code.
 
 ## Dependencies
 
