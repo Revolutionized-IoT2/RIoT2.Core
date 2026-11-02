@@ -6,6 +6,11 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+- Build: `renovate.json` extends the shared Renovate preset ([I33](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i33-supply-chain-s)). Renovate opens grouped
+  update pull requests once the app is installed (MA7).
+- Release: every package gets `<package>.<version>.spdx.json`, an SPDX SBOM of its dependencies, on
+  the GitHub release of the tag (`release.yml` needs `contents: write`).
+
 ## [1.17.0] - 2026-11-02
 
 Nullable reference types ([I32](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i32-nullable-reference-types-m), plan M8 step 9). Every package is now
