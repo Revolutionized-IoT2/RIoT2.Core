@@ -18,7 +18,7 @@ component.
   | `RIoT2.Core.Devices.Testing` | The plugin test kit (.NET 10) | Node |
   | `RIoT2.Core.Devices.Build` | MSBuild target that packs the plugin zip on `dotnet publish` | none |
   | `RIoT2.Core.Hosting` | The services' logging, metrics and security seams (.NET 10, Serilog, OpenTelemetry) | Mqtt, Http |
-  | `RIoT2.Connector.Sdk` | The connector SDK (.NET 10): settings, MQTT, templates, queue ([Connector/README.md](Connector/README.md)) | Hosting |
+  | `RIoT2.Connector.Sdk` | The connector SDK (.NET 10): settings, MQTT, templates, queue, disk spool, health ([Connector/README.md](Connector/README.md)) | Hosting |
 
   Reference the narrowest packages (since 1.14.0, [I28](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i28-narrow-references-and-generated-models-m)): a service
   `Contracts` and `Mqtt` (plus `Http` if it calls `Web`), a plugin `Devices` (plus `Http` or `Mqtt`

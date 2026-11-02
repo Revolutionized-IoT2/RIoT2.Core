@@ -71,6 +71,9 @@ public sealed class ConnectorMqttService : IHostedService, IAsyncDisposable
 
     public ValueTask DisposeAsync() => _client.DisposeAsync();
 
+    /// <summary>Whether the MQTT connection is up (<c>/health</c>).</summary>
+    public bool IsConnected => _client.IsConnected();
+
     private async Task AnnounceAsync()
     {
         await _client.PublishAsync(_onlineTopic, Json.SerializeIgnoreNulls(new NodeOnlineMessage

@@ -22,12 +22,15 @@ app.Run();
   problem at once. `MySettings` is registered as a singleton for the sink.
 - `IConnectorSink.WriteAsync(batch, templates, cancellationToken)` gets `ConnectorMessage`s (kind, node id, the raw
   JSON, `ReceivedUtc`) in order, and maps them with `templates.Snapshot` (`FindReport`, `FindCommand`).
-  - Throw `TransientSinkException` when the target is down or busy: the same batch is retried, 1 s doubling to 60 s,
-    while new messages wait in the queue.
-  - Throw `SinkRejectedException` when the target refuses the data itself: the batch is dropped. Any other exception
-    is treated the same, so a bug can't stall the queue.
+  - Throw `TransientSinkException` when the target is down or busy: the same batch is retried, 1 s doubling to 60 s.
+    With the spool, the batch and what waits in memory move to disk, and new messages follow them there until they
+    are written; without it, new messages wait in memory.
+  - Throw `SinkRejectedException` when the target refuses the data itself: the batch goes to the dead-letter file
+    (dropped without the spool). Any other exception is treated the same, so a bug can't stall the queue. Map each
+    message on its own, so one bad message doesn't take its batch with it.
   - Call `ConnectorMetrics.RecordIgnored(message)` for a message there is nothing to write for.
   - Use `ReceivedUtc` for commands, which carry no time of their own.
+  - Override `CheckHealthAsync` to tell `/health` whether the target answers.
 
 ## What the SDK does
 
@@ -35,13 +38,15 @@ app.Run();
 | --- | --- |
 | `ConnectorHostExtensions` | `AddRIoT2Connector`: logging, settings, security seams, telemetry (meter `RIoT2.Connector`), the template client (`X-RIoT2-Key`, outbound URL policy), sink, queue and MQTT; `MapRIoT2Connector`: `/health` and `/healthz` |
 | `ConnectorOptions` | The shared settings, and the queue's limits a connector may change in code: `QueueCapacity` (1000), `BatchSize` (100), `BatchInterval` (1 s), `MinRetryDelay`/`MaxRetryDelay` (1 s/60 s), `DrainTimeout` (10 s) |
+| `ConnectorSpoolOptions` | `RIOT2_CONNECTOR_SPOOL` (on by default; off in options built in code), `RIOT2_CONNECTOR_SPOOL_MAX_MB` (100), `RIOT2_CONNECTOR_SPOOL_MAX_AGE_DAYS` (7); in code also `Path` (`Data/spool` next to the app), `SegmentBytes`, `DeadLetterMaxBytes` and `HighWaterMark` (0.8) |
 | `ConnectorMqttService` | Presence on `riot2/node/{id}/online` (again when the orchestrator comes online), the templates on the configuration command, and every readable report (and command, with `RIOT2_HANDLE_COMMANDS=true`) queued with its receive time |
 | `TemplateCatalog` | The report, command and variable templates from the orchestrator, replaced only as a complete set |
-| `ConnectorPipeline` | The bounded queue, batches, retry, rejection, and a stop that writes what is queued for up to `DrainTimeout` |
-| `ConnectorMetrics` | `riot2.connector.messages`, `riot2.connector.writes`, `riot2.connector.queue_depth` ([metrics.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/metrics.md)) |
+| `ConnectorPipeline` | The memory queue and the disk spool (JSON-lines segments with a checkpoint, written in order, oldest segment dropped at the size or age limit), batches, retry, the dead-letter file, and a stop that finishes the write in flight and spools the rest (without the spool: writes what is queued for up to `DrainTimeout`) |
+| `ConnectorHealthReport` | `/health`: MQTT, the sink's `CheckHealthAsync` (5 s) and the spool; `unhealthy` (503) without MQTT, `degraded` when the sink doesn't answer or messages are spooled |
+| `ConnectorMetrics` | `riot2.connector.messages`, `.writes`, `.queue_depth`, `.spool_depth`, `.spool_bytes`, `.spool_dropped` ([metrics.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/metrics.md)) |
 
-Still to come (design 7.3 phases 2–4): the disk spool and dead-letter file, a `/health` that checks the sink,
-`NodeType.Connector`, and `IRiot2CommandClient` for connectors that write back into RIoT2.
+Still to come (design 7.3 phases 3–4): `NodeType.Connector`, and `IRiot2CommandClient` for connectors that write back
+into RIoT2.
 
-Tests: RIoT2.Tests `ConnectorSdkTests`, `ConnectorMetricsTests`, and the InfluxDB connector's `InfluxSinkTests` and
-`GoldenInfluxTests`.
+Tests: RIoT2.Tests `ConnectorSdkTests`, `ConnectorSpoolTests`, `ConnectorMetricsTests`, and the InfluxDB connector's
+`InfluxSinkTests` and `GoldenInfluxTests`.

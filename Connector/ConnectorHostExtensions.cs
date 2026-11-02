@@ -65,14 +65,20 @@ public static class ConnectorHostExtensions
         return settings;
     }
 
-    /// <summary>The security middleware, and <c>/health</c> and <c>/healthz</c> (anonymous).</summary>
+    /// <summary>
+    /// The security middleware, <c>/health</c> (<see cref="ConnectorHealthReport"/>: MQTT, the sink and the spool; 503
+    /// while MQTT is disconnected) and <c>/healthz</c> (the process is running), both anonymous.
+    /// </summary>
     public static WebApplication MapRIoT2Connector(this WebApplication app)
     {
         ArgumentNullException.ThrowIfNull(app);
         app.UseRIoT2Security();
-        var health = () => Results.Ok(new { status = "ok" });
-        app.MapGet("/health", health).AllowAnonymous();
-        app.MapGet("/healthz", health).AllowAnonymous();
+        app.MapGet("/health", async (ConnectorMqttService mqtt, IConnectorSink sink, ConnectorPipeline pipeline, CancellationToken cancellationToken) =>
+        {
+            var report = await ConnectorHealthReport.CheckAsync(mqtt.IsConnected, sink, pipeline, cancellationToken).ConfigureAwait(false);
+            return Results.Json(report, statusCode: report.HttpStatus);
+        }).AllowAnonymous();
+        app.MapGet("/healthz", () => Results.Ok(new { status = ConnectorHealthReport.Ok })).AllowAnonymous();
         return app;
     }
 }

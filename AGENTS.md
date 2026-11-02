@@ -47,7 +47,7 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj
 | `src/Devices.Build/` | `RIoT2.Core.Devices.Build`: `build/*.targets` (`RIoT2PluginPack`, after `Publish`), the `PackPlugin` task and `PluginPackager` |
 | `Testing/` | `RIoT2.Core.Devices.Testing` (.NET 10): `PluginTestHost`, `PluginConformance`, `DeviceConfigurationBuilder` |
 | `Hosting/` | `RIoT2.Core.Hosting` (.NET 10, Serilog, OpenTelemetry): `AddRIoT2Logging()`, `AddRIoT2Telemetry()`, `AddRIoT2Security()` |
-| `Connector/` | `RIoT2.Connector.Sdk` (design 7.3): `AddRIoT2Connector`, `IConnectorSink`, `ConnectorPipeline`, `ConnectorMetrics` |
+| `Connector/` | `RIoT2.Connector.Sdk` (design 7.3): `AddRIoT2Connector`, `IConnectorSink`, `ConnectorPipeline` and its `ConnectorSpool`, `ConnectorMetrics` |
 | `Directory.Build.repo.props` | The one version of every package |
 | `contracts/golden/` | Golden files for every message, response and stored format; read by RIoT2.Tests, Elsa, UI and firmware tests |
 | `contracts/schemas/`, `tools/SchemaExport/` | The contract JSON Schema, written by the tool on every build; the UI generates its models from it |

@@ -6,6 +6,24 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.21.0] - 2026-11-02
+
+The connector spool ([I38](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-3-4.md#i38-connector-spool-m), [design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md) phase 2). Only
+`RIoT2.Connector.Sdk` changes; the other nine packages are unchanged apart from the version.
+
+- Added: a disk spool in `ConnectorPipeline` (`ConnectorSpoolOptions`; `RIOT2_CONNECTOR_SPOOL`, on by
+  default, `RIOT2_CONNECTOR_SPOOL_MAX_MB` 100, `RIOT2_CONNECTOR_SPOOL_MAX_AGE_DAYS` 7). The first transient
+  failure, or a memory queue 80 % full, sends messages to JSON-lines segments in `Data/spool`; they are
+  written in order from a checkpoint, also after a restart. The oldest segment is dropped at the size or
+  age limit. Stopping finishes the write in flight and spools what waits in memory.
+- Added: `dead-letter.jsonl` for rejected batches, with the error (moved to `dead-letter.1.jsonl` at 10 MB).
+- Added: `ConnectorHealthReport` behind `/health` (MQTT, the sink's `CheckHealthAsync`, queue and spool;
+  503 while MQTT is disconnected); `ConnectorMqttService.IsConnected`.
+- Added: `riot2.connector.spool_depth`, `riot2.connector.spool_bytes` and `riot2.connector.spool_dropped`
+  (`size`, `age`, `unreadable`).
+- Unchanged: with the spool off (and in options built in code, where it is off by default) the pipeline
+  behaves as in 1.20.0.
+
 ## [1.20.0] - 2026-11-02
 
 The connector SDK ([I37](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-3-4.md#i37-connector-sdk-m), [design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md) phase 1). A new package; the

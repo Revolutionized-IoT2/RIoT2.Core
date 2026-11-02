@@ -4,14 +4,22 @@ using RIoT2.Core.Diagnostics;
 namespace RIoT2.Connector.Sdk;
 
 /// <summary>
-/// The connector instruments (meter <see cref="MeterNames.Connector"/>, design 7.4). The spool metrics come with the
-/// spool (design 7.3 phase 2). Nothing is measured while no listener is attached.
+/// The connector instruments (meter <see cref="MeterNames.Connector"/>, design 7.4): messages, writes, the in-memory
+/// queue and the disk spool. Nothing is measured while no listener is attached.
 /// </summary>
 public static class ConnectorMetrics
 {
     public const string MessagesName = "riot2.connector.messages";
     public const string WritesName = "riot2.connector.writes";
     public const string QueueDepthName = "riot2.connector.queue_depth";
+    public const string SpoolDepthName = "riot2.connector.spool_depth";
+    public const string SpoolBytesName = "riot2.connector.spool_bytes";
+    public const string SpoolDroppedName = "riot2.connector.spool_dropped";
+
+    /// <summary><see cref="SpoolDropped"/> reasons.</summary>
+    public const string Size = "size";
+    public const string Age = "age";
+    public const string Unreadable = "unreadable";
 
     /// <summary><see cref="Messages"/> results.</summary>
     public const string Queued = "queued";
@@ -38,14 +46,27 @@ public static class ConnectorMetrics
 
     /// <summary>
     /// Messages handed to the sink, by <c>outcome</c>: <c>written</c>, <c>retried</c> (a transient failure; the batch
-    /// is tried again), <c>rejected</c> (dropped) or <c>discarded</c> (left at shutdown).
+    /// is tried again), <c>rejected</c> (dead-lettered with the spool, otherwise dropped) or <c>discarded</c> (left at
+    /// shutdown without the spool).
     /// </summary>
     public static readonly Counter<long> Writes = Meter.CreateCounter<long>(WritesName, "{message}",
         "Messages handed to the sink, by outcome: written, retried, rejected, or discarded at shutdown.");
 
+    /// <summary>Spooled messages lost, by <c>reason</c>: <c>size</c> or <c>age</c> (the oldest segment was dropped) or <c>unreadable</c>.</summary>
+    public static readonly Counter<long> SpoolDropped = Meter.CreateCounter<long>(SpoolDroppedName, "{message}",
+        "Spooled messages dropped, by reason: size or age limit, or unreadable.");
+
     static ConnectorMetrics()
     {
         Meter.CreateObservableGauge(QueueDepthName, ObserveQueue, "{message}", "Messages waiting to be written.");
+        Meter.CreateObservableGauge(SpoolDepthName, () => Observe(pipeline => pipeline.SpoolDepth), "{message}", "Messages waiting in the disk spool.");
+        Meter.CreateObservableGauge(SpoolBytesName, () => Observe(pipeline => pipeline.SpoolBytes), "By", "Size of the disk spool's segment files.");
+    }
+
+    internal static void Dropped(string reason, long messages)
+    {
+        if (messages > 0)
+            SpoolDropped.Add(messages, new KeyValuePair<string, object?>("reason", reason));
     }
 
     public static void Message(string type, string result) =>
@@ -87,6 +108,20 @@ public static class ConnectorMetrics
                     depth += pipeline.QueueDepth;
             }
             return [new Measurement<int>(depth)];
+        }
+    }
+
+    private static IEnumerable<Measurement<long>> Observe(Func<ConnectorPipeline, long> value)
+    {
+        lock (Pipelines)
+        {
+            long total = 0;
+            foreach (var reference in Pipelines)
+            {
+                if (reference.TryGetTarget(out var pipeline))
+                    total += value(pipeline);
+            }
+            return [new Measurement<long>(total)];
         }
     }
 }
