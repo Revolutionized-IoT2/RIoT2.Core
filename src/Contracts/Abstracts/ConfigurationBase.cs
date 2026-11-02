@@ -13,18 +13,18 @@ namespace RIoT2.Core.Abstracts
     public abstract class ConfigurationBase : IConfiguration
     {
         /// <inheritdoc/>
-        public virtual string Id { get; set; }
+        public virtual string Id { get; set; } = null!;
 
         /// <inheritdoc/>
-        public virtual string Url { get; set; }
+        public virtual string Url { get; set; } = null!;
 
         /// <inheritdoc/>
-        public virtual MqttConfiguration Mqtt { get; set; }
+        public virtual MqttConfiguration Mqtt { get; set; } = null!;
 
         /// <inheritdoc/>
         public abstract string ApplicationFolder { get; }
 
-        internal PackageManifest LoadManifest(string manifestFilename)
+        internal PackageManifest? LoadManifest(string manifestFilename)
         {
             var manifest = loadConfigurationFile(manifestFilename);
             if (manifest != null)
@@ -42,7 +42,7 @@ namespace RIoT2.Core.Abstracts
             return null;
         }
 
-        private FileInfo loadConfigurationFile(string filename)
+        private FileInfo? loadConfigurationFile(string filename)
         {
             var fullPath = Path.Combine(ApplicationFolder, filename);
             FileInfo f = new FileInfo(fullPath);

@@ -26,7 +26,7 @@ namespace RIoT2.Core
         /// <typeparam name="T">The target type.</typeparam>
         /// <param name="json">The JSON string to deserialize.</param>
         /// <returns>The deserialized object.</returns>
-        public static T ToObj<T>(this string json)
+        public static T? ToObj<T>(this string? json)
         {
             return Json.Deserialize<T>(json);
         }
@@ -36,7 +36,7 @@ namespace RIoT2.Core
         /// </summary>
         /// <param name="json">The JSON string to convert.</param>
         /// <returns>A dictionary representing the JSON object.</returns>
-        public static IDictionary<string, object> ToDict(this string json)
+        public static IDictionary<string, object?> ToDict(this string json)
         {
             return Json.ToDictionary(json);
         }
@@ -47,7 +47,7 @@ namespace RIoT2.Core
         /// <param name="json">The JSON string to search.</param>
         /// <param name="tokenPath">The JSONPath expression identifying the value.</param>
         /// <returns>The matched value as a string, or <c>null</c> if not found.</returns>
-        public static string FindValue(this string json, string tokenPath)
+        public static string? FindValue(this string json, string tokenPath)
         {
             return Json.FindValue(json, tokenPath);
         }

@@ -135,7 +135,7 @@ namespace RIoT2.Core.Utils
                     continue;
 
                 if (!string.IsNullOrEmpty(attribute.PropertyName) && !member.IsDefined(typeof(JsonPropertyNameAttribute), true))
-                    property.Name = Name(attribute.PropertyName, camelCase);
+                    property.Name = Name(attribute.PropertyName!, camelCase);
 
                 if (attribute.NullValueHandling == Newtonsoft.Json.NullValueHandling.Ignore && property.ShouldSerialize == null)
                     property.ShouldSerialize = (_, value) => value != null;
@@ -183,7 +183,7 @@ namespace RIoT2.Core.Utils
                 if (attribute == null || member.IsDefined(typeof(CompilerGeneratedAttribute), false))
                     continue;
 
-                var name = Name(string.IsNullOrEmpty(attribute.PropertyName) ? member.Name : attribute.PropertyName, camelCase);
+                var name = Name(string.IsNullOrEmpty(attribute.PropertyName) ? member.Name : attribute.PropertyName!, camelCase);
                 if (typeInfo.Properties.Any(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)))
                     continue;
 

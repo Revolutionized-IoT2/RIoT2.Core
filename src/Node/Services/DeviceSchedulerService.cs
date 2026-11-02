@@ -26,28 +26,28 @@ namespace RIoT2.Core.Services
     public class DeviceSchedulerService : IHostedService
     {
         private readonly ILogger<DeviceSchedulerService> _logger;
-        private IScheduler _scheduler;
+        private IScheduler? _scheduler;
         private IDeviceService _deviceService;
         private readonly INodeConfigurationService _configuration;
         private readonly SemaphoreSlim _lifecycle = new SemaphoreSlim(1, 1);
         private readonly List<IRefreshableReportDevice> _subscriptions = new List<IRefreshableReportDevice>();
         private readonly Dictionary<string, Func<CancellationToken, Task>> _refreshActions = new Dictionary<string, Func<CancellationToken, Task>>();
         private readonly string _schedulerName = "RIoT2-" + Guid.NewGuid().ToString("N");
-        private Channel<Update> _updates;
+        private Channel<Update>? _updates;
         private Task _worker = Task.CompletedTask;
-        private CancellationTokenSource _stopping;
+        private CancellationTokenSource? _stopping;
         private bool _active;
 
         /// <summary>
         /// Occurs when a scheduled trigger of this scheduler fires, identifying the trigger by group and name.
         /// </summary>
-        public event SchedulerEventHandler RefreshTriggered;
+        public event SchedulerEventHandler? RefreshTriggered;
 
         /// <summary>
         /// Occurs when a trigger of any scheduler fires. Kept for one release; use <see cref="RefreshTriggered"/>.
         /// </summary>
         [Obsolete("Use the RefreshTriggered event of the scheduler instance. The static event is removed in increment I45.")]
-        public static event SchedulerEventHandler SchedulerEvent;
+        public static event SchedulerEventHandler? SchedulerEvent;
 
         /// <summary>
         /// Raises the static <see cref="SchedulerEvent"/>. Kept for one release; use <see cref="TriggerRefresh"/>.
@@ -196,7 +196,7 @@ namespace RIoT2.Core.Services
                 await configure(allTriggers);
 
                 _logger.LogInformation("starting Scheduler.");
-                await _scheduler.Start(cancellationToken);
+                await _scheduler!.Start(cancellationToken);
             }
             else
             {
@@ -273,15 +273,15 @@ namespace RIoT2.Core.Services
         }
 
         // The device's refresh trigger, when its RefreshSchedule is a valid Quartz cron expression.
-        internal static SchedulerTrigger RefreshTrigger(DeviceConfiguration configuration)
+        internal static SchedulerTrigger? RefreshTrigger(DeviceConfiguration? configuration)
         {
             if (configuration == null || String.IsNullOrWhiteSpace(configuration.RefreshSchedule)
-                || !CronExpression.IsValidExpression(configuration.RefreshSchedule))
+                || !CronExpression.IsValidExpression(configuration.RefreshSchedule!))
                 return null;
 
             return new SchedulerTrigger()
             {
-                CronSchedule = configuration.RefreshSchedule,
+                CronSchedule = configuration.RefreshSchedule!,
                 Group = configuration.Id,
                 Name = configuration.Id
             };
@@ -289,14 +289,14 @@ namespace RIoT2.Core.Services
 
         private sealed class Update
         {
-            public Update(ServiceEvent? serviceEvent, TaskCompletionSource<bool> done)
+            public Update(ServiceEvent? serviceEvent, TaskCompletionSource<bool>? done)
             {
                 Event = serviceEvent;
                 Done = done;
             }
 
             public ServiceEvent? Event { get; }
-            public TaskCompletionSource<bool> Done { get; }
+            public TaskCompletionSource<bool>? Done { get; }
         }
     }
 

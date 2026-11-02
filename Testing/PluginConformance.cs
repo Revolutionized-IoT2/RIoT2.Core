@@ -29,7 +29,7 @@ public static class PluginConformance
     /// <summary>Runs every check and throws <see cref="PluginConformanceException"/> listing all failures.</summary>
     /// <param name="pluginType">The plugin class.</param>
     /// <param name="configureServices">Replaces services after the plugin registered them, for example hardware fakes.</param>
-    public static void Verify(Type pluginType, Action<IServiceCollection> configureServices = null)
+    public static void Verify(Type pluginType, Action<IServiceCollection>? configureServices = null)
     {
         var failures = Check(pluginType, configureServices);
         if (failures.Count > 0)
@@ -37,7 +37,7 @@ public static class PluginConformance
     }
 
     /// <summary>Runs every check and returns the failures; empty when the plugin conforms.</summary>
-    public static IReadOnlyList<string> Check(Type pluginType, Action<IServiceCollection> configureServices = null)
+    public static IReadOnlyList<string> Check(Type pluginType, Action<IServiceCollection>? configureServices = null)
     {
         ArgumentNullException.ThrowIfNull(pluginType);
         var failures = new List<string>();
@@ -111,7 +111,7 @@ public static class PluginConformance
 
     private static void CheckDevice(IDevice device, int index, List<string> failures)
     {
-        var name = device.GetType().FullName;
+        var name = device.GetType().FullName ?? device.GetType().Name;
         var requiresHardware = device.GetType().GetCustomAttribute<RequiresHardwareAttribute>(inherit: true) != null;
 
         DeviceConfiguration template;
@@ -216,7 +216,7 @@ public static class PluginConformance
         else if (descriptor.ImplementationFactory != null)
             instance = descriptor.ImplementationFactory(services);
         else
-            instance = ActivatorUtilities.CreateInstance(services, descriptor.ImplementationType);
+            instance = ActivatorUtilities.CreateInstance(services, descriptor.ImplementationType!);
 
         return instance as IDevice ?? throw new InvalidOperationException("The registration returned no IDevice.");
     }
@@ -246,7 +246,7 @@ public static class PluginConformance
         }
         catch (ReflectionTypeLoadException error)
         {
-            return error.Types.Where(type => type != null);
+            return error.Types.OfType<Type>();
         }
     }
 

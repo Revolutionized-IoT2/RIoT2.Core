@@ -87,7 +87,7 @@ namespace RIoT2.Core.Utils
 
         public static async Task<HttpResponseMessage> GetWithBearerTokenAsync(
             string address,
-            string token = null,
+            string? token = null,
             int timeOutMilliseconds = defaultTimeOutMilliseconds)
         {
             return await GetAsync(
@@ -98,8 +98,8 @@ namespace RIoT2.Core.Utils
 
         public static async Task<HttpResponseMessage> PostWithBearerTokenAsync(
             string address,
-            string postBody,
-            string token = null,
+            string? postBody,
+            string? token = null,
             int timeOutMilliseconds = defaultTimeOutMilliseconds)
         {
             return await PostAsync(
@@ -111,7 +111,7 @@ namespace RIoT2.Core.Utils
 
         public static async Task<HttpResponseMessage> GetAsync(
             string address,
-            AuthenticationHeaderValue authHeader = null,
+            AuthenticationHeaderValue? authHeader = null,
             int timeOutMilliseconds = defaultTimeOutMilliseconds)
         {
             try
@@ -154,7 +154,7 @@ namespace RIoT2.Core.Utils
         /// </summary>
         public static async Task<HttpResponseMessage> GetAsync(
            string address,
-           Dictionary<string, string> headers = null)
+           Dictionary<string, string>? headers = null)
         {
             try
             {
@@ -178,8 +178,8 @@ namespace RIoT2.Core.Utils
 
         public static async Task<HttpResponseMessage> PostAsync(
             string address,
-            string postBody,
-            AuthenticationHeaderValue authHeader,
+            string? postBody,
+            AuthenticationHeaderValue? authHeader,
             int timeOutMilliseconds = defaultTimeOutMilliseconds)
         {
             try
@@ -206,7 +206,7 @@ namespace RIoT2.Core.Utils
         public static async Task<HttpResponseMessage> PostAsync(
            string address,
            string postBody,
-           Dictionary<string, string> headers = null,
+           Dictionary<string, string>? headers = null,
            int timeOutMilliseconds = defaultTimeOutMilliseconds)
         {
             try
@@ -268,8 +268,8 @@ namespace RIoT2.Core.Utils
         /// </summary>
         public static async Task<HttpResponseMessage> PutAsync(
            string address,
-           string body,
-           IReadOnlyDictionary<string, string> headers = null,
+           string? body,
+           IReadOnlyDictionary<string, string>? headers = null,
            int timeOutMilliseconds = defaultTimeOutMilliseconds)
         {
             try
@@ -295,7 +295,7 @@ namespace RIoT2.Core.Utils
             }
         }
 
-        public static async Task<string> SendRequestAsync(string uri, string userName, string password, HttpMethod method)
+        public static async Task<string> SendRequestAsync(string uri, string? userName, string? password, HttpMethod method)
         {
             try
             {
@@ -341,7 +341,7 @@ namespace RIoT2.Core.Utils
         }
 
         // Fix #9: avoid emitting a malformed "Authorization: Bearer" header when the token is null/empty.
-        private static AuthenticationHeaderValue CreateBearerHeader(string token)
+        private static AuthenticationHeaderValue? CreateBearerHeader(string? token)
         {
             return String.IsNullOrEmpty(token) ? null : new AuthenticationHeaderValue("Bearer", token);
         }

@@ -11,8 +11,8 @@
 
         public string ClientId { get; set; }
         public string ServerUrl { get; set; }
-        public string Username { get; set; }
-        public string Password { get; set; }
+        public string? Username { get; set; }
+        public string? Password { get; set; }
 
         /// <summary>Broker TCP port (<c>RIOT2_MQTT_PORT</c>).</summary>
         public int Port { get; set; } = DefaultPort;

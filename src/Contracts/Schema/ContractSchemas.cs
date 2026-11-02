@@ -215,7 +215,7 @@ namespace RIoT2.Core.Schema
 
         private static JsonNode AllowNull(JsonNode node)
         {
-            if (node is JsonObject schema && schema["type"] is JsonValue single && single.TryGetValue(out string name) && name != "null")
+            if (node is JsonObject schema && schema["type"] is JsonValue single && single.TryGetValue(out string? name) && name != "null")
                 schema["type"] = new JsonArray(name, "null");
             return node;
         }
@@ -224,7 +224,7 @@ namespace RIoT2.Core.Schema
         {
             if (node is JsonObject schema && schema["type"] is JsonArray types)
             {
-                var remaining = types.Select(t => t.GetValue<string>()).Where(t => t != "null").ToList();
+                var remaining = types.Select(t => t!.GetValue<string>()).Where(t => t != "null").ToList();
                 schema["type"] = remaining.Count == 1 ? (JsonNode)remaining[0] : new JsonArray(remaining.Select(t => (JsonNode)t).ToArray());
             }
             return node;

@@ -14,35 +14,35 @@ namespace RIoT2.Core.Plugins.Build
     {
         /// <summary><c>@(ResolvedFileToPublish)</c>: <c>RelativePath</c>, <c>NuGetPackageId</c> and <c>NuGetPackageVersion</c> are read.</summary>
         [Required]
-        public ITaskItem[] Files { get; set; }
+        public ITaskItem[] Files { get; set; } = Array.Empty<ITaskItem>();
 
         [Required]
-        public string PublishDirectory { get; set; }
+        public string PublishDirectory { get; set; } = string.Empty;
 
         [Required]
-        public string OutputDirectory { get; set; }
+        public string OutputDirectory { get; set; } = string.Empty;
 
         [Required]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         [Required]
-        public string Version { get; set; }
+        public string Version { get; set; } = string.Empty;
 
         [Required]
-        public string Package { get; set; }
+        public string Package { get; set; } = string.Empty;
 
-        public string CoreVersion { get; set; }
+        public string? CoreVersion { get; set; }
 
-        public string[] ExcludePatterns { get; set; }
+        public string[]? ExcludePatterns { get; set; }
 
         [Output]
-        public string ZipFile { get; set; }
+        public string? ZipFile { get; set; }
 
         [Output]
-        public string HashFile { get; set; }
+        public string? HashFile { get; set; }
 
         [Output]
-        public string ResolvedCoreVersion { get; set; }
+        public string? ResolvedCoreVersion { get; set; }
 
         public override bool Execute()
         {

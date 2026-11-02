@@ -20,7 +20,7 @@ namespace RIoT2.Core.Models
         /// <summary>Hash of the configuration the node runs (<see cref="NodeDeviceConfiguration.Hash"/>). Omitted when <c>null</c>.</summary>
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
-        public string AppliedHash { get; set; }
+        public string? AppliedHash { get; set; }
 
         /// <summary>One of <see cref="NodeConfigurationState"/>.</summary>
         public string State { get; set; }
@@ -28,17 +28,17 @@ namespace RIoT2.Core.Models
         /// <summary>Why the last fetch or apply failed. Omitted when <c>null</c>.</summary>
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
-        public string Error { get; set; }
+        public string? Error { get; set; }
 
         /// <summary>Devices that failed to start although the configuration was applied. Omitted when <c>null</c>.</summary>
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
-        public List<FailedDevice> FailedDevices { get; set; }
+        public List<FailedDevice>? FailedDevices { get; set; }
 
         /// <summary>The installed plugin package (.NET nodes). Omitted when <c>null</c>.</summary>
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
-        public PackageManifest PluginManifest { get; set; }
+        public PackageManifest? PluginManifest { get; set; }
 
         /// <summary>When the state was reached, as Unix epoch seconds.</summary>
         public long TimeStamp { get; set; }
@@ -49,7 +49,7 @@ namespace RIoT2.Core.Models
         public int? ContractVersion { get; set; } = Contract.Version;
 
         /// <summary>Creates a status message from its JSON, or returns <c>null</c> if it can't be parsed.</summary>
-        public static NodeStatusMessage Create(string json)
+        public static NodeStatusMessage? Create(string? json)
         {
             try
             {
@@ -62,7 +62,7 @@ namespace RIoT2.Core.Models
         }
 
         /// <summary>The JSON published on MQTT, without null properties.</summary>
-        public string ToJson() => Json.SerializeIgnoreNulls(this);
+        public string? ToJson() => Json.SerializeIgnoreNulls(this);
     }
 
     /// <summary>A device that failed to start, in <see cref="NodeStatusMessage.FailedDevices"/>.</summary>

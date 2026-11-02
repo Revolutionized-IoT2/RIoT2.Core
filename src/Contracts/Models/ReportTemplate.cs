@@ -11,7 +11,6 @@ namespace RIoT2.Core.Models
             Parameters = new Dictionary<string, string>();
             Filters = new List<string>();
             MaintainHistory = false;
-            Model = null;  
         }
 
         public ValueType Type { get; set; }
@@ -21,7 +20,7 @@ namespace RIoT2.Core.Models
         public Dictionary<string, string> Parameters { get; set; }
         public IEnumerable<string> Filters { get; set; }
         public bool MaintainHistory { get; set; }
-        public object Model { get; set; }
+        public object? Model { get; set; }
 
         /// <summary>
         /// Provides default report generated from the template

@@ -25,13 +25,13 @@ namespace RIoT2.Core.Models.Matter
         /// A dotted path into the report's <see cref="ValueModel"/> (e.g. <c>"state.brightness"</c>), or
         /// <see langword="null"/> to use the whole value.
         /// </summary>
-        public string ValuePath { get; set; }
+        public string? ValuePath { get; set; }
 
         /// <summary>
         /// An optional report filter to match, for report templates that emit several filtered streams
         /// under one id. <see langword="null"/> matches any filter.
         /// </summary>
-        public string Filter { get; set; }
+        public string? Filter { get; set; }
 
         /// <summary>The unit conversion applied to the extracted value. Defaults to <see cref="MatterValueScale.None"/>.</summary>
         public MatterValueScale Scale { get; set; }

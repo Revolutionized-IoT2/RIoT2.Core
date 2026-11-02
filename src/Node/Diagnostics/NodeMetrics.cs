@@ -74,13 +74,13 @@ namespace RIoT2.Core.Diagnostics
         }
 
         /// <summary>The <c>outcome</c> or <c>result</c> tag value for a status name.</summary>
-        public static KeyValuePair<string, object> Tag(string name, string value) => new KeyValuePair<string, object>(name, value);
+        public static KeyValuePair<string, object?> Tag(string name, string value) => new KeyValuePair<string, object?>(name, value);
 
         private static IEnumerable<Measurement<int>> ObserveDevices()
         {
             List<DeviceServiceBase> services;
             lock (Services)
-                services = Services.Select(reference => reference.TryGetTarget(out var target) ? target : null).Where(s => s != null).ToList();
+                services = Services.Select(reference => reference.TryGetTarget(out var target) ? target : null).OfType<DeviceServiceBase>().ToList();
 
             var counts = new Dictionary<DeviceState, int>();
             foreach (DeviceState state in Enum.GetValues(typeof(DeviceState)))

@@ -35,10 +35,10 @@ namespace RIoT2.Core.Models.Matter
         public MatterDeviceType DeviceType { get; set; }
 
         /// <summary>The vendor name reported in Bridged Device Basic Information. Optional.</summary>
-        public string VendorName { get; set; }
+        public string? VendorName { get; set; }
 
         /// <summary>The product name reported in Bridged Device Basic Information. Optional.</summary>
-        public string ProductName { get; set; }
+        public string? ProductName { get; set; }
 
         /// <summary>The RIoT-to-Matter bindings: which reports drive which cluster attributes.</summary>
         public List<MatterAttributeBinding> Attributes { get; set; }

@@ -10,8 +10,8 @@ namespace RIoT2.Core.Interfaces.Services
         bool DeviceConfigurationLoaded { get; }
         Task LoadDeviceConfiguration(string json, string id);
         NodeConfiguration Configuration { get; }
-        NodeDeviceConfiguration DeviceConfiguration { get; }
-        NodeOnlineMessage OnlineMessage { get; set; }
+        NodeDeviceConfiguration? DeviceConfiguration { get; }
+        NodeOnlineMessage? OnlineMessage { get; set; }
 
         /// <summary>
         /// Installs plugin package for device if there is any donwloaded. Deletes the package after installation. If there is an error during installation, it will throw exception with details of the error.

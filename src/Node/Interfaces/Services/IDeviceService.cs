@@ -23,14 +23,14 @@ namespace RIoT2.Core.Interfaces.Services
         /// </summary>
         /// <param name="commandId">The command identifier to look up.</param>
         /// <returns>The matching device, or <c>null</c> if none is found.</returns>
-        ICommandDevice GetDeviceByCommandId(string commandId);
+        ICommandDevice? GetDeviceByCommandId(string commandId);
 
         /// <summary>
         /// Gets the device that produces the specified report identifier.
         /// </summary>
         /// <param name="reportId">The report identifier to look up.</param>
         /// <returns>The matching device, or <c>null</c> if none is found.</returns>
-        IDevice GetDeviceByReportId(string reportId);
+        IDevice? GetDeviceByReportId(string reportId);
 
         /// <summary>
         /// Configures all devices from the current configuration.

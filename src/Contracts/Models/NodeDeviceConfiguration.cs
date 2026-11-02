@@ -23,6 +23,6 @@ namespace RIoT2.Core.Models
         /// </summary>
         [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-        public string Hash { get; set; }
+        public string? Hash { get; set; }
     }
 }

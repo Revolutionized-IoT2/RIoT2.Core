@@ -14,8 +14,8 @@ namespace RIoT2.Core.Models
         public string NodeBaseUrl { get; set; } = "";
         public string GrpcBaseUrl { get; set; } = "";
         public NodeType NodeType { get; set; }
-        public PackageManifest Manifest { get; set; } = null;
-        public PackageManifest PluginManifest { get; set; } = null;
+        public PackageManifest? Manifest { get; set; }
+        public PackageManifest? PluginManifest { get; set; }
 
         /// <summary>
         /// Optional features the node supports, from <see cref="Contract.Capabilities"/>, for example
@@ -24,7 +24,7 @@ namespace RIoT2.Core.Models
         /// </summary>
         [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-        public List<string> Capabilities { get; set; } = null;
+        public List<string>? Capabilities { get; set; }
 
         /// <summary>
         /// Optional contract version of the payload (<see cref="Contract.Version"/>); absent means 1.

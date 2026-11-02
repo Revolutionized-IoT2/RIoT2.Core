@@ -72,7 +72,7 @@ public static class RIoT2Logging
 
     /// <summary>A logger factory that writes through <see cref="CreateConfiguration"/>.</summary>
     public static ILoggerFactory CreateLoggerFactory(LoggingOptions options, string service,
-        string logFile = DefaultLogFile, TextWriter output = null)
+        string? logFile = DefaultLogFile, TextWriter? output = null)
     {
         var serilog = CreateConfiguration(options, service, logFile, output).CreateLogger();
         // Serilog filters by level; the factory passes everything on.
@@ -85,7 +85,7 @@ public static class RIoT2Logging
     /// <c>null</c> writes no file.
     /// </summary>
     public static LoggerConfiguration CreateConfiguration(LoggingOptions options, string service,
-        string logFile = DefaultLogFile, TextWriter output = null)
+        string? logFile = DefaultLogFile, TextWriter? output = null)
     {
         ArgumentNullException.ThrowIfNull(options);
         var minimum = ToSerilog(options.MinimumLevel);
@@ -155,7 +155,7 @@ public static class RIoT2Logging
 
         public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
         {
-            StringBuilder ids = null;
+            StringBuilder? ids = null;
             foreach (var name in Names)
             {
                 if (logEvent.Properties.TryGetValue(name, out var value) && value is ScalarValue { Value: string id } && id.Length > 0)

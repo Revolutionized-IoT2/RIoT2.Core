@@ -13,13 +13,13 @@ namespace RIoT2.Core.Configuration
         public const string PortVariable = "RIOT2_MQTT_PORT";
 
         /// <summary>Broker host name or IP address, without scheme or port.</summary>
-        public string Host { get; set; }
+        public string Host { get; set; } = null!;
 
         /// <summary>Broker user; <c>null</c> connects anonymously.</summary>
-        public string Username { get; set; }
+        public string? Username { get; set; }
 
         /// <summary>Broker password; <c>null</c> when not set.</summary>
-        public string Password { get; set; }
+        public string? Password { get; set; }
 
         /// <summary>Broker TCP port; 1883 unless <c>RIOT2_MQTT_PORT</c> is set.</summary>
         public int Port { get; set; } = MqttConfiguration.DefaultPort;

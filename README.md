@@ -16,7 +16,7 @@ component.
   | `RIoT2.Core.Node` | The node runtime: `NodeMqttService`, `DeviceServiceBase`, the scheduler | all of the above, Quartz |
   | `RIoT2.Core` | Facade: references all five and forwards their types, so code built against an older `RIoT2.Core` keeps working; removed in Core 2.0 | all five |
   | `RIoT2.Core.Devices.Testing` | The plugin test kit (.NET 10) | Node |
-  | `RIoT2.Core.Devices.Build` | MSBuild target that packs the plugin zip on `dotnet publish` (since 1.15.0) | none |
+  | `RIoT2.Core.Devices.Build` | MSBuild target that packs the plugin zip on `dotnet publish` | none |
   | `RIoT2.Core.Hosting` | The services' logging and metrics (.NET 10, Serilog, OpenTelemetry) | Mqtt |
 
   Reference the narrowest packages (since 1.14.0, [I28](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i28-narrow-references-and-generated-models-m)): a service
@@ -24,7 +24,7 @@ component.
   if its devices use them), the node `Node`. Only binaries built before 1.13.0 need the facade.
 
 - Target framework: .NET Standard 2.0 (the test kit and Hosting: .NET 10)
-- Versions: [CHANGELOG.md](CHANGELOG.md) (tag `1.0.0` failed CI and was never published)
+- Versions: [CHANGELOG.md](CHANGELOG.md)
 - Root namespace: `RIoT2.Core`
 
 How Core fits into the platform: [architecture overview](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/architecture/overview.md).
@@ -33,7 +33,7 @@ How Core fits into the platform: [architecture overview](https://github.com/Revo
 
 | Path | Contents |
 | --- | --- |
-| `src/Contracts/` | `Constants.cs` (topic templates, API URLs, topic helpers), `Contract.cs` (`Contract.Version`, capability names), `Enums.cs`, `Models/` (messages such as `Report`, `Command`, `NodeOnlineMessage`, `CommandResult`, `NodeStatusMessage`; `ValueModel`; configuration, template and Matter models), the message and template interfaces, `Utils/` (`Json`, `RIoT2JsonOptions`, `ConfigurationHash`), `Schema/ContractSchemas.cs` (the JSON Schema export), `Diagnostics/MeterNames.cs` |
+| `src/Contracts/` | `Constants.cs` (topics, API URLs), `Contract.cs` (`Contract.Version`, capability names), `Enums.cs`, `Models/` (the messages, `ValueModel`, configuration, template and Matter models), the message and template interfaces, `Utils/` (`Json`, `RIoT2JsonOptions`, `ConfigurationHash`), `Schema/ContractSchemas.cs` (the JSON Schema export), `Diagnostics/MeterNames.cs` |
 | `src/Mqtt/` | `MqttClient`, `LogScope` (the `CorrelationId` and `MessageId` log scopes), and `Configuration/`: how every service reads and validates its `RIOT2_*` settings |
 | `src/Http/` | `Web` helpers |
 | `src/Devices/` | `PluginBase`, `DeviceBase(<TOptions>)`, `AsyncDeviceBase(<TOptions>)`, the device and plugin interfaces, `Plugins/` (`PluginHostContract`, `DeviceTemplates`, `DeviceOptions`, `[DeviceParameter]`, `[RequiresHardware]`) |
@@ -111,6 +111,8 @@ traces. Instruments cost nothing while no one listens. Every `riot2.*` instrumen
 - `ReconfigureChangedDevicesAsync` (Core 1.1.0) restarts only the devices whose configuration
   entry changed, plus configured devices that are not running.
 - Synchronous devices (`DeviceBase`) work, but their calls can't be interrupted.
+- Nullable-annotated since 1.17.0: `Refresh`/`RefreshAsync` take `ReportTemplate?` (null: the
+  whole device).
 - Declare parameters in an options class and derive from `DeviceBase<TOptions>` or
   `AsyncDeviceBase<TOptions>` (1.16.0): mark each property `[DeviceParameter("key", Required,
   Secret, Default, Description)]` and read `Options` in `ConfigureDevice`. The base class binds
@@ -202,7 +204,7 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj
 ```
 
 Building the solution rewrites `contracts/schemas/`; commit the result with the change (CI fails
-when the build changes it). `-p:CI=true` reproduces CI's analyzer settings. Shared settings are in
+when the build changes it). `-p:CI=true` reproduces CI (analyzer and nullable warnings fail). Shared settings are in
 `Directory.Build.props` and `.editorconfig`, package versions in `Directory.Packages.props`.
 
 [RIoT2.Tests](https://github.com/Revolutionized-IoT2/RIoT2.Tests) references Core, the

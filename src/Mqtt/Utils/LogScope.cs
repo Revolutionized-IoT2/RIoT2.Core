@@ -22,11 +22,11 @@ namespace RIoT2.Core.Utils
         /// Begins a scope that adds <paramref name="property"/> = <paramref name="id"/> to every event, or
         /// returns <c>null</c> (fine in a <c>using</c>) when there is no id or logger.
         /// </summary>
-        public static IDisposable BeginIdScope(this ILogger logger, string property, string id)
+        public static IDisposable? BeginIdScope(this ILogger? logger, string property, string? id)
         {
             if (logger == null || string.IsNullOrEmpty(property) || string.IsNullOrEmpty(id))
                 return null;
-            return logger.BeginScope(new Dictionary<string, object> { [property] = id });
+            return logger.BeginScope(new Dictionary<string, object> { [property] = id! });
         }
     }
 }

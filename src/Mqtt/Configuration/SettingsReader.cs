@@ -27,35 +27,38 @@ namespace RIoT2.Core.Configuration
         /// <summary>The problems found so far, one sentence each, naming the setting.</summary>
         public IReadOnlyList<string> Errors => _errors;
 
-        /// <summary>Reads a value that must be present and not blank.</summary>
+        /// <summary>
+        /// Reads a value that must be present and not blank. A missing value is recorded as an error and
+        /// read as <c>null</c>; <see cref="ThrowIfInvalid"/> then throws, so a validated value is never null.
+        /// </summary>
         public string Required(string name)
         {
             var value = _configuration[name];
             if (string.IsNullOrWhiteSpace(value))
             {
                 _errors.Add($"{name} is required");
-                return null;
+                return null!;
             }
-            return value;
+            return value!;
         }
 
         /// <summary>Reads a value that may be missing; an empty value counts as missing.</summary>
-        public string Optional(string name, string defaultValue = null)
+        public string? Optional(string name, string? defaultValue = null)
         {
             var value = _configuration[name];
             return string.IsNullOrEmpty(value) ? defaultValue : value;
         }
 
-        /// <summary>Reads a required absolute <c>http</c> or <c>https</c> URL.</summary>
+        /// <summary>Reads a required absolute <c>http</c> or <c>https</c> URL; null only with an error, as <see cref="Required"/>.</summary>
         public string RequiredHttpUrl(string name)
         {
             var value = Required(name);
             if (value != null && !IsHttpUrl(value))
             {
                 _errors.Add($"{name} must be an absolute http or https URL");
-                return null;
+                return null!;
             }
-            return value;
+            return value!;
         }
 
         /// <summary>Reads a flag: <c>true</c> (any case) is true, anything else, or nothing, is false.</summary>
@@ -87,7 +90,7 @@ namespace RIoT2.Core.Configuration
         /// </summary>
         /// <param name="component">The service name used in the message, for example <c>orchestrator</c>.</param>
         /// <param name="logger">Optional logger for the critical message.</param>
-        public void ThrowIfInvalid(string component, ILogger logger = null)
+        public void ThrowIfInvalid(string component, ILogger? logger = null)
         {
             if (_errors.Count == 0)
                 return;

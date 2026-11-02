@@ -16,8 +16,7 @@ namespace RIoT2.Core.Abstracts
         public DeviceBase(ILogger logger)
         {
             Logger = logger;
-            CommandTemplates = null;
-            ReportTemplates = null;
+            ReportTemplates = new List<ReportTemplate>();
             _previousReports = new List<Report>();
             _numericTrends = new Dictionary<string, int>();
             State = DeviceState.Unknown;
@@ -27,9 +26,10 @@ namespace RIoT2.Core.Abstracts
         public DeviceConfiguration Configuration { get { return _configuration; } }
         private List<Report> _previousReports;
         private Dictionary<string, int> _numericTrends;
-        private DeviceConfiguration _configuration;
+        // Set by Initialize, before the device is configured or started.
+        private DeviceConfiguration _configuration = null!;
         private readonly object _sendReportIfValueChangedLock = new object();
-        public event ReportUpdatedHandler ReportUpdated;
+        public event ReportUpdatedHandler? ReportUpdated;
 
         public DeviceState State { get; private set; }
         public string StateMessage { get; private set; }
@@ -38,14 +38,14 @@ namespace RIoT2.Core.Abstracts
             State = state;
             StateMessage = message;
         }
-        public string Id { get; private set; }
-        public string Name { get; private set; }
+        public string Id { get; private set; } = string.Empty;
+        public string Name { get; private set; } = string.Empty;
 
         //public int RefreshInterval { get; private set; }
 
         public ILogger Logger { get; private set; }
 
-        public virtual IEnumerable<CommandTemplate> CommandTemplates { get; private set; }
+        public virtual IEnumerable<CommandTemplate>? CommandTemplates { get; private set; }
 
         public virtual IEnumerable<ReportTemplate> ReportTemplates { get; private set; }
 
@@ -116,7 +116,7 @@ namespace RIoT2.Core.Abstracts
         }
 
         // Lets RIoT2.Core.Devices.Testing record which parameter keys a device reads (PluginConformance).
-        internal Action<string> ParameterRead { get; set; }
+        internal Action<string>? ParameterRead { get; set; }
 
         // DeviceBase<TOptions> binds its options here, before ConfigureDevice.
         internal virtual void BindOptions() { }
@@ -125,7 +125,7 @@ namespace RIoT2.Core.Abstracts
         /// Reads a device parameter. The key matches case-insensitively when no key matches exactly (since Core
         /// 1.16.0), because the configuration download camel-cases parameter keys (divergence C1).
         /// </summary>
-        public T GetConfiguration<T>(string parameter)
+        public T? GetConfiguration<T>(string parameter)
         {
             ParameterRead?.Invoke(parameter);
             var value = DeviceOptions.Find(_configuration.DeviceParameters, parameter);
@@ -135,7 +135,7 @@ namespace RIoT2.Core.Abstracts
             try
             {
                 var converter = TypeDescriptor.GetConverter(typeof(T));
-                return (T)(converter.ConvertFromInvariantString(value));
+                return (T?)converter.ConvertFromInvariantString(value);
             }
             catch (Exception x)
             {
@@ -144,7 +144,7 @@ namespace RIoT2.Core.Abstracts
             return default(T);
         }
 
-        public object ConvertStringValueToExpectedValue(ValueType type, string value, object model = null)
+        public object? ConvertStringValueToExpectedValue(ValueType type, string value, object? model = null)
         {
             switch (type)
             {
@@ -253,7 +253,7 @@ namespace RIoT2.Core.Abstracts
                 Id = report.Id,
                 TimeStamp = report.TimeStamp,
                 Filter = report.Filter,
-                Value = report.Value?.Copy()
+                Value = report.Value?.Copy()!
             });
         }
 
@@ -280,7 +280,7 @@ namespace RIoT2.Core.Abstracts
             }
         }
 
-        public virtual void Refresh(ReportTemplate report) { }
+        public virtual void Refresh(ReportTemplate? report) { }
 
         private bool thresholdOrTrendExeeded(string reportId, double prevValue, double newValue, double? threshold)
         {

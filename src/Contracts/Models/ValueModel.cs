@@ -13,14 +13,14 @@ namespace RIoT2.Core.Models
     public class ValueModel
     {
         private JsonElement _value; //store value as jsonelement
-        private Type _objectType;
+        private Type? _objectType;
 
         #region Ctor
-        public ValueModel(object value)
+        public ValueModel(object? value)
         {
             if (value == null)
             {
-                _value = JsonSerializer.SerializeToElement<object>(null);
+                _value = JsonSerializer.SerializeToElement<object?>(null);
                 return;
             }
 
@@ -39,7 +39,7 @@ namespace RIoT2.Core.Models
 
             if (value is JObject) 
             {
-                var json = (value as JObject).ToString();
+                var json = ((JObject)value).ToString();
                 using (var jsonDocument = isJson(json))
                     _value = jsonDocument != null ? jsonDocument.RootElement.Clone() :
                         System.Text.Json.JsonSerializer.SerializeToElement(value, getOptions());
@@ -78,7 +78,7 @@ namespace RIoT2.Core.Models
             _value = System.Text.Json.JsonSerializer.SerializeToElement(value);
         }
 
-        public ValueModel(string value, bool enforceCamelCase = true)
+        public ValueModel(string? value, bool enforceCamelCase = true)
         {
             using (var jsonDocument = isJson(value, enforceCamelCase))
                 _value = jsonDocument != null ? jsonDocument.RootElement.Clone() :
@@ -110,7 +110,7 @@ namespace RIoT2.Core.Models
             }
         }
 
-        public static object GetDefaultValueForType(ValueType valueType)
+        public static object? GetDefaultValueForType(ValueType valueType)
         {
             switch (valueType)
             {
@@ -135,7 +135,7 @@ namespace RIoT2.Core.Models
         /// Undefined or Null is returned as Null
         /// </summary>
         /// <returns>Expando object, List, or a primitive</returns>
-        public object GetAsObject()
+        public object? GetAsObject()
         {
             try
             {
@@ -153,14 +153,14 @@ namespace RIoT2.Core.Models
             return handleElement(_value);
         }
 
-        private object handleElement(JsonElement elem) 
+        private object? handleElement(JsonElement elem) 
         {
             if (elem.ValueKind == JsonValueKind.Null || elem.ValueKind == JsonValueKind.Undefined)
                 return null;
 
             if (elem.ValueKind == JsonValueKind.Object)
             {
-                var expandoDict = new ExpandoObject() as IDictionary<string, Object>;
+                IDictionary<string, object?> expandoDict = new ExpandoObject();
                 foreach (JsonProperty property in elem.EnumerateObject())
                 {
                     switch (property.Value.ValueKind)
@@ -169,7 +169,7 @@ namespace RIoT2.Core.Models
                             expandoDict.Add(property.Name, handleElement(property.Value));
                             break;
                         case JsonValueKind.Array:
-                            var lst = new List<object>();
+                            var lst = new List<object?>();
                             foreach (var arrayProp in property.Value.EnumerateArray())
                                 lst.Add(handleElement(arrayProp));
 
@@ -197,11 +197,11 @@ namespace RIoT2.Core.Models
                             break;
                     }
                 }
-                return expandoDict as ExpandoObject;
+                return (ExpandoObject)expandoDict;
             }
             else if (elem.ValueKind == JsonValueKind.Array)
             {
-                var lst = new List<object>();
+                var lst = new List<object?>();
                 foreach (var arrayProp in elem.EnumerateArray())
                     lst.Add(handleElement(arrayProp));
 
@@ -227,7 +227,7 @@ namespace RIoT2.Core.Models
             return null;
         }
 
-        private JsonNode Node 
+        private JsonNode? Node 
         { 
             get 
             {
@@ -257,14 +257,14 @@ namespace RIoT2.Core.Models
                 foreach (var v in _value.EnumerateArray()) 
                 {
                     if (v.ValueKind == JsonValueKind.String)
-                        yield return v.GetString();
+                        yield return v.GetString()!;
                     else
                         yield return v.GetRawText();
                 }
             }
         }
 
-        public T GetValue<T>(string path = null)
+        public T? GetValue<T>(string? path = null)
         {
             if (Type == ValueType.Entity)
             {
@@ -281,7 +281,7 @@ namespace RIoT2.Core.Models
                 }
 
                 //fetch requested path -> return only it
-                JsonNode node = findNodePath(Node, path);
+                JsonNode? node = findNodePath(Node, path!);
                 if (node == null)
                     return default(T);
 
@@ -311,7 +311,7 @@ namespace RIoT2.Core.Models
         /// requested numeric target type <typeparamref name="T"/>. Falls back to <c>default</c> for
         /// unsupported types.
         /// </summary>
-        private static T convertNumber<T>(decimal number)
+        private static T? convertNumber<T>(decimal number)
         {
             var target = typeof(T);
 
@@ -327,7 +327,7 @@ namespace RIoT2.Core.Models
             return default(T);
         }
 
-        private JsonNode findNodePath(JsonNode node, string path = null, bool returnParent = false) 
+        private JsonNode? findNodePath(JsonNode? node, string path, bool returnParent = false) 
         {
             var parts = pathParts(path);
             var length = returnParent ? parts.Length - 1 : parts.Length;
@@ -359,13 +359,13 @@ namespace RIoT2.Core.Models
             return node;
         }
 
-        private JsonNode findNode(JsonNode node, string property)
+        private JsonNode? findNode(JsonNode? node, string property)
         {
             var parent = findPropertyParent(node, property);
             return parent?[property];
         }
 
-        private JsonObject findPropertyParent(JsonNode node, string property)
+        private JsonObject? findPropertyParent(JsonNode? node, string property)
         {
             if (node is JsonObject obj)
             {
@@ -385,21 +385,21 @@ namespace RIoT2.Core.Models
             return null;
         }
 
-        public string GetVariable(string path = null)
+        public string? GetVariable(string? path = null)
         {
             if (Type == ValueType.Text || !String.IsNullOrEmpty(path))
             {
                 var val = GetValue<string>(path);
                 if (!String.IsNullOrEmpty(val))
                 {
-                    if (val != "" && val.StartsWith("{") && val.EndsWith("}"))
+                    if (val!.StartsWith("{") && val.EndsWith("}"))
                         return val.Substring(1, val.Length - 2);
                 }
             }
             return null;
         }
 
-        public string CreateMappedObjectJson(ValueModel source, ValueType expectedType) 
+        public string? CreateMappedObjectJson(ValueModel source, ValueType expectedType) 
         {
             if (Type != ValueType.Entity)
                 return null;
@@ -421,12 +421,12 @@ namespace RIoT2.Core.Models
                     {
                         if (source.Type == ValueType.Entity)
                         {
-                            if (source.Node.AsObject().TryGetPropertyValue(map.Value.ToString(), out var sourcevalue))
-                                a.Add(sourcevalue.DeepClone());
+                            if (source.Node!.AsObject().TryGetPropertyValue(map.Value.ToString(), out var sourcevalue))
+                                a.Add(sourcevalue?.DeepClone());
                         }
                         else
                         {
-                            a.Add(source.Node.DeepClone());
+                            a.Add(source.Node?.DeepClone());
                         }
                     }
                     return a.ToString();
@@ -436,12 +436,12 @@ namespace RIoT2.Core.Models
                     {
                         if (source.Type == ValueType.Entity)
                         {
-                            if (source.Node.AsObject().TryGetPropertyValue(map.Value.ToString(), out var sourcevalue))
-                                j.Add(map.Name, sourcevalue.DeepClone());
+                            if (source.Node!.AsObject().TryGetPropertyValue(map.Value.ToString(), out var sourcevalue))
+                                j.Add(map.Name, sourcevalue?.DeepClone());
                         }
                         else
                         {
-                            j.Add(map.Name, source.Node.DeepClone());
+                            j.Add(map.Name, source.Node?.DeepClone());
                         }
                     }
                     return j.ToString();
@@ -461,7 +461,7 @@ namespace RIoT2.Core.Models
             {
                 if (!string.IsNullOrEmpty(property))
                 {
-                    var root = Node;
+                    var root = Node!;
                     var parent = findPropertyParent(root, property) ?? root.AsObject();
                     parent[property] = value.Node;
                     return new ValueModel(root.ToJsonString());
@@ -474,14 +474,14 @@ namespace RIoT2.Core.Models
         {
             if (Type == ValueType.TextArray)
             {
-                var root = Node;
+                var root = Node!;
                 root.AsArray().Add(value.Node);
                 return new ValueModel(root.ToJsonString());
             }
             return value;
         }
 
-        public ValueModel Update(ValueModel value, string path = null)
+        public ValueModel Update(ValueModel value, string? path = null)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
@@ -491,9 +491,9 @@ namespace RIoT2.Core.Models
             {
                 if (!string.IsNullOrEmpty(path))
                 {
-                    var root = Node;
-                    var parent = findNodePath(root, path, true);
-                    var leaf = pathParts(path).Last();
+                    var root = Node!;
+                    var parent = findNodePath(root, path!, true);
+                    var leaf = pathParts(path!).Last();
                     if (!(parent is JsonObject obj))
                         throw new ArgumentException("The parent value path must identify an existing object.", nameof(path));
                     var bracket = leaf.IndexOf('[');
@@ -518,7 +518,7 @@ namespace RIoT2.Core.Models
             return value;
         }
 
-         public ValueModel Merge(ValueModel from, bool mergeOnlyExistingParameters = false)
+         public ValueModel? Merge(ValueModel from, bool mergeOnlyExistingParameters = false)
         {
             if (from.Type != ValueType.Entity || Type != ValueType.Entity)
                 return null; //In order to merge, both needs to be Entities
@@ -567,7 +567,7 @@ namespace RIoT2.Core.Models
             return this;
         }
 
-        private JsonDocument isJson(string source, bool enforceCamelCase = true)
+        private JsonDocument? isJson(string? source, bool enforceCamelCase = true)
         {
             if (source == null)
                 return null;

@@ -18,15 +18,15 @@ public sealed class PluginTestHost : IDisposable, IAsyncDisposable
     private readonly ServiceProvider _provider;
     private readonly List<CapturedReport> _reports = [];
     private readonly Lock _reportsLock = new();
-    private IReadOnlyList<IDevice> _devices;
+    private IReadOnlyList<IDevice>? _devices;
 
     /// <param name="pluginType">The plugin class. It needs a public parameterless constructor, as in the node.</param>
     /// <param name="configureServices">Runs after the plugin registered its services, so a test can replace them, for example with hardware fakes.</param>
-    public PluginTestHost(Type pluginType, Action<IServiceCollection> configureServices = null)
+    public PluginTestHost(Type pluginType, Action<IServiceCollection>? configureServices = null)
         : this(CreatePlugin(pluginType), configureServices) { }
 
     /// <inheritdoc cref="PluginTestHost(Type, Action{IServiceCollection})"/>
-    public PluginTestHost(IDevicePlugin plugin, Action<IServiceCollection> configureServices = null)
+    public PluginTestHost(IDevicePlugin plugin, Action<IServiceCollection>? configureServices = null)
     {
         ArgumentNullException.ThrowIfNull(plugin);
         ServiceCollection = new ServiceCollection();
@@ -104,7 +104,7 @@ public sealed class PluginTestHost : IDisposable, IAsyncDisposable
     /// <summary>
     /// Refreshes one report, or the whole device when <paramref name="reportId"/> is null, as the node's scheduler does.
     /// </summary>
-    public static Task RefreshAsync(IDevice device, string reportId = null, CancellationToken cancellationToken = default)
+    public static Task RefreshAsync(IDevice device, string? reportId = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(device);
         var name = reportId ?? device.Id;
@@ -126,7 +126,7 @@ public sealed class PluginTestHost : IDisposable, IAsyncDisposable
         ArgumentNullException.ThrowIfNull(pluginType);
         if (!typeof(IDevicePlugin).IsAssignableFrom(pluginType) || pluginType.IsAbstract)
             throw new ArgumentException($"{pluginType.FullName} isn't a concrete IDevicePlugin.", nameof(pluginType));
-        return (IDevicePlugin)Activator.CreateInstance(pluginType);
+        return (IDevicePlugin)Activator.CreateInstance(pluginType)!;
     }
 
     public void Dispose()

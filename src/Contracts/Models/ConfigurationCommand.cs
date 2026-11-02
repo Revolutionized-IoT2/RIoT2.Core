@@ -22,7 +22,7 @@
         /// </summary>
         [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-        public string Hash { get; set; }
+        public string? Hash { get; set; }
 
         /// <summary>
         /// Optional contract version of the payload (<see cref="Contract.Version"/>); absent means 1.

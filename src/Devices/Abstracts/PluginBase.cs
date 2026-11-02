@@ -12,7 +12,7 @@ namespace RIoT2.Core.Abstracts
     /// </summary>
     public abstract class PluginBase : IDevicePlugin
     {
-        private IServiceCollection _services;
+        private IServiceCollection? _services;
 
         /// <summary>Registers the plugin's services and devices.</summary>
         protected abstract void Register();

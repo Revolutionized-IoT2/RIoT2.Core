@@ -14,7 +14,7 @@ namespace RIoT2.Core.Plugins.Build
     /// <summary>A file from the publish output, as MSBuild's <c>ResolvedFileToPublish</c> item describes it.</summary>
     public sealed class PluginFile
     {
-        public PluginFile(string relativePath, string packageId = null, string packageVersion = null)
+        public PluginFile(string relativePath, string? packageId = null, string? packageVersion = null)
         {
             RelativePath = relativePath;
             PackageId = packageId;
@@ -25,33 +25,33 @@ namespace RIoT2.Core.Plugins.Build
         public string RelativePath { get; }
 
         /// <summary>The NuGet package the file comes from, if any.</summary>
-        public string PackageId { get; }
+        public string? PackageId { get; }
 
-        public string PackageVersion { get; }
+        public string? PackageVersion { get; }
     }
 
     /// <summary>What goes into a plugin zip and where it is written.</summary>
     public sealed class PluginPackageRequest
     {
         /// <summary>Display name in <c>PluginManifest.json</c>.</summary>
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
-        public string Version { get; set; }
+        public string Version { get; set; } = string.Empty;
 
         /// <summary>Zip file name prefix: the zip is <c>&lt;Package&gt;_&lt;Version&gt;.zip</c>.</summary>
-        public string Package { get; set; }
+        public string Package { get; set; } = string.Empty;
 
         /// <summary>
         /// The plugin SDK version for <c>PluginManifest.json</c>. When empty, the version of the
         /// <c>RIoT2.Core.Devices</c> package in <see cref="Files"/> is used, or of <c>RIoT2.Core</c> for a
         /// plugin built on the facade.
         /// </summary>
-        public string CoreVersion { get; set; }
+        public string? CoreVersion { get; set; }
 
         /// <summary>The publish directory that <see cref="PluginFile.RelativePath"/> is relative to.</summary>
-        public string PublishDirectory { get; set; }
+        public string PublishDirectory { get; set; } = string.Empty;
 
-        public string OutputDirectory { get; set; }
+        public string OutputDirectory { get; set; } = string.Empty;
 
         public DateTime Date { get; set; } = DateTime.UtcNow;
 
@@ -103,7 +103,7 @@ namespace RIoT2.Core.Plugins.Build
         public static string ZipFileName(string package, string version) => package + "_" + version + ".zip";
 
         /// <summary>Whether a top-level publish file belongs in the zip.</summary>
-        public static bool Includes(string fileName, IEnumerable<string> excludePatterns)
+        public static bool Includes(string fileName, IEnumerable<string>? excludePatterns)
         {
             if (string.IsNullOrEmpty(fileName))
                 return false;
@@ -126,7 +126,7 @@ namespace RIoT2.Core.Plugins.Build
         /// The version of <c>RIoT2.Core.Devices</c> (or the <c>RIoT2.Core</c> facade) the plugin is built on:
         /// the package version, or the assembly version of a project reference. Null when neither is found.
         /// </summary>
-        public static string ResolveCoreVersion(IEnumerable<PluginFile> files, string publishDirectory)
+        public static string? ResolveCoreVersion(IEnumerable<PluginFile> files, string? publishDirectory)
         {
             var list = files.ToList();
             foreach (var package in CorePackages)
@@ -140,7 +140,7 @@ namespace RIoT2.Core.Plugins.Build
                 var path = assembly == null ? null : Path.Combine(publishDirectory ?? string.Empty, assembly.RelativePath);
                 if (path != null && File.Exists(path))
                 {
-                    var version = AssemblyName.GetAssemblyName(path).Version;
+                    var version = AssemblyName.GetAssemblyName(path).Version!;
                     return string.Format(CultureInfo.InvariantCulture, "{0}.{1}.{2}", version.Major, version.Minor, Math.Max(version.Build, 0));
                 }
             }
@@ -177,7 +177,7 @@ namespace RIoT2.Core.Plugins.Build
             var coreVersion = string.IsNullOrWhiteSpace(request.CoreVersion)
                 ? ResolveCoreVersion(request.Files, request.PublishDirectory)
                 : request.CoreVersion;
-            if (string.IsNullOrWhiteSpace(coreVersion))
+            if (coreVersion == null || coreVersion.Trim().Length == 0)
                 throw new InvalidOperationException("The plugin references neither RIoT2.Core.Devices nor RIoT2.Core, so coreVersion is unknown. Set RIoT2PluginCoreVersion.");
 
             var selected = request.Files
@@ -248,7 +248,7 @@ namespace RIoT2.Core.Plugins.Build
             return Regex.IsMatch(fileName, regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         }
 
-        private static void Require(string value, string name)
+        private static void Require(string? value, string name)
         {
             if (string.IsNullOrWhiteSpace(value))
                 throw new ArgumentException($"{name} is required.", name);

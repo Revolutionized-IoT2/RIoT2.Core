@@ -14,8 +14,7 @@ depending only on the ones below it: `RIoT2.Core.Contracts` (wire models, topics
 `.Mqtt` (MQTT client and service settings), `.Http`, `.Devices` (the plugin SDK) and `.Node` (the
 node runtime). `RIoT2.Core` is a facade over all five that forwards their types, so binaries
 built against an older `RIoT2.Core` keep working until Core 2.0 (I45). `RIoT2.Core.Devices.Testing`
-and `RIoT2.Core.Hosting` are .NET 10. `RIoT2.Core.Devices.Build` (1.15.0) is an MSBuild task that
-packs a plugin's zip on `dotnet publish`. Consumers reference the narrowest **packages** (I28); RIoT2.Tests
+and `RIoT2.Core.Hosting` are .NET 10. `RIoT2.Core.Devices.Build` packs plugin zips. Consumers reference the narrowest **packages** (I28); RIoT2.Tests
 is the only project reference.
 
 ## Commands
@@ -35,8 +34,7 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj
 - Every push runs `.github/workflows/ci.yml` (build, pack smoke test of all nine packages, secret
   scan). To release, push a git tag `x.y.z`: `release.yml` validates, then packs and pushes all
   nine with that version ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)). Core's tests live in RIoT2.Tests.
-- Shared build settings are in `Directory.Build.props` and `.editorconfig`; package versions are
-  centralized in `Directory.Packages.props`. `-p:CI=true` enables CI warning treatment locally.
+- Shared settings: `Directory.Build.props`, `.editorconfig`; versions: `Directory.Packages.props`.
 
 ## Layout
 
@@ -103,6 +101,8 @@ must stay compatible with it.
   (zip-slip guard) and sanitizing package file names.
 - New device code derives from `AsyncDeviceBase`. No `async void` or blocking waits (the threading
   analyzers fail CI); a deliberate wait needs a `#pragma` with its reason.
+- Nullable is on (I32): optional or omitted-when-null contract members are `?`; rules in the hub's
+  `build/README.md`.
 - Plugins derive from `PluginBase`. Keep `PluginHostContract.SharedAssemblyPrefixes` the only list
   of assemblies the node shares with plugins; the node's `PluginLoadContext` reads it, and
   `RIoT2.Core.Devices.Build` compiles the same file (internal there, `DEVICES_BUILD_TASK`) to leave

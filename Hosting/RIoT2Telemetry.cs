@@ -30,7 +30,7 @@ public static class RIoT2Telemetry
     /// <param name="service">The service, e.g. <c>orchestrator</c>; the resource's <c>service.name</c> is <c>riot2-&lt;service&gt;</c>.</param>
     /// <param name="instanceId">The service's RIoT2 id (<c>service.instance.id</c>), which tells two nodes apart.</param>
     /// <param name="meters">The service's own meters, e.g. <see cref="MeterNames.Orchestrator"/>.</param>
-    public static bool AddRIoT2Telemetry(this IHostApplicationBuilder builder, string service, string instanceId, params string[] meters)
+    public static bool AddRIoT2Telemetry(this IHostApplicationBuilder builder, string service, string? instanceId, params string[] meters)
     {
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentException.ThrowIfNullOrWhiteSpace(service);

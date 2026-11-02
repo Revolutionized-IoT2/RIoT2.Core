@@ -28,35 +28,36 @@ namespace RIoT2.Core.Services
         public const int ReportQueueCapacity = 1000;
 
         private static readonly TimeSpan DropWarningInterval = TimeSpan.FromMinutes(1);
-        private MqttClient _client;
+        private MqttClient? _client;
         private ICommandService _commandService;
         private IReportService _reportService;
         private INodeConfigurationService _configurationService;
-        private string _reportTopic;
-        private string _commandTopic;
-        private string _configurationTopic;
-        private string _orchestratorOnlineTopic;
-        private string _nodeOnlineTopic;
-        private string _commandResultTopic;
-        private string _statusTopic;
-        private INodeConfigurationStatusSource _statusSource;
+        private string _reportTopic = string.Empty;
+        private string _commandTopic = string.Empty;
+        private string _configurationTopic = string.Empty;
+        private string _orchestratorOnlineTopic = string.Empty;
+        private string _nodeOnlineTopic = string.Empty;
+        private string _commandResultTopic = string.Empty;
+        private string _statusTopic = string.Empty;
+        private INodeConfigurationStatusSource? _statusSource;
         private readonly SemaphoreSlim _statusGate = new SemaphoreSlim(1, 1);
         //private ILogger _logger;
         private ILogger<NodeMqttService> _logger;
-        private CancellationTokenSource _shutdown;
-        private SemaphoreSlim _legacyCommandGate;
+        // Created by Start, before any message or command can arrive.
+        private CancellationTokenSource _shutdown = null!;
+        private SemaphoreSlim _legacyCommandGate = null!;
         private readonly Func<MqttClient> _clientFactory;
         private const int MaxPendingCommands = 64;
         private readonly object _commandGate = new object();
         private readonly List<Task> _commands = new List<Task>();
         private bool _acceptingCommands;
-        private Channel<Report> _reports;
+        private Channel<Report>? _reports;
         private Task _reportPublisher = Task.CompletedTask;
         private long _droppedReports;
         private long _lastDropWarning;
         private readonly CorrelationCache _correlations = new CorrelationCache();
         // Results of commands that finish while Stop waits for them still go out on this client.
-        private MqttClient _resultClient;
+        private MqttClient? _resultClient;
 
         /// <summary>Reports dropped because the report queue was full.</summary>
         public long DroppedReports => Interlocked.Read(ref _droppedReports);
@@ -168,7 +169,7 @@ namespace RIoT2.Core.Services
         private void DispatchCommand(string message)
         {
             var command = TryReadCommand(message);
-            var correlationId = string.IsNullOrEmpty(command?.CorrelationId) ? null : command.CorrelationId;
+            var correlationId = string.IsNullOrEmpty(command?.CorrelationId) ? null : command!.CorrelationId;
             // The execution started below inherits the scope, so the device's own log lines carry the id.
             using (_logger.BeginIdScope(LogScope.CorrelationId, correlationId))
             lock (_commandGate)
@@ -178,7 +179,7 @@ namespace RIoT2.Core.Services
                 {
                     _logger.LogWarning("Node MQTT command rejected: stopping or pending command limit {Limit} reached; no retry", MaxPendingCommands);
                     if (correlationId != null)
-                        _ = PublishResultAsync(command, CommandResultStatus.Rejected,
+                        _ = PublishResultAsync(command!, CommandResultStatus.Rejected,
                             _acceptingCommands ? $"More than {MaxPendingCommands} commands are pending." : "The node is stopping.");
                     else
                         CountUncorrelated(CommandResultStatus.Rejected);
@@ -186,7 +187,7 @@ namespace RIoT2.Core.Services
                 }
                 if (correlationId != null && !_correlations.TryAdd(correlationId))
                 {
-                    AnswerRedelivery(command);
+                    AnswerRedelivery(command!);
                     return;
                 }
                 // Capture the device generation now, without blocking configuration messages behind I/O.
@@ -209,7 +210,7 @@ namespace RIoT2.Core.Services
                 _ = PublishResultAsync(command, status, error);
         }
 
-        private static Command TryReadCommand(string message)
+        private static Command? TryReadCommand(string message)
         {
             try
             {
@@ -221,7 +222,7 @@ namespace RIoT2.Core.Services
             }
         }
 
-        private async Task ExecuteCommandAsync(string message, Command correlated, CancellationToken cancellationToken)
+        private async Task ExecuteCommandAsync(string message, Command? correlated, CancellationToken cancellationToken)
         {
             try
             {
@@ -291,7 +292,7 @@ namespace RIoT2.Core.Services
             NodeMetrics.Commands.Add(1, NodeMetrics.Tag("outcome", outcome));
 
         // Remembers the outcome for redeliveries, then answers.
-        private Task CompleteAsync(Command command, string status, string error = null)
+        private Task CompleteAsync(Command command, string status, string? error = null)
         {
             _correlations.Complete(command.CorrelationId, status, error);
             return PublishResultAsync(command, status, error);
@@ -315,7 +316,7 @@ namespace RIoT2.Core.Services
                 device.CommandTemplates?.Any(template => template.Id == commandId) == true) == true;
         }
 
-        private async Task PublishResultAsync(Command command, string status, string error = null)
+        private async Task PublishResultAsync(Command command, string status, string? error = null)
         {
             NodeMetrics.Commands.Add(1, NodeMetrics.Tag("outcome", status));
             var client = _resultClient;
@@ -323,7 +324,8 @@ namespace RIoT2.Core.Services
                 return;
             var result = new CommandResult
             {
-                CorrelationId = command.CorrelationId,
+                // Only commands that carry a correlationId get a result.
+                CorrelationId = command.CorrelationId!,
                 CommandId = command.Id,
                 Status = status,
                 Error = error,
@@ -461,7 +463,7 @@ namespace RIoT2.Core.Services
             {
                 await Task.WhenAll(commands).ConfigureAwait(false);
                 // Publish the reports already queued before the client goes offline.
-                reports.Writer.TryComplete();
+                reports?.Writer.TryComplete();
                 await reportPublisher.ConfigureAwait(false);
                 await client.Stop().ConfigureAwait(false);
             }

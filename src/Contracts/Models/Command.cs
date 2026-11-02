@@ -27,7 +27,7 @@ namespace RIoT2.Core.Models
         /// </summary>
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
-        public string CorrelationId { get; set; }
+        public string? CorrelationId { get; set; }
 
         /// <summary>
         /// Optional contract version of the payload (<see cref="Contract.Version"/>); absent means 1.
@@ -41,7 +41,7 @@ namespace RIoT2.Core.Models
         /// </summary>
         /// <param name="json">The JSON payload representing the command.</param>
         /// <returns>The deserialized command.</returns>
-        public static Command Create(string json)
+        public static Command? Create(string? json)
         {
             return Json.Deserialize<Command>(json);
         }

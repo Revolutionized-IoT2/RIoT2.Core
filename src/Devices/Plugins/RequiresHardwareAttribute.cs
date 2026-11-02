@@ -10,9 +10,9 @@ namespace RIoT2.Core.Plugins
     [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
     public sealed class RequiresHardwareAttribute : Attribute
     {
-        public RequiresHardwareAttribute(string reason = null) => Reason = reason;
+        public RequiresHardwareAttribute(string? reason = null) => Reason = reason;
 
         /// <summary>What the device needs, for example "I2C bus" or "MQTT broker".</summary>
-        public string Reason { get; }
+        public string? Reason { get; }
     }
 }

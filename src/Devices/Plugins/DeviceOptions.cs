@@ -33,13 +33,13 @@ namespace RIoT2.Core.Plugins
         /// initial value; a required one without a default is a problem.
         /// </summary>
         /// <exception cref="DeviceOptionsException">Listing every missing or invalid parameter.</exception>
-        public static TOptions Bind<TOptions>(IDictionary<string, string> parameters) where TOptions : class, new() =>
+        public static TOptions Bind<TOptions>(IDictionary<string, string>? parameters) where TOptions : class, new() =>
             (TOptions)Bind(typeof(TOptions), parameters, null);
 
-        internal static object Bind(Type optionsType, IDictionary<string, string> parameters, Action<string> read)
+        internal static object Bind(Type optionsType, IDictionary<string, string>? parameters, Action<string>? read)
         {
             var list = Parameters(optionsType);
-            var options = Activator.CreateInstance(optionsType);
+            var options = Activator.CreateInstance(optionsType)!;
             var problems = new List<string>();
             foreach (var parameter in list)
             {
@@ -58,7 +58,7 @@ namespace RIoT2.Core.Plugins
                     }
                 }
 
-                if (TryConvert(parameter.ValueType, raw, out var value))
+                if (TryConvert(parameter.ValueType, raw!, out var value))
                     parameter.Property.SetValue(options, value);
                 else if (parameter.Definition.Secret)
                     problems.Add($"{key} is not a valid {Describe(parameter.Definition.Type)}");
@@ -75,7 +75,7 @@ namespace RIoT2.Core.Plugins
         /// The value stored under <paramref name="key"/>: an exact match, or else one that differs only in case,
         /// because the configuration download camel-cases dictionary keys (divergence C1). Null when absent.
         /// </summary>
-        internal static string Find(IDictionary<string, string> parameters, string key)
+        internal static string? Find(IDictionary<string, string>? parameters, string? key)
         {
             if (parameters == null || key == null)
                 return null;
@@ -141,7 +141,7 @@ namespace RIoT2.Core.Plugins
             return parameters;
         }
 
-        private static bool TryConvert(Type type, string raw, out object value)
+        private static bool TryConvert(Type type, string raw, out object? value)
         {
             value = null;
             if (type == typeof(string))
@@ -167,7 +167,7 @@ namespace RIoT2.Core.Plugins
             }
         }
 
-        private static string Format(object value)
+        private static string? Format(object? value)
         {
             switch (value)
             {
@@ -219,10 +219,10 @@ namespace RIoT2.Core.Plugins
 
         private sealed class Parameter
         {
-            public PropertyInfo Property { get; set; }
-            public DeviceParameterAttribute Attribute { get; set; }
-            public Type ValueType { get; set; }
-            public DeviceParameterDefinition Definition { get; set; }
+            public PropertyInfo Property { get; set; } = null!;
+            public DeviceParameterAttribute Attribute { get; set; } = null!;
+            public Type ValueType { get; set; } = null!;
+            public DeviceParameterDefinition Definition { get; set; } = null!;
         }
     }
 }

@@ -6,6 +6,38 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-11-02
+
+Nullable reference types ([I32](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i32-nullable-reference-types-m), plan M8 step 9). Every package is now
+nullable-annotated, and CI fails on a nullable warning. Runtime behaviour, golden files, hashes
+and the schema are unchanged. Annotations are compile-time only: a consumer without nullable
+enabled sees no difference, and binaries built against 1.16 still load. A plugin built on this
+version needs Node 1.12.0, which ships it.
+
+- Members that can be null are now `?`:
+  - Contract members that are optional or left out while null (for example `Hash`, `Error`,
+    `CorrelationId`, `ParameterDefinitions`, `Capabilities`, `Manifest`, `PluginManifest`,
+    `MatterEndpoints`), `DeviceConfiguration.CommandTemplates` (a device without commands has
+    none), `ReportTemplate.Model` and `CommandTemplate.Model`.
+  - Results that are null for bad or missing input: `Json.Deserialize<T>`, `Report.Create` and
+    the other `Create` methods, `ValueModel.GetValue<T>`, `DeviceBase.GetConfiguration<T>` and
+    `Json.SerializeIgnoreNulls`.
+  - `INodeConfigurationService.DeviceConfiguration` and `OnlineMessage`, which are null until
+    they are loaded or set.
+  - `IDeviceService.GetDeviceByCommandId`/`GetDeviceByReportId` (null when no device matches).
+- `DeviceBase.Refresh` and `AsyncDeviceBase.RefreshAsync` take `ReportTemplate? report`. Null
+  means a device-level refresh, as before. A plugin that enables nullable overrides them with
+  `ReportTemplate?`.
+- Serializer-populated contract models turn off CS8618 in a nested `.editorconfig`. There, a
+  non-nullable member is one that a valid message carries.
+- `DeviceBase<TOptions>.Options` starts as a new options instance instead of null, until binding
+  replaces it before `ConfigureDevice`. `DeviceBase.ReportTemplates` starts empty instead of null,
+  until `Initialize`.
+- No polyfill package: the netstandard2.0 projects use no nullable attributes.
+- Fixed (since 1.16.1): an `AsyncDeviceBase` device stopped while a refresh ran ended in `Error`,
+  because the refresh treated the cancellation caused by the stop as a failure. It ends `Stopped`
+  again. The node wasn't affected: it cancels a device's work before stopping the device.
+
 ## [1.16.1] - 2026-11-02
 
 - Fixed: `AsyncDeviceBase` treated every `OperationCanceledException` as a cancellation. An

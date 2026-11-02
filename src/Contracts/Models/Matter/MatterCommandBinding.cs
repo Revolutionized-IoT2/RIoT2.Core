@@ -31,14 +31,14 @@ namespace RIoT2.Core.Models.Matter
         /// A dotted path into the command's <see cref="ValueModel"/> to write the value to (e.g.
         /// <c>"brightness"</c>), or <see langword="null"/> to send the value as the whole payload.
         /// </summary>
-        public string ValuePath { get; set; }
+        public string? ValuePath { get; set; }
 
         /// <summary>
         /// An optional JSON payload the command value is seeded from before <see cref="ValuePath"/> is
         /// written, for entity commands that require fields beyond the bound attribute. When
         /// <see langword="null"/>, the command template's own model is used.
         /// </summary>
-        public string ValueTemplateJson { get; set; }
+        public string? ValueTemplateJson { get; set; }
 
         /// <summary>
         /// The unit conversion between RIoT and Matter, declared in the RIoT-to-Matter direction; the

@@ -2,8 +2,8 @@
 {
     public class MqttEventArgs
     {
-        public string Topic { get; set; }
-        public string ClientId { get; set; }
-        public string Message { get; set; }
+        public string Topic { get; set; } = string.Empty;
+        public string ClientId { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
     }
 }

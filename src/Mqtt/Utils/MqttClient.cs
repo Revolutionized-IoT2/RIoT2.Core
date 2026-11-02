@@ -49,10 +49,10 @@ namespace RIoT2.Core.Utils
         private static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(5);
 
         private readonly MqttConfiguration _settings;
-        private readonly ILogger _logger;
+        private readonly ILogger? _logger;
         private readonly SemaphoreSlim _stopGate = new SemaphoreSlim(1, 1);
-        private IManagedMqttClient _client;
-        private Channel<MqttEventArgs> _received;
+        private IManagedMqttClient? _client;
+        private Channel<MqttEventArgs>? _received;
         private Task _receiveWorker = Task.CompletedTask;
         private string _willTopic;
         private string _willPayload;
@@ -69,23 +69,23 @@ namespace RIoT2.Core.Utils
         }
 
         /// <summary>Raised for every received message, after the previous message's handlers finished.</summary>
-        public event MqttMessageReceivedHandler MessageReceived;
+        public event MqttMessageReceivedHandler? MessageReceived;
 
         /// <summary>Raised for every received message and awaited before the next one is handled.</summary>
-        public event Func<MqttEventArgs, Task> MessageReceivedAsync;
+        public event Func<MqttEventArgs, Task>? MessageReceivedAsync;
 
         /// <summary>Raised after every (re)connect, before queued messages are sent.</summary>
-        public event Func<Task> ConnectedAsync;
+        public event Func<Task>? ConnectedAsync;
 
         /// <summary>Raised with <c>true</c> when the connection comes up and <c>false</c> when it drops.</summary>
-        public event Action<bool> ConnectionStateChanged;
+        public event Action<bool>? ConnectionStateChanged;
 
-        public MqttClient(string clientId, string serverUrl, string username, string password)
+        public MqttClient(string clientId, string serverUrl, string? username, string? password)
             : this(clientId, serverUrl, username, password, MqttConfiguration.DefaultPort)
         {
         }
 
-        public MqttClient(string clientId, string serverUrl, string username, string password, int port)
+        public MqttClient(string clientId, string serverUrl, string? username, string? password, int port)
             : this(new MqttConfiguration
             {
                 ClientId = clientId,
@@ -98,7 +98,7 @@ namespace RIoT2.Core.Utils
         }
 
         /// <summary>Creates a client from its settings; <paramref name="logger"/> receives handler errors and dropped-message warnings.</summary>
-        public MqttClient(MqttConfiguration configuration, ILogger logger = null)
+        public MqttClient(MqttConfiguration configuration, ILogger? logger = null)
         {
             if (configuration == null)
                 throw new ArgumentNullException(nameof(configuration));
@@ -128,7 +128,7 @@ namespace RIoT2.Core.Utils
         /// connection drops, and <see cref="StopAsync"/> publishes the same message on a graceful stop.
         /// Call it before starting.
         /// </summary>
-        public void SetLastWill(string topic, string payload, bool retain)
+        public void SetLastWill(string topic, string? payload, bool retain)
         {
             if (string.IsNullOrEmpty(topic))
                 throw new ArgumentException("The last-will topic is required.", nameof(topic));
@@ -196,7 +196,7 @@ namespace RIoT2.Core.Utils
         /// otherwise (see the class remarks for the queue limit).
         /// </summary>
         /// <exception cref="InvalidOperationException">The client is not started.</exception>
-        public async Task PublishAsync(string topic, string payload, MqttQos qos = MqttQos.AtLeastOnce, bool retain = false,
+        public async Task PublishAsync(string topic, string? payload, MqttQos qos = MqttQos.AtLeastOnce, bool retain = false,
             CancellationToken cancellationToken = default)
         {
             var client = _client;
@@ -214,7 +214,7 @@ namespace RIoT2.Core.Utils
 
         /// <summary>Publishes at QoS 1. Kept for plugins built against Core 1.2 or earlier.</summary>
         [Obsolete("Use PublishAsync. Publish is removed in increment I45.")]
-        public Task Publish(string topic, string payload, bool retain = false) =>
+        public Task Publish(string topic, string? payload, bool retain = false) =>
             PublishAsync(topic, payload, MqttQos.AtLeastOnce, retain);
 
         /// <summary>Stops the client; see <see cref="StopAsync"/>.</summary>
@@ -291,7 +291,7 @@ namespace RIoT2.Core.Utils
             try
             {
                 // Waits while the queue is full, so receiving pauses instead of growing memory.
-                await _received.Writer.WriteAsync(message).ConfigureAwait(false);
+                await _received!.Writer.WriteAsync(message).ConfigureAwait(false);
             }
             catch (ChannelClosedException)
             {
@@ -331,7 +331,7 @@ namespace RIoT2.Core.Utils
         private async Task OnConnectedAsync(MqttClientConnectedEventArgs _)
         {
             if (Interlocked.Increment(ref _connects) > 1)
-                ReconnectCounter.Add(1, new KeyValuePair<string, object>("client", _settings.ClientId));
+                ReconnectCounter.Add(1, new KeyValuePair<string, object?>("client", _settings.ClientId));
             SetConnected(true);
             var handlers = ConnectedAsync;
             if (handlers == null)
@@ -366,7 +366,7 @@ namespace RIoT2.Core.Utils
         private Task OnSkippedAsync(ApplicationMessageSkippedEventArgs e)
         {
             var total = Interlocked.Increment(ref _dropped);
-            DroppedCounter.Add(1, new KeyValuePair<string, object>("client", _settings.ClientId));
+            DroppedCounter.Add(1, new KeyValuePair<string, object?>("client", _settings.ClientId));
             var now = DateTime.UtcNow.Ticks;
             var last = Interlocked.Read(ref _lastDropWarning);
             if (now - last >= DropWarningInterval.Ticks && Interlocked.CompareExchange(ref _lastDropWarning, now, last) == last)
@@ -434,8 +434,8 @@ namespace RIoT2.Core.Utils
         {
             List<MqttClient> clients;
             lock (StartedClients)
-                clients = StartedClients.Select(reference => reference.TryGetTarget(out var target) ? target : null).Where(c => c != null).ToList();
-            return clients.Select(c => new Measurement<int>(Volatile.Read(ref c._connected), new KeyValuePair<string, object>("client", c._settings.ClientId)));
+                clients = StartedClients.Select(reference => reference.TryGetTarget(out var target) ? target : null).OfType<MqttClient>().ToList();
+            return clients.Select(c => new Measurement<int>(Volatile.Read(ref c._connected), new KeyValuePair<string, object?>("client", c._settings.ClientId)));
         }
 
         public static bool IsMatch(string topic, string topicFilter)

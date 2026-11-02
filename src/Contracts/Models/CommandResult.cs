@@ -23,7 +23,7 @@ namespace RIoT2.Core.Models
         /// <summary>Why the command failed or was rejected. Omitted when <c>null</c>.</summary>
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
-        public string Error { get; set; }
+        public string? Error { get; set; }
 
         /// <summary>When the node decided, as Unix epoch seconds.</summary>
         public long TimeStamp { get; set; }
@@ -34,7 +34,7 @@ namespace RIoT2.Core.Models
         public int? ContractVersion { get; set; } = Contract.Version;
 
         /// <summary>Creates a result from its JSON, or returns <c>null</c> if it can't be parsed.</summary>
-        public static CommandResult Create(string json)
+        public static CommandResult? Create(string? json)
         {
             try
             {
@@ -47,7 +47,7 @@ namespace RIoT2.Core.Models
         }
 
         /// <summary>The JSON published on MQTT, without null properties.</summary>
-        public string ToJson() => Json.SerializeIgnoreNulls(this);
+        public string? ToJson() => Json.SerializeIgnoreNulls(this);
     }
 
     /// <summary>The values of <see cref="CommandResult.Status"/>, as sent on the wire.</summary>

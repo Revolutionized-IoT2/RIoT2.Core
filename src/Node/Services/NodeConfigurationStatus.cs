@@ -18,14 +18,14 @@ namespace RIoT2.Core.Services
         private readonly Func<DateTime> _utcNow;
         private NodeStatusMessage _current;
 
-        public NodeConfigurationStatus(Func<DateTime> utcNow = null)
+        public NodeConfigurationStatus(Func<DateTime>? utcNow = null)
         {
             _utcNow = utcNow ?? (() => DateTime.UtcNow);
             _current = new NodeStatusMessage { State = NodeConfigurationState.Applying, TimeStamp = Now() };
         }
 
         /// <summary>Raised with a snapshot after every change and on <see cref="Republish"/>. Handlers must not block.</summary>
-        public event Action<NodeStatusMessage> Changed;
+        public event Action<NodeStatusMessage>? Changed;
 
         /// <summary>A snapshot of the current status.</summary>
         public NodeStatusMessage Current
@@ -34,7 +34,7 @@ namespace RIoT2.Core.Services
         }
 
         /// <summary>The hash of the last configuration applied, or <c>null</c>.</summary>
-        public string AppliedHash
+        public string? AppliedHash
         {
             get { lock (_gate) return _current.AppliedHash; }
         }
@@ -43,7 +43,7 @@ namespace RIoT2.Core.Services
         /// <c>true</c> when the configuration with <paramref name="hash"/> is applied and every device
         /// in it started, so receiving it again needs no work.
         /// </summary>
-        public bool IsApplied(string hash)
+        public bool IsApplied(string? hash)
         {
             lock (_gate)
                 return hash != null && _current.AppliedHash == hash && _current.State == NodeConfigurationState.Applied
@@ -62,7 +62,7 @@ namespace RIoT2.Core.Services
         /// from an orchestrator before 1.5.0) is applied. Devices that didn't start are listed, but the
         /// configuration itself counts as applied (design 7.2, decision 5).
         /// </summary>
-        public void Applied(int? revision, string hash, IEnumerable<FailedDevice> failedDevices = null)
+        public void Applied(int? revision, string? hash, IEnumerable<FailedDevice>? failedDevices = null)
         {
             NodeMetrics.ConfigApplies.Add(1, NodeMetrics.Tag("result", NodeMetrics.Applied));
             Update(status =>
@@ -95,7 +95,7 @@ namespace RIoT2.Core.Services
         });
 
         /// <summary>The installed plugin package, reported with the status.</summary>
-        public void SetPluginManifest(PackageManifest manifest) => Update(status => status.PluginManifest = manifest);
+        public void SetPluginManifest(PackageManifest? manifest) => Update(status => status.PluginManifest = manifest);
 
         /// <summary>Raises <see cref="Changed"/> with the unchanged status, for example to answer a configuration command.</summary>
         public void Republish() => Update(_ => { });

@@ -15,8 +15,8 @@ namespace RIoT2.Core.Models
             Manifest = LoadManifest("Data/Manifest.json");
         }
 
-        public PackageManifest PluginManifest { get; private set; }
-        public PackageManifest Manifest { get; private set; }
+        public PackageManifest? PluginManifest { get; private set; }
+        public PackageManifest? Manifest { get; private set; }
 
         public override string ApplicationFolder { get => _configurationFolder.FullName; }
 

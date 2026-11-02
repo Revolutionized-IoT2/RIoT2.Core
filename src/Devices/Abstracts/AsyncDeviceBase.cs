@@ -14,12 +14,12 @@ namespace RIoT2.Core.Abstracts
 
         protected abstract Task StartDeviceAsync(CancellationToken cancellationToken);
         protected abstract Task StopDeviceAsync(CancellationToken cancellationToken);
-        protected abstract Task RefreshAsync(ReportTemplate report, CancellationToken cancellationToken);
+        protected abstract Task RefreshAsync(ReportTemplate? report, CancellationToken cancellationToken);
 
 #pragma warning disable VSTHRD002 // Plan M11 group A: DeviceBase's synchronous contract for older hosts; the node calls the async members.
         public sealed override void StartDevice() => StartAsync(CancellationToken.None).GetAwaiter().GetResult();
         public sealed override void StopDevice() => StopAsync(CancellationToken.None).GetAwaiter().GetResult();
-        public sealed override void Refresh(ReportTemplate report) => RefreshAsync(report, CancellationToken.None).GetAwaiter().GetResult();
+        public sealed override void Refresh(ReportTemplate? report) => RefreshAsync(report, CancellationToken.None).GetAwaiter().GetResult();
 #pragma warning restore VSTHRD002
 
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -63,8 +63,9 @@ namespace RIoT2.Core.Abstracts
             {
                 await RefreshAsync(ReportTemplates?.FirstOrDefault(r => r.Id == name), cancellationToken).ConfigureAwait(false);
             }
-            // Only the caller's cancellation; another one (an HTTP timeout) is a failure.
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+            // The caller's cancellation, or one caused by stopping the device, isn't a failure; another one
+            // (an HTTP timeout while the device runs) is.
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested || State != DeviceState.Running) { throw; }
             catch (Exception error)
             {
                 SetState(DeviceState.Error, error.Message);

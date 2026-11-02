@@ -26,7 +26,7 @@ namespace RIoT2.Core.Models
             get { return _value.Type; }
         }
         public ValueModel Model { get { return _value; } }
-        public object Value 
+        public object? Value 
         {
             get { return _value.GetAsObject(); }
             set { _value = new ValueModel(value); }
@@ -45,7 +45,7 @@ namespace RIoT2.Core.Models
                 Address = "variable",
                 MaintainHistory = true,
                 Type = Model.Type,
-                Parameters = null,
+                Parameters = null!,
                 Model = Model.GetAsObject()
             };
         }

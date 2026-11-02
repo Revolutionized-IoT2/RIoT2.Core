@@ -6,7 +6,7 @@ namespace RIoT2.Core.Services
 {
     public class ReportService : IReportService
     {
-        public event ReportUpdatedHandler ReportUpdated;
+        public event ReportUpdatedHandler? ReportUpdated;
 
         IDeviceService _deviceService;
         public ReportService(IDeviceService deviceService)

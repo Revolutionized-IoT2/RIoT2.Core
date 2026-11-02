@@ -9,17 +9,18 @@ namespace RIoT2.Core.Models
         public string Id { get; set; }
         public string Name { get; set; }
         public string ClassFullName { get; set; }
-        public List<CommandTemplate> CommandTemplates { get; set; }
+        /// <summary>The device's commands; <c>null</c> for a device that takes no commands.</summary>
+        public List<CommandTemplate>? CommandTemplates { get; set; }
         public List<ReportTemplate> ReportTemplates { get; set; }
         public Dictionary<string, string> DeviceParameters { get; set; }
-        public string RefreshSchedule { get; set; }
+        public string? RefreshSchedule { get; set; }
 
         /// <summary>
         /// The Matter endpoints this device is exposed as through the RIoT Control Bridge, declared by
         /// devices that implement <see cref="Interfaces.IMatterDevice"/>. <c>null</c> or empty for devices
         /// that are not bridged to Matter.
         /// </summary>
-        public List<MatterEndpointTemplate> MatterEndpoints { get; set; }
+        public List<MatterEndpointTemplate>? MatterEndpoints { get; set; }
 
         /// <summary>
         /// Optional lowercase hex SHA-256 of this entry as served (design 7.2), so a node can tell which
@@ -27,7 +28,7 @@ namespace RIoT2.Core.Models
         /// </summary>
         [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-        public string Hash { get; set; }
+        public string? Hash { get; set; }
 
         /// <summary>
         /// Optional, templates only (Core 1.16.0, plan M12 step 4): the parameters the device reads, with their
@@ -36,7 +37,7 @@ namespace RIoT2.Core.Models
         /// </summary>
         [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-        public List<DeviceParameterDefinition> ParameterDefinitions { get; set; }
+        public List<DeviceParameterDefinition>? ParameterDefinitions { get; set; }
 
         /// <summary>
         /// Builds a scheduler trigger from the configured refresh schedule.
@@ -47,14 +48,14 @@ namespace RIoT2.Core.Models
         /// the node's scheduler skips an invalid one.
         /// </returns>
         [Obsolete("The node's scheduler builds the trigger and validates the cron expression; removed in Core 2.0 (I45).")]
-        public SchedulerTrigger GetDeviceRefreshSchedule()
+        public SchedulerTrigger? GetDeviceRefreshSchedule()
         {
             if (String.IsNullOrWhiteSpace(RefreshSchedule))
                 return null;
 
             return new SchedulerTrigger()
             {
-                CronSchedule = RefreshSchedule,
+                CronSchedule = RefreshSchedule!,
                 Group = Id,
                 Name = Id
             };

@@ -29,7 +29,7 @@ namespace RIoT2.Core.Utils
         /// <param name="json">A JSON object.</param>
         /// <returns>The dictionary.</returns>
         /// <exception cref="System.Text.Json.JsonException">The text is not a JSON object.</exception>
-        public static IDictionary<string, object> ToDictionary(string json)
+        public static IDictionary<string, object?> ToDictionary(string json)
         {
             using (var document = JsonDocument.Parse(json, DocumentOptions))
                 return ObjectToDictionary(document.RootElement);
@@ -40,13 +40,13 @@ namespace RIoT2.Core.Utils
         /// </summary>
         /// <param name="obj">The object to convert.</param>
         /// <returns>The dictionary.</returns>
-        public static IDictionary<string, object> ToDictionary(object obj)
+        public static IDictionary<string, object?> ToDictionary(object obj)
         {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
 #pragma warning disable CS0618 // A JObject keeps its own conversion until JObjects are gone (I26).
             if (obj is JObject jObject)
-                return ToDictionary(jObject);
+                return ToDictionary(jObject)!;
 #pragma warning restore CS0618
             if (obj is JsonElement element)
                 return ObjectToDictionary(element);
@@ -61,12 +61,12 @@ namespace RIoT2.Core.Utils
         /// <param name="jObject">The JSON object to convert.</param>
         /// <returns>A dictionary representing the JSON object, or <c>null</c> if <paramref name="jObject"/> is <c>null</c>.</returns>
         [Obsolete("Newtonsoft.Json only. Use ToDictionary(string) or ToDictionary(object).")]
-        public static IDictionary<string, object> ToDictionary(JObject jObject)
+        public static IDictionary<string, object?>? ToDictionary(JObject? jObject)
         {
             if (jObject == null)
                 return null;
 
-            var result = jObject.ToObject<Dictionary<string, object>>();
+            var result = jObject.ToObject<Dictionary<string, object?>>()!;
 
             var JObjectKeys = (from r in result
                                let key = r.Key
@@ -80,14 +80,14 @@ namespace RIoT2.Core.Utils
                               where value != null && value.GetType() == typeof(JArray)
                               select key).ToList();
 
-            JArrayKeys.ForEach(key => result[key] = ((JArray)result[key]).Select(ConvertToken).ToArray());
-            JObjectKeys.ForEach(key => result[key] = ToDictionary((result[key] as JObject).ToString()));
+            JArrayKeys.ForEach(key => result[key] = ((JArray)result[key]!).Select(ConvertToken).ToArray());
+            JObjectKeys.ForEach(key => result[key] = ToDictionary(((JObject)result[key]!).ToString()));
 
             return result;
         }
 
 #pragma warning disable CS0618
-        private static object ConvertToken(JToken token)
+        private static object? ConvertToken(JToken token)
         {
             switch (token)
             {
@@ -109,12 +109,12 @@ namespace RIoT2.Core.Utils
         /// <param name="json">The JSON string to deserialize.</param>
         /// <param name="toType">The target type.</param>
         /// <returns>The deserialized object, or <c>null</c> if <paramref name="json"/> is null or white space.</returns>
-        public static object Deserialize(string json, System.Type toType)
+        public static object? Deserialize(string? json, System.Type toType)
         {
             if (string.IsNullOrWhiteSpace(json))
                 return null;
 
-            return JsonSerializer.Deserialize(json, toType, RIoT2JsonOptions.Default);
+            return JsonSerializer.Deserialize(json!, toType, RIoT2JsonOptions.Default);
         }
 
         /// <summary>
@@ -125,12 +125,12 @@ namespace RIoT2.Core.Utils
         /// <param name="json">The JSON string to deserialize.</param>
         /// <returns>The deserialized object, or the default of <typeparamref name="T"/> if <paramref name="json"/> is null or empty.</returns>
         [Obsolete("Newtonsoft.Json only, for stored configuration with $type metadata (removed with typed persistence, I26). Use Deserialize<T>.")]
-        public static T DeserializeAutoTypeNameHandling<T>(string json)
+        public static T? DeserializeAutoTypeNameHandling<T>(string? json)
         {
             if (string.IsNullOrEmpty(json))
                 return default(T);
 
-            return JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings()
+            return JsonConvert.DeserializeObject<T>(json!, new JsonSerializerSettings()
             {
                 TypeNameHandling = TypeNameHandling.Auto,
                 SerializationBinder = _safeTypeNameBinder
@@ -145,7 +145,7 @@ namespace RIoT2.Core.Utils
         /// <param name="includeNulls">If <c>true</c>, includes properties with null values.</param>
         /// <returns>The JSON representation of the object.</returns>
         [Obsolete("Newtonsoft.Json only, for stored configuration (removed with typed persistence, I26). Use Serialize or SerializeIgnoreNulls.")]
-        public static string SerializeAutoTypeNameHandling(object obj, bool autoTypeNameHandling = false, bool includeNulls = false)
+        public static string SerializeAutoTypeNameHandling(object? obj, bool autoTypeNameHandling = false, bool includeNulls = false)
         {
             return JsonConvert.SerializeObject(obj, new JsonSerializerSettings()
             {
@@ -164,12 +164,12 @@ namespace RIoT2.Core.Utils
         /// <param name="json">The JSON string to deserialize.</param>
         /// <returns>The deserialized object, or the default of <typeparamref name="T"/> if <paramref name="json"/> is null or white space.</returns>
         /// <exception cref="System.Text.Json.JsonException">The JSON is invalid or doesn't fit <typeparamref name="T"/>.</exception>
-        public static T Deserialize<T>(string json)
+        public static T? Deserialize<T>(string? json)
         {
             if (string.IsNullOrWhiteSpace(json))
                 return default(T);
 
-            return JsonSerializer.Deserialize<T>(json, RIoT2JsonOptions.Default);
+            return JsonSerializer.Deserialize<T>(json!, RIoT2JsonOptions.Default);
         }
 
         /// <summary>
@@ -179,7 +179,7 @@ namespace RIoT2.Core.Utils
         /// <param name="json">The JSON string to deserialize.</param>
         /// <returns>The deserialized object, or the default of <typeparamref name="T"/> if <paramref name="json"/> is null or empty.</returns>
         [Obsolete("Newtonsoft.Json only. Deserialize<T> matches property names case-insensitively.")]
-        public static T DeserializePascal<T>(string json)
+        public static T? DeserializePascal<T>(string? json)
         {
             if (string.IsNullOrEmpty(json))
                 return default(T);
@@ -192,7 +192,7 @@ namespace RIoT2.Core.Utils
                 }
             };
 
-            return JsonConvert.DeserializeObject<T>(json, settings);
+            return JsonConvert.DeserializeObject<T>(json!, settings);
         }
 
         /// <summary>
@@ -201,7 +201,7 @@ namespace RIoT2.Core.Utils
         /// <param name="json">The JSON string to deserialize.</param>
         /// <returns>The deserialized object, the original string if deserialization fails, or <c>null</c> if <paramref name="json"/> is null or empty.</returns>
         [Obsolete("Newtonsoft.Json only: returns JObject or JArray. Use Deserialize<T>, Deserialize<JsonElement> or ToDictionary.")]
-        public static object Deserialize(string json)
+        public static object? Deserialize(string? json)
         {
             if (string.IsNullOrEmpty(json))
                 return null;
@@ -216,7 +216,7 @@ namespace RIoT2.Core.Utils
 
             try
             {
-                return JsonConvert.DeserializeObject(json, settings);
+                return JsonConvert.DeserializeObject(json!, settings);
             }
             catch
             {
@@ -229,7 +229,7 @@ namespace RIoT2.Core.Utils
         /// </summary>
         /// <param name="value">The object to serialize.</param>
         /// <returns>The JSON representation, or <c>null</c> if serialization fails.</returns>
-        public static string SerializeIgnoreNulls(object value)
+        public static string? SerializeIgnoreNulls(object? value)
         {
             try
             {
@@ -247,7 +247,7 @@ namespace RIoT2.Core.Utils
         /// </summary>
         /// <param name="value">The object to serialize.</param>
         /// <returns>The JSON representation of the object.</returns>
-        public static string Serialize(object value)
+        public static string Serialize(object? value)
         {
             return JsonSerializer.Serialize(value, value?.GetType() ?? typeof(object), RIoT2JsonOptions.Default);
         }
@@ -307,7 +307,7 @@ namespace RIoT2.Core.Utils
                 return text.Replace(placeholder, jsonData);
 
             var injectedText = text;
-            foreach (var e in (JsonObject)value)
+            foreach (var e in (JsonObject)value!)
                 injectedText = injectedText.Replace($"{placeholder}.{e.Key}", TokenText(e.Value));
             return injectedText;
         }
@@ -319,7 +319,7 @@ namespace RIoT2.Core.Utils
         /// <param name="json">The JSON string to read.</param>
         /// <param name="attribute">The name of the attribute to read (case-sensitive).</param>
         /// <returns>The attribute value, or <c>null</c> if it is missing or the JSON is not an object.</returns>
-        public static string GetValue(string json, string attribute)
+        public static string? GetValue(string json, string attribute)
         {
             try
             {
@@ -343,7 +343,7 @@ namespace RIoT2.Core.Utils
         /// <param name="path">The path.</param>
         /// <returns>The value's text (as <see cref="GetValue"/>, but objects and arrays compact), or <c>null</c> if not found.</returns>
         /// <exception cref="ArgumentException">The path uses unsupported JSONPath syntax.</exception>
-        public static string FindValue(string json, string path)
+        public static string? FindValue(string json, string path)
         {
             if (!TrySelect(ParseObject(json), path, out var token, out _, out _) || token == null)
                 return null;
@@ -359,7 +359,7 @@ namespace RIoT2.Core.Utils
         /// <param name="path">The path of an existing value.</param>
         /// <param name="value">The value to set, serialized with its member names as declared.</param>
         /// <returns>The updated JSON, indented, or the original JSON if the path was not found.</returns>
-        public static string SetValue(string json, string path, object value)
+        public static string SetValue(string json, string path, object? value)
         {
             var root = ParseObject(json);
             if (!TrySelect(root, path, out _, out var parent, out var key) || parent == null)
@@ -367,9 +367,9 @@ namespace RIoT2.Core.Utils
 
             var replacement = JsonSerializer.SerializeToNode(value, value?.GetType() ?? typeof(object), RIoT2JsonOptions.AsDeclared);
             if (parent is JsonObject asObject)
-                asObject[(string)key] = replacement;
+                asObject[(string)key!] = replacement;
             else if (parent is JsonArray asArray)
-                asArray[(int)key] = replacement;
+                asArray[(int)key!] = replacement;
 
             return root.ToJsonString(RIoT2JsonOptions.Indented);
         }
@@ -379,10 +379,10 @@ namespace RIoT2.Core.Utils
         /// </summary>
         /// <param name="str">The string to test.</param>
         /// <returns><c>true</c> if the string is valid JSON; otherwise, <c>false</c>.</returns>
-        public static bool IsJson(string str)
+        public static bool IsJson(string? str)
         {
             if (string.IsNullOrWhiteSpace(str)) { return false; }
-            str = str.Trim();
+            str = str!.Trim();
             if ((str.StartsWith("{") && str.EndsWith("}")) || //For object
                 (str.StartsWith("[") && str.EndsWith("]"))) //For array
             {
@@ -417,7 +417,7 @@ namespace RIoT2.Core.Utils
         }
 
         // A JsonNode where a repeated property name keeps its last value, as Newtonsoft's JObject did.
-        private static JsonNode ToNode(JsonElement element)
+        private static JsonNode? ToNode(JsonElement element)
         {
             switch (element.ValueKind)
             {
@@ -439,20 +439,20 @@ namespace RIoT2.Core.Utils
             }
         }
 
-        private static IDictionary<string, object> ObjectToDictionary(JsonElement element)
+        private static IDictionary<string, object?> ObjectToDictionary(JsonElement element)
         {
             if (element.ValueKind != JsonValueKind.Object)
                 throw new System.Text.Json.JsonException($"Expected a JSON object, not {element.ValueKind}.");
-            return (IDictionary<string, object>)ToClr(element);
+            return (IDictionary<string, object?>)ToClr(element)!;
         }
 
         // Newtonsoft's materialization: long for integers, double for other numbers.
-        private static object ToClr(JsonElement element)
+        private static object? ToClr(JsonElement element)
         {
             switch (element.ValueKind)
             {
                 case JsonValueKind.Object:
-                    var dictionary = new Dictionary<string, object>();
+                    var dictionary = new Dictionary<string, object?>();
                     foreach (var property in element.EnumerateObject())
                         dictionary[property.Name] = ToClr(property.Value);
                     return dictionary;
@@ -473,7 +473,7 @@ namespace RIoT2.Core.Utils
 
         // The text Newtonsoft's JToken.ToString() gave a value: strings as they are, True/False,
         // numbers as their digits, null as empty, and objects and arrays as indented JSON.
-        private static string TokenText(JsonNode node)
+        private static string TokenText(JsonNode? node)
         {
             if (node == null)
                 return string.Empty;
@@ -485,7 +485,7 @@ namespace RIoT2.Core.Utils
             switch (element.ValueKind)
             {
                 case JsonValueKind.String:
-                    return element.GetString();
+                    return element.GetString()!;
                 case JsonValueKind.True:
                     return bool.TrueString;
                 case JsonValueKind.False:
@@ -501,7 +501,7 @@ namespace RIoT2.Core.Utils
 
         // Follows a JSONPath subset. True when the path exists (its value may be JSON null); parent and
         // key say where it is. A JSON null before the end of the path means the path doesn't exist.
-        private static bool TrySelect(JsonObject root, string path, out JsonNode value, out JsonNode parent, out object key)
+        private static bool TrySelect(JsonObject root, string path, out JsonNode? value, out JsonNode? parent, out object? key)
         {
             value = root;
             parent = null;
@@ -518,7 +518,7 @@ namespace RIoT2.Core.Utils
                 {
                     var index = (int)segment;
                     found = container is JsonArray array && index >= 0 && index < array.Count;
-                    value = found ? ((JsonArray)container)[index] : null;
+                    value = found ? ((JsonArray)container!)[index] : null;
                 }
                 if (!found)
                 {
@@ -657,7 +657,7 @@ namespace RIoT2.Core.Utils
                 CommentHandling = System.Text.Json.JsonCommentHandling.Skip
             };
 
-            System.Text.Json.JsonDocument doc = null;
+            System.Text.Json.JsonDocument? doc = null;
             try
             {
                 doc = System.Text.Json.JsonDocument.Parse(json, options);
@@ -687,8 +687,8 @@ namespace RIoT2.Core.Utils
         /// <returns><c>true</c> if the conversion succeeded; otherwise, <c>false</c>.</returns>
         public static bool TryJsonToJsObjectLiteral(
             string json,
-            out string js,
-            out string error,
+            out string? js,
+            out string? error,
             bool unquotePropertyNamesWhenSafe = true,
             bool prettyPrint = true,
             int indentSize = 2,

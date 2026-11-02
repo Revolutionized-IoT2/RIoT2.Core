@@ -16,10 +16,10 @@ namespace RIoT2.Core.Utils
 
         private sealed class Entry
         {
-            public string Id;
+            public string Id = string.Empty;
             public DateTime Seen;
-            public string Status;
-            public string Error;
+            public string? Status;
+            public string? Error;
         }
 
         private readonly object _gate = new object();
@@ -27,7 +27,7 @@ namespace RIoT2.Core.Utils
         private readonly LinkedList<Entry> _order = new LinkedList<Entry>();
         private readonly Func<DateTime> _utcNow;
 
-        public CorrelationCache(int capacity = DefaultCapacity, TimeSpan? lifetime = null, Func<DateTime> utcNow = null)
+        public CorrelationCache(int capacity = DefaultCapacity, TimeSpan? lifetime = null, Func<DateTime>? utcNow = null)
         {
             if (capacity < 1)
                 throw new ArgumentOutOfRangeException(nameof(capacity));
@@ -53,7 +53,7 @@ namespace RIoT2.Core.Utils
                 if (_ids.ContainsKey(id))
                     return false;
                 if (_ids.Count >= Capacity)
-                    Remove(_order.First);
+                    Remove(_order.First!);
                 _ids[id] = _order.AddLast(new Entry { Id = id, Seen = _utcNow() });
                 return true;
             }
@@ -63,7 +63,7 @@ namespace RIoT2.Core.Utils
         /// Looks up <paramref name="id"/>. <paramref name="status"/> is <c>null</c> while its command
         /// runs, and its final <see cref="Models.CommandResultStatus"/> afterwards.
         /// </summary>
-        public bool TryGet(string id, out string status, out string error)
+        public bool TryGet(string? id, out string? status, out string? error)
         {
             lock (_gate)
             {
@@ -80,7 +80,7 @@ namespace RIoT2.Core.Utils
         }
 
         /// <summary>Records how the command ended. Nothing happens when the id was forgotten meanwhile.</summary>
-        public void Complete(string id, string status, string error = null)
+        public void Complete(string? id, string status, string? error = null)
         {
             lock (_gate)
             {
@@ -93,7 +93,7 @@ namespace RIoT2.Core.Utils
         }
 
         /// <summary>Forgets <paramref name="id"/>, so its next delivery runs again.</summary>
-        public void Remove(string id)
+        public void Remove(string? id)
         {
             lock (_gate)
             {

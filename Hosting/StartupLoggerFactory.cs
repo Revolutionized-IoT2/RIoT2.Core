@@ -10,7 +10,7 @@ namespace RIoT2.Core.Hosting;
 /// </summary>
 internal sealed class StartupLoggerFactory(ILoggerFactory startup) : ILoggerFactory
 {
-    private ILoggerFactory _host;
+    private ILoggerFactory? _host;
 
     internal ILoggerFactory Target => Volatile.Read(ref _host) ?? startup;
 
@@ -26,14 +26,14 @@ internal sealed class StartupLoggerFactory(ILoggerFactory startup) : ILoggerFact
 
     private sealed class ForwardingLogger(StartupLoggerFactory owner, string category) : ILogger
     {
-        private Binding _binding;
+        private Binding? _binding;
 
-        public IDisposable BeginScope<TState>(TState state) where TState : notnull => Current.BeginScope(state);
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => Current.BeginScope(state);
 
         public bool IsEnabled(LogLevel logLevel) => Current.IsEnabled(logLevel);
 
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception,
-            Func<TState, Exception, string> formatter) =>
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter) =>
             Current.Log(logLevel, eventId, state, exception, formatter);
 
         private ILogger Current

@@ -38,7 +38,7 @@ namespace RIoT2.Core.Utils
                         ? new ValueModel(number)
                         : new ValueModel(reader.GetDouble());
                 case JsonTokenType.String:
-                    return new ValueModel((object)reader.GetString());
+                    return new ValueModel((object?)reader.GetString());
                 default:
                     throw new JsonException($"Unexpected token {reader.TokenType} for a value.");
             }
@@ -58,7 +58,7 @@ namespace RIoT2.Core.Utils
     /// </summary>
     public sealed class LooseObjectConverter : JsonConverter<object>
     {
-        public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override object? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             switch (reader.TokenType)
             {
@@ -103,23 +103,23 @@ namespace RIoT2.Core.Utils
             if (reader.TokenType != JsonTokenType.StartObject)
                 throw new JsonException($"Expected an object for an ExpandoObject, not {reader.TokenType}.");
             using (var document = JsonDocument.ParseValue(ref reader))
-                return (ExpandoObject)ToValue(document.RootElement);
+                return (ExpandoObject)ToValue(document.RootElement)!;
         }
 
         public override void Write(Utf8JsonWriter writer, ExpandoObject value, JsonSerializerOptions options) =>
             JsonSerializer.Serialize(writer, (IDictionary<string, object>)value, options);
 
-        private static object ToValue(JsonElement element)
+        private static object? ToValue(JsonElement element)
         {
             switch (element.ValueKind)
             {
                 case JsonValueKind.Object:
-                    IDictionary<string, object> expando = new ExpandoObject();
+                    IDictionary<string, object?> expando = new ExpandoObject();
                     foreach (var property in element.EnumerateObject())
                         expando[property.Name] = ToValue(property.Value);
                     return expando;
                 case JsonValueKind.Array:
-                    var list = new List<object>();
+                    var list = new List<object?>();
                     foreach (var item in element.EnumerateArray())
                         list.Add(ToValue(item));
                     return list;
@@ -140,7 +140,7 @@ namespace RIoT2.Core.Utils
     /// <summary>Accepts a number or a boolean (as its JSON text) where a string is expected, as Newtonsoft did.</summary>
     public sealed class LenientStringConverter : JsonConverter<string>
     {
-        public override string Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             switch (reader.TokenType)
             {
@@ -484,7 +484,7 @@ namespace RIoT2.Core.Utils
         public static string EnsureDecimalPlace(string text) =>
             text.IndexOfAny(new[] { '.', 'e', 'E' }) >= 0 ? text : text + ".0";
 
-        public static double ParseDouble(string text)
+        public static double ParseDouble(string? text)
         {
             if (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
                 return value;

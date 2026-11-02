@@ -14,7 +14,7 @@ namespace RIoT2.Core.Configuration
         public const string TracingVariable = "RIOT2_TRACING";
 
         /// <summary>The OTLP collector, or <c>null</c>, which turns metrics and traces off.</summary>
-        public Uri OtlpEndpoint { get; set; }
+        public Uri? OtlpEndpoint { get; set; }
 
         /// <summary>Also export traces (<c>RIOT2_TRACING=true</c>); needs <see cref="OtlpEndpoint"/>.</summary>
         public bool Tracing { get; set; }

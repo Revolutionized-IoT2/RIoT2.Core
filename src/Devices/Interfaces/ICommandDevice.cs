@@ -11,7 +11,7 @@ namespace RIoT2.Core.Interfaces
         /// <summary>
         /// Gets the command templates describing the commands the device accepts.
         /// </summary>
-        IEnumerable<CommandTemplate> CommandTemplates { get; }
+        IEnumerable<CommandTemplate>? CommandTemplates { get; }
 
         /// <summary>
         /// Executes the specified command on the device.

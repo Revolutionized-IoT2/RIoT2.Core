@@ -21,7 +21,7 @@ public sealed class DeviceConfigurationBuilder
         {
             Id = Guid.NewGuid().ToString(),
             Name = deviceType.Name,
-            ClassFullName = deviceType.FullName,
+            ClassFullName = deviceType.FullName ?? deviceType.Name,
             DeviceParameters = [],
             ReportTemplates = [],
             CommandTemplates = []
@@ -77,7 +77,7 @@ public sealed class DeviceConfigurationBuilder
     }
 
     /// <summary>Adds a report template. The id defaults to the address.</summary>
-    public DeviceConfigurationBuilder WithReport(string address, ValueType type = ValueType.Text, string id = null, string name = null)
+    public DeviceConfigurationBuilder WithReport(string address, ValueType type = ValueType.Text, string? id = null, string? name = null)
     {
         _configuration.ReportTemplates ??= [];
         _configuration.ReportTemplates.Add(new ReportTemplate { Id = id ?? address, Address = address, Name = name ?? address, Type = type });
@@ -85,7 +85,7 @@ public sealed class DeviceConfigurationBuilder
     }
 
     /// <summary>Adds a command template. The id defaults to the address.</summary>
-    public DeviceConfigurationBuilder WithCommand(string address, ValueType type = ValueType.Text, string id = null, string name = null)
+    public DeviceConfigurationBuilder WithCommand(string address, ValueType type = ValueType.Text, string? id = null, string? name = null)
     {
         _configuration.CommandTemplates ??= [];
         _configuration.CommandTemplates.Add(new CommandTemplate { Id = id ?? address, Address = address, Name = name ?? address, Type = type });

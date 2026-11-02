@@ -13,7 +13,7 @@ namespace RIoT2.Core.Models
         public string Data { get; set; }
         public ulong Address { get; set; }
 
-        public BeaconData GetAsBeacon() 
+        public BeaconData? GetAsBeacon() 
         {
             try 
             {

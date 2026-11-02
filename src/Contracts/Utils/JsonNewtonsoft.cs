@@ -20,7 +20,7 @@ namespace RIoT2.Core.Utils
     {
         private static readonly ISerializationBinder _defaultBinder = new DefaultSerializationBinder();
 
-        public Type BindToType(string assemblyName, string typeName)
+        public Type BindToType(string? assemblyName, string typeName)
         {
             var type = _defaultBinder.BindToType(assemblyName, typeName);
             if (!IsAllowedType(type))
@@ -28,14 +28,14 @@ namespace RIoT2.Core.Utils
             return type;
         }
 
-        public void BindToName(Type serializedType, out string assemblyName, out string typeName)
+        public void BindToName(Type serializedType, out string? assemblyName, out string? typeName)
         {
             if (!IsAllowedType(serializedType))
                 throw new JsonSerializationException($"Type '{serializedType.FullName}' from assembly '{serializedType.Assembly.GetName().Name}' is not allowed in RIoT2 JSON type metadata.");
             _defaultBinder.BindToName(serializedType, out assemblyName, out typeName);
         }
 
-        private static bool IsAllowedType(Type type)
+        private static bool IsAllowedType(Type? type)
         {
             if (type == null)
                 return false;
@@ -46,7 +46,7 @@ namespace RIoT2.Core.Utils
             if (type.IsPrimitive || type == typeof(string) || type == typeof(decimal))
                 return true;
 
-            if (IsRIoT2Assembly(type.Assembly.GetName().Name))
+            if (IsRIoT2Assembly(type.Assembly.GetName().Name ?? string.Empty))
                 return true;
 
             if (!type.IsGenericType)
@@ -72,12 +72,12 @@ namespace RIoT2.Core.Utils
     [Obsolete("Newtonsoft.Json only. Json.Serialize and Json.Deserialize use System.Text.Json and ValueModelJsonConverter.")]
     public class ValueModelConverter : JsonConverter<ValueModel>
     {
-        public override void WriteJson(JsonWriter writer, ValueModel value, Newtonsoft.Json.JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, ValueModel? value, Newtonsoft.Json.JsonSerializer serializer)
         {
-            writer.WriteRawValue(value.ToJson());
+            writer.WriteRawValue(value?.ToJson());
         }
 
-        public override ValueModel ReadJson(JsonReader reader, Type objectType, ValueModel existingValue, bool hasExistingValue, Newtonsoft.Json.JsonSerializer serializer)
+        public override ValueModel? ReadJson(JsonReader reader, Type objectType, ValueModel? existingValue, bool hasExistingValue, Newtonsoft.Json.JsonSerializer serializer)
         {
             if (reader.TokenType != JsonToken.Null)
             {
@@ -163,7 +163,7 @@ namespace RIoT2.Core.Utils
         /// </summary>
         /// <typeparam name="T">The target type.</typeparam>
         /// <returns>The deserialized object.</returns>
-        public T ToObject<T>()
+        public T? ToObject<T>()
         {
             return _jobj.ToObject<T>();
         }
@@ -193,7 +193,7 @@ namespace RIoT2.Core.Utils
             return false;
         }
 
-        private string getPropertyIgnoreCase(string property)
+        private string? getPropertyIgnoreCase(string property)
         {
             foreach (var e in _jobj)
             {
@@ -219,14 +219,14 @@ namespace RIoT2.Core.Utils
         /// <typeparam name="T">The type to convert the value to.</typeparam>
         /// <param name="path">The JSONPath expression identifying the value.</param>
         /// <returns>The converted value, or the default of <typeparamref name="T"/> if not found.</returns>
-        public T FindValue<T>(string path)
+        public T? FindValue<T>(string path)
         {
             var token = _jobj.SelectToken(path);
             if (token != null)
             {
                 if (token.Type == JTokenType.Object)
                 {
-                    return (token as JObject).ToObject<T>();
+                    return ((JObject)token).ToObject<T>();
                 }
                 return token.Value<T>();
             }
@@ -238,7 +238,7 @@ namespace RIoT2.Core.Utils
         /// </summary>
         /// <param name="property">The property name (matched case-insensitively).</param>
         /// <returns>The property's JSON, or <c>null</c> if it is missing.</returns>
-        public string GetValueAsJson(string property)
+        public string? GetValueAsJson(string property)
         {
             try
             {
@@ -260,7 +260,7 @@ namespace RIoT2.Core.Utils
         /// </summary>
         /// <param name="property">The property name (matched case-insensitively).</param>
         /// <returns>The property value as a <see cref="bool"/>, <see cref="decimal"/>, <see cref="DateTime"/>, <see cref="int"/>, or string; or <c>null</c> if missing.</returns>
-        public object GetValue(string property)
+        public object? GetValue(string property)
         {
             try
             {
@@ -327,7 +327,7 @@ namespace RIoT2.Core.Utils
         /// </summary>
         /// <param name="placeholder">The placeholder value to match (case-insensitive).</param>
         /// <param name="value">The replacement value.</param>
-        public void ReplacePlaceHolderWithValue(string placeholder, object value)
+        public void ReplacePlaceHolderWithValue(string placeholder, object? value)
         {
             traverseJObject(placeholder, value, _jobj);
         }
@@ -335,11 +335,11 @@ namespace RIoT2.Core.Utils
         private void updateOrAddInPath(string path, object valueToAdd)
         {
             var pathParts = path.Split('.');
-            JToken node = _jobj;
+            JToken? node = _jobj;
             for (int i = 0; i < pathParts.Length; i++)
             {
                 var pathPart = pathParts[i];
-                var partNode = node.SelectToken(pathPart);
+                var partNode = node?.SelectToken(pathPart);
 
                 // Only JObject nodes can have properties added to them.
                 if (!(node is JObject objectNode))
@@ -358,7 +358,7 @@ namespace RIoT2.Core.Utils
                 node = partNode;
             }
         }
-        private void traverseJObject(string placeholder, object value, JObject parent)
+        private void traverseJObject(string placeholder, object? value, JObject parent)
         {
             foreach (var e in parent)
             {
@@ -376,14 +376,14 @@ namespace RIoT2.Core.Utils
             var keysToReplace = new List<string>();
             foreach (var e in parent)
             {
-                if (string.Equals(e.Value.ToString(), placeholder, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(e.Value?.ToString(), placeholder, StringComparison.OrdinalIgnoreCase))
                     keysToReplace.Add(e.Key);
             }
             foreach (var key in keysToReplace)
                 parent[key] = new JValue(value);
         }
 
-        private void traverseJArray(string placeholder, object value, JArray array)
+        private void traverseJArray(string placeholder, object? value, JArray array)
         {
             for (int i = 0; i < array.Count; i++)
             {

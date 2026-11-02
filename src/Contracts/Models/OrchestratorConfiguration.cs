@@ -19,7 +19,7 @@ namespace RIoT2.Core.Models
             _configurationFolder = new DirectoryInfo(assemblyLocation);
             Manifest = LoadManifest("Data/Manifest.json");
         }
-        public PackageManifest Manifest { get; set; }
+        public PackageManifest? Manifest { get; set; }
 
         public override string ApplicationFolder { get => _configurationFolder.FullName; }
     }

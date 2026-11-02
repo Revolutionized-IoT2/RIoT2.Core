@@ -23,7 +23,7 @@
         /// <summary>
         /// Gets or sets the default model that describes the template's value structure.
         /// </summary>
-        object Model { get; set; }
+        object? Model { get; set; }
 
         /// <summary>
         /// Gets or sets the value type represented by the template.

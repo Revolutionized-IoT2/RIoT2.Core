@@ -17,7 +17,7 @@ namespace RIoT2.Core.Abstracts
         protected DeviceBase(ILogger logger) : base(logger) { }
 
         /// <summary>The bound parameters; set before <see cref="DeviceBase.ConfigureDevice"/> runs.</summary>
-        public TOptions Options { get; private set; }
+        public TOptions Options { get; private set; } = new TOptions();
 
         public Type OptionsType => typeof(TOptions);
 
@@ -34,7 +34,7 @@ namespace RIoT2.Core.Abstracts
         protected AsyncDeviceBase(ILogger logger) : base(logger) { }
 
         /// <summary>The bound parameters; set before <see cref="DeviceBase.ConfigureDevice"/> runs.</summary>
-        public TOptions Options { get; private set; }
+        public TOptions Options { get; private set; } = new TOptions();
 
         public Type OptionsType => typeof(TOptions);
 

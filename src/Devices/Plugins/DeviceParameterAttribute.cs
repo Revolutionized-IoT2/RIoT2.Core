@@ -30,9 +30,9 @@ namespace RIoT2.Core.Plugins
         /// The value used when the parameter is missing or empty, in invariant format. When not set, the property's
         /// initial value is the default.
         /// </summary>
-        public string Default { get; set; }
+        public string? Default { get; set; }
 
         /// <summary>Help text shown in the UI.</summary>
-        public string Description { get; set; }
+        public string? Description { get; set; }
     }
 }

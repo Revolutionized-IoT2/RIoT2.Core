@@ -14,12 +14,12 @@ public sealed class TestNodeConfigurationService : INodeConfigurationService
         Configuration = new NodeConfiguration { Id = "test-node", Url = url };
     }
 
-    public event DeviceConfigurationUpdatedHandler DeviceConfigurationUpdated;
+    public event DeviceConfigurationUpdatedHandler? DeviceConfigurationUpdated;
 
     public bool DeviceConfigurationLoaded => DeviceConfiguration != null;
     public NodeConfiguration Configuration { get; }
-    public NodeDeviceConfiguration DeviceConfiguration { get; private set; }
-    public NodeOnlineMessage OnlineMessage { get; set; }
+    public NodeDeviceConfiguration? DeviceConfiguration { get; private set; }
+    public NodeOnlineMessage? OnlineMessage { get; set; }
 
     public Task LoadDeviceConfiguration(string json, string id)
     {

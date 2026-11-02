@@ -23,7 +23,7 @@ namespace RIoT2.Core.Abstracts
         private readonly Dictionary<IDevice, string> _applied = new Dictionary<IDevice, string>();
         private int _disposed;
 
-        public event DeviceServiceUpdatedHandler DevicesUpdated;
+        public event DeviceServiceUpdatedHandler? DevicesUpdated;
 
         public DeviceServiceBase(INodeConfigurationService configurationService, ILogger logger, List<IDevice> devices)
         {
@@ -35,10 +35,10 @@ namespace RIoT2.Core.Abstracts
 
         public virtual List<IDevice> Devices { get; private set; }
 
-        public virtual ICommandDevice GetDeviceByCommandId(string commandId) =>
+        public virtual ICommandDevice? GetDeviceByCommandId(string commandId) =>
             Devices.OfType<ICommandDevice>().FirstOrDefault(d => d.CommandTemplates?.Any(c => c.Id == commandId) == true);
 
-        public virtual IDevice GetDeviceByReportId(string reportId) =>
+        public virtual IDevice? GetDeviceByReportId(string reportId) =>
             Devices.FirstOrDefault(d => d.ReportTemplates?.Any(r => r.Id == reportId) == true);
 
         private DeviceOperationAdapter Runtime(IDevice device)
@@ -125,7 +125,7 @@ namespace RIoT2.Core.Abstracts
         /// <see cref="DeviceConfiguration.ClassFullName"/>, and two entries are equal when they serialize
         /// to the same JSON. An identical configuration therefore starts and stops nothing.
         /// </summary>
-        public async Task<DeviceReconfigurationResult> ReconfigureChangedDevicesAsync(IEnumerable<DeviceConfiguration> configuration, CancellationToken cancellationToken)
+        public async Task<DeviceReconfigurationResult> ReconfigureChangedDevicesAsync(IEnumerable<DeviceConfiguration>? configuration, CancellationToken cancellationToken)
         {
             var desired = Desired(configuration);
             // Free devices that are about to be replaced from stalled work before waiting for the lifecycle lock.
@@ -194,7 +194,7 @@ namespace RIoT2.Core.Abstracts
             finally { _lifecycle.Release(); }
         }
 
-        private Dictionary<IDevice, DesiredDevice> Desired(IEnumerable<DeviceConfiguration> configuration)
+        private Dictionary<IDevice, DesiredDevice> Desired(IEnumerable<DeviceConfiguration>? configuration)
         {
             var snapshot = configuration?.Where(c => c != null).ToList() ?? new List<DeviceConfiguration>();
             var desired = new Dictionary<IDevice, DesiredDevice>();
@@ -210,7 +210,7 @@ namespace RIoT2.Core.Abstracts
         // The entry's hash (design 7.2) is left out, so an orchestrator that starts sending it restarts nothing.
         private static string Key(DeviceConfiguration entry)
         {
-            var node = System.Text.Json.Nodes.JsonNode.Parse(Json.Serialize(entry)).AsObject();
+            var node = System.Text.Json.Nodes.JsonNode.Parse(Json.Serialize(entry))!.AsObject();
             node.Remove("hash");
             return node.ToJsonString(RIoT2JsonOptions.Default);
         }

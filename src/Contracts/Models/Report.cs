@@ -23,7 +23,7 @@ namespace RIoT2.Core.Models
         /// <summary>
         /// Gets or sets the filter that categorizes the report.
         /// </summary>
-        public string Filter { get; set; }
+        public string? Filter { get; set; }
 
         /// <summary>
         /// Gets or sets the value payload of the report.
@@ -45,7 +45,7 @@ namespace RIoT2.Core.Models
         /// </summary>
         /// <param name="json">The JSON payload representing the report.</param>
         /// <returns>The deserialized report, or <c>null</c> if the JSON could not be parsed.</returns>
-        public static Report Create(string json) 
+        public static Report? Create(string? json) 
         {
             try
             {
@@ -61,7 +61,7 @@ namespace RIoT2.Core.Models
         /// Serializes the report to its JSON representation, ignoring null properties.
         /// </summary>
         /// <returns>The JSON representation of the report.</returns>
-        public string ToJson()
+        public string? ToJson()
         {
             return Json.SerializeIgnoreNulls(this);
         }

@@ -21,7 +21,7 @@ namespace RIoT2.Core.Abstracts
     public abstract class NodeConfigurationServiceBase : INodeConfigurationService, INodeConfigurationStatusSource
     {
         private readonly object _pendingGate = new object();
-        private string _pendingHash;
+        private string? _pendingHash;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NodeConfigurationServiceBase"/> class with no device configuration loaded.
@@ -32,19 +32,19 @@ namespace RIoT2.Core.Abstracts
         }
 
         /// <inheritdoc/>
-        public virtual event DeviceConfigurationUpdatedHandler DeviceConfigurationUpdated;
+        public virtual event DeviceConfigurationUpdatedHandler? DeviceConfigurationUpdated;
 
         /// <inheritdoc/>
         public virtual bool DeviceConfigurationLoaded { get; private set; }
 
         /// <inheritdoc/>
-        public virtual NodeDeviceConfiguration DeviceConfiguration { get; private set; }
+        public virtual NodeDeviceConfiguration? DeviceConfiguration { get; private set; }
 
         /// <inheritdoc/>
         public abstract NodeConfiguration Configuration { get; }
 
         /// <inheritdoc/>
-        public virtual NodeOnlineMessage OnlineMessage { get; set; }
+        public virtual NodeOnlineMessage? OnlineMessage { get; set; }
 
         /// <summary>The node's view of its configuration, published on its status topic (design 7.2).</summary>
         public NodeConfigurationStatus ConfigurationStatus { get; } = new NodeConfigurationStatus();
@@ -68,7 +68,7 @@ namespace RIoT2.Core.Abstracts
         public virtual async Task LoadDeviceConfiguration(string json, string id)
         {
             var command = Json.Deserialize<ConfigurationCommand>(json);
-            if (string.IsNullOrEmpty(command?.ApiBaseUrl))
+            if (command == null || string.IsNullOrEmpty(command.ApiBaseUrl))
                 throw Fail("The configuration command has no apiBaseUrl.");
 
             var current = DeviceConfiguration;
@@ -120,7 +120,7 @@ namespace RIoT2.Core.Abstracts
                 if (!response.IsSuccessStatusCode)
                     throw Fail($"Could not fetch the configuration from {url}: HTTP {(int)response.StatusCode} {response.ReasonPhrase}");
 
-                NodeDeviceConfiguration configuration;
+                NodeDeviceConfiguration? configuration;
                 try
                 {
                     configuration = Json.Deserialize<NodeDeviceConfiguration>(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
@@ -135,13 +135,13 @@ namespace RIoT2.Core.Abstracts
             }
         }
 
-        private Exception Fail(string message, Exception inner = null)
+        private Exception Fail(string message, Exception? inner = null)
         {
             ConfigurationStatus.Failed(message);
             return new InvalidOperationException(message, inner);
         }
 
-        private bool IsBeingApplied(string hash)
+        private bool IsBeingApplied(string? hash)
         {
             lock (_pendingGate)
                 return _pendingHash == hash && ConfigurationStatus.Current.State == NodeConfigurationState.Applying;
@@ -169,7 +169,7 @@ namespace RIoT2.Core.Abstracts
         /// it becomes the current configuration (see <see cref="SetDeviceConfiguration"/>) and is returned.
         /// Returns <c>null</c> when nothing was saved, and throws when the saved file can't be read.
         /// </summary>
-        public NodeDeviceConfiguration LoadAppliedConfiguration()
+        public NodeDeviceConfiguration? LoadAppliedConfiguration()
         {
             var path = AppliedConfigurationPath;
             if (!File.Exists(path))
@@ -187,7 +187,7 @@ namespace RIoT2.Core.Abstracts
             if (configuration == null)
                 throw new ArgumentNullException(nameof(configuration));
             var path = AppliedConfigurationPath;
-            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             var temporary = path + ".tmp";
             File.WriteAllText(temporary, Json.Serialize(configuration));
             if (File.Exists(path))
@@ -238,7 +238,7 @@ namespace RIoT2.Core.Abstracts
             }
         }
 
-        private string getPluginPackage()
+        private string? getPluginPackage()
         {
             var dataFolder = Path.Combine(Configuration.ApplicationFolder, "Data");
             if (Directory.Exists(dataFolder))
@@ -279,7 +279,7 @@ namespace RIoT2.Core.Abstracts
         private void saveFile(string filename, byte[] content) 
         {
             var fullPath = getSafeApplicationPath(filename);
-            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
             FileInfo fi = new FileInfo(fullPath);
             if (fi.Exists)
                 fi.Delete();
@@ -287,7 +287,7 @@ namespace RIoT2.Core.Abstracts
             File.WriteAllBytes(fullPath, content);
         }
 
-        private FileInfo loadFile(string filename)
+        private FileInfo? loadFile(string filename)
         {
             var fullPath = getSafeApplicationPath(filename);
             FileInfo f = new FileInfo(fullPath);
@@ -319,7 +319,7 @@ namespace RIoT2.Core.Abstracts
                         continue;
                     }
 
-                    Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+                    Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
                     entry.ExtractToFile(fullPath, true);
                 }
             }
