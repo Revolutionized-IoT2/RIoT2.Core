@@ -9,7 +9,13 @@ namespace RIoT2.Core.Plugins
     /// matching <see cref="SharedAssemblyPrefixes"/> always come from the node, so a plugin's devices
     /// implement the node's <c>IDevice</c> and use its DI and logging abstractions.
     /// </summary>
-    public static class PluginHostContract
+    /// <remarks>RIoT2.Core.Devices.Build compiles this file too, so its packaging leaves out exactly these assemblies.</remarks>
+#if DEVICES_BUILD_TASK
+    internal
+#else
+    public
+#endif
+    static class PluginHostContract
     {
         /// <summary>
         /// Assembly name prefixes the node shares. A name matches when it equals a prefix or starts with the

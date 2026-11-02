@@ -4,7 +4,7 @@ Shared libraries for the [RIoT2](https://github.com/Revolutionized-IoT2) platfor
 and MQTT topics, the MQTT client, the device plugin SDK and the node runtime used by every .NET
 component.
 
-- Type: class libraries, released from one tag as eight NuGet packages on GitHub Packages (since
+- Type: class libraries, released from one tag as nine NuGet packages on GitHub Packages (since
   1.13.0, [ADR 0005](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0005-split-core-packages.md)):
 
   | Package | Contents | Depends on |
@@ -16,6 +16,7 @@ component.
   | `RIoT2.Core.Node` | The node runtime: `NodeMqttService`, `DeviceServiceBase`, the scheduler | all of the above, Quartz |
   | `RIoT2.Core` | Facade: references all five and forwards their types, so code built against an older `RIoT2.Core` keeps working; removed in Core 2.0 | all five |
   | `RIoT2.Core.Devices.Testing` | The plugin test kit (.NET 10) | Node |
+  | `RIoT2.Core.Devices.Build` | MSBuild target that packs the plugin zip on `dotnet publish` (since 1.15.0) | none |
   | `RIoT2.Core.Hosting` | The services' logging and metrics (.NET 10, Serilog, OpenTelemetry) | Mqtt |
 
   Reference the narrowest packages (since 1.14.0, [I28](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i28-narrow-references-and-generated-models-m)): a service
@@ -38,6 +39,7 @@ How Core fits into the platform: [architecture overview](https://github.com/Revo
 | `src/Devices/` | `PluginBase`, `DeviceBase`, `AsyncDeviceBase`, the device and plugin interfaces, `Plugins/` (`PluginHostContract`, `DeviceTemplates`, `[RequiresHardware]`) |
 | `src/Node/` | `NodeMqttService`, `DeviceServiceBase`, `NodeConfigurationServiceBase`, `DeviceSchedulerService`, `CommandService`, `ReportService`, `NodeConfigurationStatus`, `NodeMetrics` (`riot2.node.*`) |
 | `RIoT2.Core.csproj`, `Facade/` | The `RIoT2.Core` facade: type forwards and the `[Obsolete]` orchestrator-only types |
+| `src/Devices.Build/` | `RIoT2.Core.Devices.Build`: the `RIoT2PluginPack` target and its task (`PluginPackager`); compiles `PluginHostContract.cs` from `src/Devices/` |
 | `Testing/` | `RIoT2.Core.Devices.Testing`: `PluginTestHost`, `PluginConformance`, `DeviceConfigurationBuilder` |
 | `Hosting/` | `RIoT2.Core.Hosting` for the services (not plugins): `AddRIoT2Logging()`, Serilog to the console and `Logs/RIoT2.log`, text or JSON ([design 7.4](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/operations.md)), and `AddRIoT2Telemetry()` |
 | `contracts/golden/` | Golden files: the JSON on MQTT, in orchestrator responses and in `StoredObjects`. Not part of a package. See [contracts/golden/README.md](contracts/golden/README.md). |
@@ -66,16 +68,13 @@ golden file against it.
   JSON-looking strings as they are.
 - Build topic strings with `Constants.Get(id, MqttTopic.Report)`, and read the id back with
   `Constants.GetTopicId`.
-- Contract additions are optional properties that are omitted while unset, so older readers and
-  the golden files don't see them. Since 1.6.0 these include `Command.CorrelationId`,
-  `NodeOnlineMessage.Capabilities`, the configuration `Revision`/`Hash` fields and
-  `contractVersion` on every MQTT payload. `CommandResult` and `NodeStatusMessage` (topics
-  `CommandResult` and `NodeStatus`) are defined for designs 7.1 and 7.2; check a node's
-  capabilities with `NodeOnlineMessage.HasCapability` before you rely on them.
-- Desired state (1.8.0): `ConfigurationHash.Stamp` computes the configuration hashes,
-  `NodeConfigurationStatus` holds the node's status, and `NodeConfigurationServiceBase` skips a
-  configuration it already runs and saves and loads the applied one
-  (`SaveAppliedConfiguration`, `LoadAppliedConfiguration`).
+- Contract additions are optional properties, omitted while unset, so older readers and the
+  golden files don't see them (since 1.6.0: `Command.CorrelationId`, `NodeOnlineMessage.Capabilities`,
+  the configuration `Revision`/`Hash`, `contractVersion`). Check a node's capabilities with
+  `NodeOnlineMessage.HasCapability` before you rely on `CommandResult` or `NodeStatusMessage`.
+- Desired state (1.8.0): `ConfigurationHash.Stamp` computes the hashes, `NodeConfigurationStatus`
+  holds the node's status, and `NodeConfigurationServiceBase` skips a configuration it already
+  runs and saves and loads the applied one.
 
 ### Logging in a service
 
@@ -92,8 +91,7 @@ A service calls `builder.AddRIoT2Telemetry("<service>", id, MeterNames.<Service>
 reads `TelemetryOptions.Read(settings)` in its options type. Nothing is exported until
 `OTEL_EXPORTER_OTLP_ENDPOINT` is set; then the service's meter, `RIoT2.Mqtt` (`riot2.mqtt.connected`,
 `reconnects`, `dropped`), ASP.NET Core and the runtime go over OTLP, and with `RIOT2_TRACING=true` also
-traces. Instruments use `System.Diagnostics.Metrics` directly, which costs nothing while no one
-listens. Every `riot2.*` instrument is in the platform's
+traces. Instruments cost nothing while no one listens. Every `riot2.*` instrument is in the platform's
 [metrics contract](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/metrics.md).
 
 ### Writing devices
@@ -135,6 +133,17 @@ start and stop. Pass a second argument to replace services, for example hardware
 fakes. `PluginTestHost` hosts a plugin for device tests: it captures reports and sends commands
 and refreshes the way the node does; `DeviceConfigurationBuilder` builds configurations.
 
+### Packing a plugin
+
+Reference `RIoT2.Core.Devices.Build` with `PrivateAssets="all"` and set `RIoT2PluginName`. Then
+`dotnet publish -p:Version=x.y.z` also writes `bin/plugin/<AssemblyName>_x.y.z.zip`, the zip the
+node installs, and its `.sha256` sidecar (`sha256sum` format). The zip holds the plugin's top-level
+assemblies and native libraries without the ones the node shares (`PluginHostContract`) or ships
+(`RIoT2PluginExclude`), plus `PluginManifest.json` with `coreVersion`, the `RIoT2.Core.Devices`
+version the plugin uses. `plugin-release.yml` only checks and uploads it. Other properties:
+`RIoT2PluginPackage`, `RIoT2PluginOutputDir`, `RIoT2PluginCoreVersion`, `RIoT2PluginPack=false`
+(see `build/RIoT2.Core.Devices.Build.targets`).
+
 ## Matter device declarations
 
 A device plugin opts in to being bridged to a Matter ecosystem (for example Google Home) by
@@ -153,23 +162,16 @@ public IEnumerable<MatterEndpointTemplate> GetMatterEndpoints(DeviceConfiguratio
         Id = $"{configuration.Id}:lamp",
         Name = "Living Room Lamp",
         DeviceType = MatterDeviceType.DimmableLight,
-        Attributes =
-        {
-            new MatterAttributeBinding { Attribute = MatterAttribute.OnOff, ReportTemplateId = report.Id, ValuePath = "on" },
-            new MatterAttributeBinding { Attribute = MatterAttribute.CurrentLevel, ReportTemplateId = report.Id, ValuePath = "brightness", Scale = MatterValueScale.Percent0To100ToLevel0To254 }
-        },
-        Commands =
-        {
-            new MatterCommandBinding { Attribute = MatterAttribute.OnOff, CommandTemplateId = command.Id, ValuePath = "on" },
-            new MatterCommandBinding { Attribute = MatterAttribute.CurrentLevel, CommandTemplateId = command.Id, ValuePath = "brightness", Scale = MatterValueScale.Percent0To100ToLevel0To254 }
-        }
+        Attributes = { new MatterAttributeBinding { Attribute = MatterAttribute.OnOff, ReportTemplateId = report.Id, ValuePath = "on" } },
+        Commands = { new MatterCommandBinding { Attribute = MatterAttribute.OnOff, CommandTemplateId = command.Id, ValuePath = "on" } }
     };
 }
 ```
 
 The declaration must be built against the `DeviceConfiguration` instance passed in, because devices
-that mint template ids per call would otherwise reference ids that are never persisted. Scales are
-declared in the RIoT-to-Matter direction; the bridge applies the inverse on the command path.
+that mint template ids per call would otherwise reference ids that are never persisted. A binding's
+`Scale` (for example `Percent0To100ToLevel0To254` for `CurrentLevel`) is declared in the
+RIoT-to-Matter direction; the bridge applies the inverse on the command path.
 
 The templates travel to the orchestrator on `DeviceConfiguration.MatterEndpoints`, through the
 existing configuration-template path, and the orchestrator's Matter bridge turns them into bridged
@@ -183,8 +185,8 @@ endpoints. `RIoT2.Core` itself contains no Matter protocol code.
 - Devices: the dependency injection and logging abstractions, `Microsoft.Bcl.AsyncInterfaces`
 - Node: `Quartz` (device refresh scheduling), the hosting abstractions
 - `RIoT2.Core.Hosting` only: `Serilog.AspNetCore` 10.0.0, `Serilog.Sinks.File` 7.0.0, OpenTelemetry
-  1.20.1 (hosting, OTLP exporter, ASP.NET Core, HTTP and runtime instrumentation), and the ASP.NET
-  Core shared framework
+  1.20.1 and the ASP.NET Core shared framework
+- `RIoT2.Core.Devices.Build`: none at run time (compiled against MSBuild 17.14)
 
 Automation is handled by [RIoT2.Elsa](https://github.com/Revolutionized-IoT2/RIoT2.Elsa), not
 by Core.
@@ -199,28 +201,24 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.csproj
 dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj -c Release
 ```
 
-Building the solution rewrites `contracts/schemas/` from the contract types; commit the result
-with the change (CI fails when the build changes it). Add `-p:CI=true` to `dotnet build` to
-reproduce CI analyzer settings locally. Shared build
-settings come from `Directory.Build.props`, `.editorconfig` and `Directory.Packages.props`; package
-versions are centralized in `Directory.Packages.props`.
+Building the solution rewrites `contracts/schemas/`; commit the result with the change (CI fails
+when the build changes it). `-p:CI=true` reproduces CI's analyzer settings. Shared settings are in
+`Directory.Build.props` and `.editorconfig`, package versions in `Directory.Packages.props`.
 
-[RIoT2.Tests](https://github.com/Revolutionized-IoT2/RIoT2.Tests) references Core,
-RIoT2.Net.Orchestrator and RIoT2.Connector.InfluxDB as projects, so those repositories must be
-checked out next to this one. Its [end-to-end tests](https://github.com/Revolutionized-IoT2/RIoT2.Tests/blob/main/README.md#end-to-end-tests) also run this source with the
-Orchestrator, the Node and the Devices plugin. A change to a message or stored format must update
-the golden files:
-run the RIoT2.Tests suite with `RIOT2_UPDATE_GOLDEN=1`, review the diff, and commit it here
-([contracts/golden/README.md](contracts/golden/README.md)).
+[RIoT2.Tests](https://github.com/Revolutionized-IoT2/RIoT2.Tests) references Core, the
+Orchestrator and the InfluxDB connector as projects, so check them out next to this one; its
+end-to-end tests also run the Node and the Devices plugin. A change to a message or stored format
+must update the golden files: run RIoT2.Tests with `RIOT2_UPDATE_GOLDEN=1`, review the diff and
+commit it here ([contracts/golden/README.md](contracts/golden/README.md)).
 
 ## Versions and releases
 
 - Release notes are in [CHANGELOG.md](CHANGELOG.md).
-- To release, push a tag `x.y.z`. The release workflow validates, then publishes all eight packages
-  with that version (`Directory.Build.repo.props` holds it between releases) to GitHub Packages. A tag whose run fails publishes nothing; fix the build and push the next
-  version. Every push also runs CI ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)).
-- To try an unreleased Core in a consumer, pack every project of `RIoT2.Core.sln` into
-  `C:\Src\RIoT2\.localfeed` and restore with that folder as an extra source. A local pack is not a release.
+- To release, push a tag `x.y.z`: the release workflow validates, then publishes all nine packages
+  with that version (kept in `Directory.Build.repo.props`). A failed run publishes nothing; fix the
+  build and push the next version. Every push also runs CI ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)).
+- To try an unreleased Core, pack every project into `C:\Src\RIoT2\.localfeed` and restore the
+  consumer with it as an extra source.
 - Keep the public API additive. Consumers pin package versions, and device plugins run inside the
   Node's Core version: a plugin built against a newer Core than the node's doesn't load, so release
   the Node image first, then the plugins.

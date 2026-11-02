@@ -1,0 +1,44 @@
+<Project>
+  <!--
+    RIoT2.Core.Devices.Build (plan M12 step 3). After "dotnet publish", packs the node's plugin zip:
+    <RIoT2PluginOutputDir>/<RIoT2PluginPackage>_<RIoT2PluginVersion>.zip with PluginManifest.json
+    inside, and a .sha256 sidecar next to it. The zip holds the plugin's own top-level assemblies
+    and native libraries; assemblies the node shares (PluginHostContract.SharedAssemblyPrefixes) or
+    provides (RIoT2PluginExclude) are left out.
+
+    Properties (all optional):
+      RIoT2PluginPack        false: don't pack on publish.
+      RIoT2PluginName        "name" in the manifest. Default: $(AssemblyName).
+      RIoT2PluginPackage     Zip file name prefix. Default: $(AssemblyName).
+      RIoT2PluginVersion     Default: $(Version).
+      RIoT2PluginCoreVersion Default: the RIoT2.Core.Devices (or RIoT2.Core) version the plugin uses.
+      RIoT2PluginOutputDir   Default: bin/plugin/ next to the project.
+      RIoT2PluginExclude     File name patterns the node provides, separated by ";".
+  -->
+  <PropertyGroup>
+    <RIoT2PluginTaskAssembly Condition="'$(RIoT2PluginTaskAssembly)' == ''">$(MSBuildThisFileDirectory)..\tasks\netstandard2.0\RIoT2.Core.Devices.Build.dll</RIoT2PluginTaskAssembly>
+    <RIoT2PluginPack Condition="'$(RIoT2PluginPack)' == ''">true</RIoT2PluginPack>
+    <RIoT2PluginName Condition="'$(RIoT2PluginName)' == ''">$(AssemblyName)</RIoT2PluginName>
+    <RIoT2PluginPackage Condition="'$(RIoT2PluginPackage)' == ''">$(AssemblyName)</RIoT2PluginPackage>
+    <RIoT2PluginVersion Condition="'$(RIoT2PluginVersion)' == ''">$(Version)</RIoT2PluginVersion>
+    <RIoT2PluginOutputDir Condition="'$(RIoT2PluginOutputDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(BaseOutputPath)', 'plugin'))</RIoT2PluginOutputDir>
+    <!-- The node's own dependencies; PluginLoadContext resolves them from the node's folder. -->
+    <RIoT2PluginExclude Condition="'$(RIoT2PluginExclude)' == ''">Microsoft.Extensions.*.dll;MQTTnet*.dll;Newtonsoft.Json.dll;Quartz.dll</RIoT2PluginExclude>
+  </PropertyGroup>
+
+  <UsingTask TaskName="RIoT2.Core.Plugins.Build.PackPlugin" AssemblyFile="$(RIoT2PluginTaskAssembly)" />
+
+  <Target Name="RIoT2PluginPack" AfterTargets="Publish" Condition="'$(RIoT2PluginPack)' == 'true'">
+    <PackPlugin Files="@(ResolvedFileToPublish)"
+                PublishDirectory="$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(PublishDir)'))"
+                OutputDirectory="$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(RIoT2PluginOutputDir)'))"
+                Name="$(RIoT2PluginName)"
+                Version="$(RIoT2PluginVersion)"
+                Package="$(RIoT2PluginPackage)"
+                CoreVersion="$(RIoT2PluginCoreVersion)"
+                ExcludePatterns="$(RIoT2PluginExclude)">
+      <Output TaskParameter="ZipFile" PropertyName="RIoT2PluginZip" />
+      <Output TaskParameter="HashFile" PropertyName="RIoT2PluginHashFile" />
+    </PackPlugin>
+  </Target>
+</Project>

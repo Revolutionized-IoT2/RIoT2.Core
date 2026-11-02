@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- MSBuild-only package (plan M12 step 3): a plugin references it with PrivateAssets="all", and
+       "dotnet publish" then writes the node's plugin zip, PluginManifest.json inside it and a .sha256
+       sidecar. The task runs inside MSBuild, so it targets netstandard2.0 and has no runtime
+       dependencies. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>RIoT2.Core.Plugins.Build</RootNamespace>
+    <Description>Packs a RIoT2 device plugin on dotnet publish: the zip the node installs, with PluginManifest.json and a .sha256 sidecar.</Description>
+    <PackageTags>riot2;plugin;msbuild</PackageTags>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <BuildOutputTargetFolder>tasks</BuildOutputTargetFolder>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <!-- The task DLL lives in tasks/, not lib/: there is nothing to compile against. -->
+    <NoWarn>$(NoWarn);NU5100;NU5128</NoWarn>
+    <!-- The shared assembly list comes from RIoT2.Core.Devices' PluginHostContract (linked below). -->
+    <DefineConstants>$(DefineConstants);DEVICES_BUILD_TASK</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Devices\Plugins\PluginHostContract.cs" Link="PluginHostContract.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Compile only: MSBuild provides these at run time. -->
+    <PackageReference Include="Microsoft.Build.Framework" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" PrivateAssets="all" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="build\RIoT2.Core.Devices.Build.targets" Pack="true" PackagePath="build" />
+  </ItemGroup>
+
+</Project>

@@ -8,13 +8,14 @@ workspace map, platform-wide rules and the documentation rules. In the local wor
 
 ## What this is
 
-The RIoT2 core libraries, released from one tag as eight NuGet packages (GitHub Packages) since
+The RIoT2 core libraries, released from one tag as nine NuGet packages (GitHub Packages) since
 1.13.0 ([ADR 0005](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0005-split-core-packages.md)). Five .NET Standard 2.0 packages under `src/`, each
 depending only on the ones below it: `RIoT2.Core.Contracts` (wire models, topics, JSON),
 `.Mqtt` (MQTT client and service settings), `.Http`, `.Devices` (the plugin SDK) and `.Node` (the
 node runtime). `RIoT2.Core` is a facade over all five that forwards their types, so binaries
 built against an older `RIoT2.Core` keep working until Core 2.0 (I45). `RIoT2.Core.Devices.Testing`
-and `RIoT2.Core.Hosting` are .NET 10. Consumers reference the narrowest **packages** (I28); RIoT2.Tests
+and `RIoT2.Core.Hosting` are .NET 10. `RIoT2.Core.Devices.Build` (1.15.0) is an MSBuild task that
+packs a plugin's zip on `dotnet publish`. Consumers reference the narrowest **packages** (I28); RIoT2.Tests
 is the only project reference.
 
 ## Commands
@@ -28,13 +29,12 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.csproj    # Core, Orchestrator and InfluxD
 dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj -c Release    # End-to-end: broker, Orchestrator, Node, Devices plugin
 ```
 
-- To check a consumer against unreleased Core, pack **every** project in `RIoT2.Core.sln` (the
-  facade depends on the five packages at the same version) into the local feed with
-  `dotnet pack <project> -c Release -o .\.localfeed`, clear the version from the NuGet cache, and
-  restore the consumer with `.localfeed` as an extra source. A local pack is not a release.
-- Every push runs `.github/workflows/ci.yml` (build, pack smoke test of all eight packages, secret
+- To check a consumer against unreleased Core, `dotnet pack` **every** packable project into
+  `.\.localfeed`, clear the version from the NuGet cache, and restore the consumer with
+  `.localfeed` as an extra source. A local pack is not a release.
+- Every push runs `.github/workflows/ci.yml` (build, pack smoke test of all nine packages, secret
   scan). To release, push a git tag `x.y.z`: `release.yml` validates, then packs and pushes all
-  eight with that version ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)). Core's tests live in RIoT2.Tests.
+  nine with that version ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)). Core's tests live in RIoT2.Tests.
 - Shared build settings are in `Directory.Build.props` and `.editorconfig`; package versions are
   centralized in `Directory.Packages.props`. `-p:CI=true` enables CI warning treatment locally.
 
@@ -48,6 +48,7 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj
 | `src/Devices/` | `RIoT2.Core.Devices`, the plugin SDK: `PluginBase`, `DeviceBase`, `AsyncDeviceBase`, device and service interfaces, `PluginHostContract`, `DeviceTemplates` |
 | `src/Node/` | `RIoT2.Core.Node`, the node runtime: `NodeMqttService`, `DeviceServiceBase`, `NodeConfigurationServiceBase`, `DeviceSchedulerService` (Quartz), `NodeMetrics`, `CorrelationCache` |
 | `RIoT2.Core.csproj`, `Facade/` | The facade: `TypeForwards.cs` (every public type of the packages) and the `[Obsolete]` orchestrator-only and unused types, removed in I45 |
+| `src/Devices.Build/` | `RIoT2.Core.Devices.Build`: `build/*.targets` (`RIoT2PluginPack`, after `Publish`), the `PackPlugin` task and `PluginPackager` |
 | `Testing/` | `RIoT2.Core.Devices.Testing` (.NET 10): `PluginTestHost`, `PluginConformance`, `DeviceConfigurationBuilder` |
 | `Hosting/` | `RIoT2.Core.Hosting` (.NET 10, Serilog, OpenTelemetry): `AddRIoT2Logging()`, `AddRIoT2Telemetry()` |
 | `Directory.Build.repo.props` | The one version of every package |
@@ -103,7 +104,9 @@ must stay compatible with it.
 - New device code derives from `AsyncDeviceBase` and overrides the async methods. Don't add
   `async void` lifecycle methods or blocking waits.
 - Plugins derive from `PluginBase`. Keep `PluginHostContract.SharedAssemblyPrefixes` the only list
-  of assemblies the node shares with plugins; the node's `PluginLoadContext` reads it. A change to
+  of assemblies the node shares with plugins; the node's `PluginLoadContext` reads it, and
+  `RIoT2.Core.Devices.Build` compiles the same file (internal there, `DEVICES_BUILD_TASK`) to leave
+  them out of the zip, so keep that file dependency-free. A change to
   `PluginConformance` changes what every plugin repository's CI accepts: say so in the CHANGELOG.
 - `DeviceBase.ParameterRead` is the internal hook the test kit uses to record parameter reads
   (`InternalsVisibleTo RIoT2.Core.Devices.Testing`). Don't make it public.
@@ -115,50 +118,46 @@ must stay compatible with it.
 - `Json.Serialize` also camel-cases **dictionary keys**, so `deviceParameters` keys arrive
   camel-cased, while `DeviceBase.GetConfiguration<T>(key)` is case-sensitive. Use camelCase
   parameter keys (contract divergence C1).
-- `MqttClient` publishes and subscribes at QoS 1 (since 1.3.0), so receivers must tolerate a
-  duplicate. Its port is `RIOT2_MQTT_PORT` (default 1883); there is no TLS yet (I34, I51). A bare
-  `MqttClient` doesn't retain its last will; `NodeMqttService` sets a retained one and retains its
-  presence (since 1.8.0). Publishing before a start throws.
+- `MqttClient` uses QoS 1, so receivers must tolerate a duplicate; port `RIOT2_MQTT_PORT` (1883),
+  no TLS yet (I34, I51). Only `NodeMqttService` retains its last will and presence. Publishing
+  before a start throws.
 - Don't expose MQTTnet types from Core's public API: `MqttQos`, `MqttSubscription` and
   `MqttEventArgs` stand in for them, so a later MQTTnet 5 migration only touches `MqttClient`
   ([M10](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m10-mqtt-client-robustness.md)).
-- MQTT receive callbacks are serialized (one worker per client, each handler in its own
-  `try/catch`; receiving pauses at 1,000 waiting). Don't await device I/O inside them: a
-  configuration must be able to cancel a stalled command. `NodeMqttService` tracks at most 64
+- MQTT receive callbacks are serialized (one worker per client; receiving pauses at 1,000
+  waiting). Don't await device I/O inside them: a configuration must be able to cancel a stalled command. `NodeMqttService` tracks at most 64
   commands and awaits them at shutdown.
-- A command with a `correlationId` gets exactly one `CommandResult` from `NodeMqttService`,
-  except when shutdown cancels it (then none, and the id is forgotten so the redelivery runs). A
-  redelivery never runs: nothing while the first runs, then `duplicate` after `executed`, or the
-  first `failed`/`unknownCommand` again. Any other cancellation is `failed`: never run a command
-  against a replacement configuration.
-  Answer `rejected`, and forget the id, whenever the command didn't run and may run later
-  (`DeviceNotReadyException`, a configuration still being applied, the 64-command limit). Throw
-  `UnknownCommandException` for a command no device owns; the node advertises `command-result/1`
-  in its online message (design 7.1).
+- A command with a `correlationId` gets exactly one `CommandResult` from `NodeMqttService`, except
+  when shutdown cancels it (none; the id is forgotten so the redelivery runs). A redelivery never
+  runs: `duplicate` after `executed`, else the first `failed`/`unknownCommand` again. Any other
+  cancellation is `failed`. Answer `rejected`, and forget the id, when the command didn't run and
+  may run later (`DeviceNotReadyException`, a configuration being applied, the 64-command limit).
+  Throw `UnknownCommandException` for a command no device owns (design 7.1).
 - Desired state (design 7.2, 1.8.0): `NodeConfigurationServiceBase.LoadDeviceConfiguration` skips
   a command whose `hash` is applied with every device running, or being applied; a failed fetch
-  must keep the current configuration and report `failed` (never set `DeviceConfiguration` to
-  `null`). The host reports the outcome on `ConfigurationStatus` (`Applied` with the devices that
-  aren't running, `Failed`, `PendingRestart`) and calls `SaveAppliedConfiguration`; otherwise the
-  status stays `applying`. `NodeMqttService` advertises `desired-state/1` only for a configuration
+  keeps the current configuration and reports `failed` (never set `DeviceConfiguration` to `null`).
+  The host reports `Applied`/`Failed`/`PendingRestart` on `ConfigurationStatus` and calls
+  `SaveAppliedConfiguration`, or the status stays `applying`. `NodeMqttService` advertises `desired-state/1` only for a configuration
   service that implements `INodeConfigurationStatusSource`. The device diff key must keep ignoring
   the entry's `hash`, or the first hashed configuration restarts every device.
 - `NodeMqttService` publishes reports through a bounded queue (1,000, oldest dropped) and one
   publisher, in the order the devices raised them. Device events are synchronous: never handle one
   with an `async void` method; hand the work to a queue or a tracked task.
-- `ValueModel` keeps JSON-looking strings and large integers as they are. Path updates
-  (`a.b`, `items[0].value`) throw `ArgumentException` when the parent is missing; they don't
-  create it.
+- `ValueModel` keeps JSON-looking strings and large integers as they are. Path updates throw
+  `ArgumentException` when the parent is missing.
 - Call `MqttClient.SetLastWill` before `Start`; `StopAsync` publishes the same message.
 - `DeviceServiceBase.ReconfigureChangedDevicesAsync` compares each device's entry, serialized with
   `Json.Serialize`, with the one it was last initialized with. Keep that serialization
   deterministic: a field that changes on every download would restart the device every time.
 - `<Version>` in `Directory.Build.repo.props` is the latest CHANGELOG heading until the first change
-  after a release; then raise it to the next release. The release workflow passes the tag as the
-  version. It must be at least the version the consumers pin: RIoT2.Tests references these
-  projects and their packages at once, and NuGet silently picks the higher version.
+  after a release, then the next release. It must be at least what consumers pin: RIoT2.Tests
+  references these projects and their packages at once, and NuGet picks the higher version.
 - RIoT2.Tests' solution must list every project of `RIoT2.Core.sln`: a referenced project missing
   from the solution builds in Debug, and the end-to-end tests refuse a Debug `RIoT2.Core.Node`.
+- The plugin pack task runs inside MSBuild, also on .NET Framework in Visual Studio: keep
+  `src/Devices.Build/` on .NET Standard 2.0 with no run-time dependencies (no System.Text.Json),
+  compiled against MSBuild 17.14 with `ExcludeAssets="runtime"`. The Node's
+  `PluginCompatibilityTests` load a zip it packed.
 - Keep Serilog and the ASP.NET Core framework out of the packages under `src/`: plugins reference them.
   Service-only hosting code goes in `Hosting/`, and so does OpenTelemetry: Core instruments use
   `System.Diagnostics.Metrics` only. Use `LogScope` names for ids in log scopes, so the text format shows them.
@@ -168,8 +167,7 @@ must stay compatible with it.
   unchanged configuration.
 - Services read settings only through an options type built with `SettingsReader` (plan M4); no
   service calls `Environment.GetEnvironmentVariable`. Messages keep the format
-  `Invalid {component} configuration: …`, which the services' tests pin. Tag `1.0.0` was never
-  published: don't reference it.
+  `Invalid {component} configuration: …`, which the services' tests pin.
 
 ## Related work
 

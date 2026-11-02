@@ -34,6 +34,7 @@ jobs:
           - src/Mqtt/RIoT2.Core.Mqtt.csproj
           - src/Http/RIoT2.Core.Http.csproj
           - src/Devices/RIoT2.Core.Devices.csproj
+          - src/Devices.Build/RIoT2.Core.Devices.Build.csproj
           - src/Node/RIoT2.Core.Node.csproj
           - RIoT2.Core.csproj
           - Testing/RIoT2.Core.Devices.Testing.csproj

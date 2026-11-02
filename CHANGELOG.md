@@ -6,6 +6,23 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-11-02
+
+Plugin packaging ([I29](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i29-plugin-packaging-s), plan M12 step 3). No API, wire, storage or hash change.
+
+- Added: the `RIoT2.Core.Devices.Build` package, released from the same tag. A plugin references it
+  with `PrivateAssets="all"`; `dotnet publish` then runs its `RIoT2PluginPack` target, which writes
+  `<RIoT2PluginPackage>_<version>.zip` and a `.sha256` sidecar (`sha256sum` format) to
+  `bin/plugin/` (`RIoT2PluginOutputDir`). The zip holds the plugin's top-level assemblies and native
+  libraries from the publish output, without the assemblies in
+  `PluginHostContract.SharedAssemblyPrefixes` or `RIoT2PluginExclude` (default: the
+  `Microsoft.Extensions.*`, MQTTnet, Newtonsoft.Json and Quartz assemblies the node ships), plus
+  `PluginManifest.json` (`name`, `date`, `version`, `installedPackageFilename`, `coreVersion`).
+  `coreVersion` is the resolved `RIoT2.Core.Devices` version (`RIoT2.Core` for a facade plugin).
+  This is what the hub's `plugin-release.yml` did in bash until now; the workflow only checks and
+  uploads the result. The task targets .NET Standard 2.0, has no run-time dependencies and runs
+  in MSBuild 17.14 or newer.
+
 ## [1.14.1] - 2026-11-01
 
 - Fixed: `RIoT2.Core.Mqtt` declares its `Microsoft.Bcl.AsyncInterfaces` dependency. A .NET 10
