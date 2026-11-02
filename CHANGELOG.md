@@ -6,6 +6,20 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.20.0] - 2026-11-02
+
+The connector SDK ([I37](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-3-4.md#i37-connector-sdk-m), [design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md) phase 1). A new package; the
+other nine are unchanged apart from the version.
+
+- Added: `RIoT2.Connector.Sdk` (.NET 10, in `Connector/`, see its README). `AddRIoT2Connector<TSink, TSettings>`
+  and `MapRIoT2Connector`; `IConnectorSink` with `TransientSinkException` and `SinkRejectedException`;
+  `ConnectorMessage` (kind, node id, raw JSON, receive time); `ConnectorOptions` (`RIOT2_CONNECTOR_ID`,
+  `RIOT2_HANDLE_COMMANDS`, MQTT, logging, telemetry, security, and the queue's limits);
+  `ConnectorMqttService`; `TemplateCatalog`; `ConnectorPipeline` (bounded queue, batches of 100 or after
+  1 s, retry 1 s doubling to 60 s, rejection, a 10 s drain on stop); `ConnectorMetrics` (the
+  `riot2.connector.*` instruments, moved from the InfluxDB connector; `writes` now counts messages by
+  `written`, `retried`, `rejected`, `discarded`).
+
 ## [1.19.0] - 2026-11-02
 
 Verified plugin updates on the node ([I35](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-3-4.md#i35-verified-plugin-updates-m), [design 7.2](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/desired-state-configuration.md) phase 4, backlog item 5).

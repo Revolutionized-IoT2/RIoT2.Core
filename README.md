@@ -4,7 +4,7 @@ Shared libraries for the [RIoT2](https://github.com/Revolutionized-IoT2) platfor
 and MQTT topics, the MQTT client, the device plugin SDK and the node runtime used by every .NET
 component.
 
-- Type: class libraries, released from one tag as nine NuGet packages on GitHub Packages (since
+- Type: class libraries, released from one tag as ten NuGet packages on GitHub Packages (since
   1.13.0, [ADR 0005](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0005-split-core-packages.md)):
 
   | Package | Contents | Depends on |
@@ -18,12 +18,13 @@ component.
   | `RIoT2.Core.Devices.Testing` | The plugin test kit (.NET 10) | Node |
   | `RIoT2.Core.Devices.Build` | MSBuild target that packs the plugin zip on `dotnet publish` | none |
   | `RIoT2.Core.Hosting` | The services' logging, metrics and security seams (.NET 10, Serilog, OpenTelemetry) | Mqtt, Http |
+  | `RIoT2.Connector.Sdk` | The connector SDK (.NET 10): settings, MQTT, templates, queue ([Connector/README.md](Connector/README.md)) | Hosting |
 
   Reference the narrowest packages (since 1.14.0, [I28](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i28-narrow-references-and-generated-models-m)): a service
   `Contracts` and `Mqtt` (plus `Http` if it calls `Web`), a plugin `Devices` (plus `Http` or `Mqtt`
   if its devices use them), the node `Node`. Only binaries built before 1.13.0 need the facade.
 
-- Target framework: .NET Standard 2.0 (the test kit and Hosting: .NET 10)
+- Target framework: .NET Standard 2.0 (the test kit, Hosting and the connector SDK: .NET 10)
 - Versions: [CHANGELOG.md](CHANGELOG.md)
 - Root namespace: `RIoT2.Core`
 
@@ -41,7 +42,8 @@ How Core fits into the platform: [architecture overview](https://github.com/Revo
 | `RIoT2.Core.csproj`, `Facade/` | The `RIoT2.Core` facade: type forwards and the `[Obsolete]` orchestrator-only types |
 | `src/Devices.Build/` | `RIoT2.Core.Devices.Build`: the `RIoT2PluginPack` target and its task (`PluginPackager`); compiles `PluginHostContract.cs` from `src/Devices/` |
 | `Testing/` | `RIoT2.Core.Devices.Testing`: `PluginTestHost`, `PluginConformance`, `DeviceConfigurationBuilder` |
-| `Hosting/` | `RIoT2.Core.Hosting` for the services (not plugins): `AddRIoT2Logging()`, Serilog, text or JSON ([design 7.4](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/operations.md)), `AddRIoT2Telemetry()`, and `AddRIoT2Security()` with the role policies and `/api/security/info` ([design 7.5](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/security-mode.md)) |
+| `Hosting/` | `RIoT2.Core.Hosting` for the services: `AddRIoT2Logging()`, `AddRIoT2Telemetry()` ([7.4](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/operations.md)), `AddRIoT2Security()` ([7.5](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/security-mode.md)) |
+| `Connector/` | `RIoT2.Connector.Sdk`: `AddRIoT2Connector`, `IConnectorSink`, `ConnectorPipeline` |
 | `contracts/golden/` | Golden files: the JSON on MQTT, in orchestrator responses and in `StoredObjects`. Not part of a package. See [contracts/golden/README.md](contracts/golden/README.md). |
 | `contracts/schemas/` | `riot2-contracts.schema.json`: the JSON Schema of the contract types, written by `tools/SchemaExport` on every build. The UI generates its TypeScript models from it. See [contracts/schemas/README.md](contracts/schemas/README.md). |
 | `tools/SchemaExport/` | The console tool that writes `contracts/schemas/` (not packed) |
@@ -150,31 +152,8 @@ version the plugin uses. `plugin-release.yml` only checks and uploads it. Other 
 
 ## Matter device declarations
 
-A device is bridged to a Matter ecosystem (for example Google Home) when it implements
-`IMatterDevice` as well as `IDeviceWithConfiguration`, and returns one `MatterEndpointTemplate`
-per endpoint: the Matter device type, and how its templates map onto cluster attributes:
-
-```csharp
-public IEnumerable<MatterEndpointTemplate> GetMatterEndpoints(DeviceConfiguration configuration)
-{
-    var report = configuration.ReportTemplates[0];
-    var command = configuration.CommandTemplates[0];
-
-    yield return new MatterEndpointTemplate
-    {
-        Id = $"{configuration.Id}:lamp",
-        Name = "Living Room Lamp",
-        DeviceType = MatterDeviceType.DimmableLight,
-        Attributes = { new MatterAttributeBinding { Attribute = MatterAttribute.OnOff, ReportTemplateId = report.Id, ValuePath = "on" } },
-        Commands = { new MatterCommandBinding { Attribute = MatterAttribute.OnOff, CommandTemplateId = command.Id, ValuePath = "on" } }
-    };
-}
-```
-
-Build the declaration from the `DeviceConfiguration` passed in, so its template ids are the
-persisted ones. A binding's `Scale` (for example `Percent0To100ToLevel0To254`) is declared in the
-RIoT-to-Matter direction; the bridge inverts it for commands. The templates reach the
-orchestrator's bridge on `DeviceConfiguration.MatterEndpoints`; Core has no Matter protocol code.
+A device is bridged to Matter (for example Google Home) when it implements `IMatterDevice` and
+returns `MatterEndpointTemplate`s: [src/Devices/matter-declarations.md](src/Devices/matter-declarations.md).
 
 ## Dependencies
 

@@ -2,7 +2,7 @@ name: Release
 
 # Push a x.y.z tag to publish every RIoT2.Core package with that version to GitHub Packages: the
 # packages under src/ (including the RIoT2.Core.Devices.Build MSBuild package), the RIoT2.Core
-# facade, RIoT2.Core.Devices.Testing and RIoT2.Core.Hosting (plan M1 step 2). Project references
+# facade, RIoT2.Core.Devices.Testing, RIoT2.Core.Hosting and RIoT2.Connector.Sdk (plan M1 step 2). Project references
 # become dependencies on the same version. Then bump the consumers (release order:
 # docs/increments/README.md in the .github repository).
 
@@ -37,6 +37,7 @@ jobs:
           - RIoT2.Core.csproj
           - Testing/RIoT2.Core.Devices.Testing.csproj
           - Hosting/RIoT2.Core.Hosting.csproj
+          - Connector/RIoT2.Connector.Sdk.csproj
     uses: Revolutionized-IoT2/.github/.github/workflows/nuget-publish.yml@main
     with:
       project: ${{ matrix.project }}

@@ -8,12 +8,12 @@ workspace map, platform-wide rules and the documentation rules. In the local wor
 
 ## What this is
 
-The RIoT2 core libraries, released from one tag as nine NuGet packages (GitHub Packages) since
+The RIoT2 core libraries, released from one tag as ten NuGet packages (GitHub Packages) since
 1.13.0 ([ADR 0005](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0005-split-core-packages.md)). Five .NET Standard 2.0 packages under `src/`, each
 depending only on the ones below it: `RIoT2.Core.Contracts` (wire models, topics, JSON),
 `.Mqtt` (MQTT client and service settings), `.Http`, `.Devices` (the plugin SDK) and `.Node` (the
-node runtime). `RIoT2.Core` is a facade forwarding their types to older binaries until Core 2.0 (I45). `RIoT2.Core.Devices.Testing`
-and `RIoT2.Core.Hosting` are .NET 10. `RIoT2.Core.Devices.Build` packs plugin zips. Consumers reference the narrowest **packages** (I28); RIoT2.Tests
+node runtime). `RIoT2.Core` is a facade forwarding their types to older binaries until Core 2.0 (I45). `RIoT2.Core.Devices.Testing`,
+`RIoT2.Core.Hosting` and the connector SDK `RIoT2.Connector.Sdk` are .NET 10. `RIoT2.Core.Devices.Build` packs plugin zips. Consumers reference the narrowest **packages** (I28); RIoT2.Tests
 is the only project reference.
 
 ## Commands
@@ -29,9 +29,9 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj
 
 - To check a consumer against unreleased Core, `dotnet pack` **every** project into
   `.\.localfeed`, clear that version from the NuGet cache, and restore with it as an extra source.
-- Every push runs `.github/workflows/ci.yml` (build, pack smoke test of all nine packages, secret
+- Every push runs `.github/workflows/ci.yml` (build, pack smoke test of all ten packages, secret
   scan). To release, push a git tag `x.y.z`: `release.yml` validates, then packs and pushes all
-  nine with that version ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)). Core's tests live in RIoT2.Tests.
+  ten with that version ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)). Core's tests live in RIoT2.Tests.
 - Shared settings: `Directory.Build.props`, `.editorconfig`; versions: `Directory.Packages.props`.
 
 ## Layout
@@ -47,6 +47,7 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj
 | `src/Devices.Build/` | `RIoT2.Core.Devices.Build`: `build/*.targets` (`RIoT2PluginPack`, after `Publish`), the `PackPlugin` task and `PluginPackager` |
 | `Testing/` | `RIoT2.Core.Devices.Testing` (.NET 10): `PluginTestHost`, `PluginConformance`, `DeviceConfigurationBuilder` |
 | `Hosting/` | `RIoT2.Core.Hosting` (.NET 10, Serilog, OpenTelemetry): `AddRIoT2Logging()`, `AddRIoT2Telemetry()`, `AddRIoT2Security()` |
+| `Connector/` | `RIoT2.Connector.Sdk` (design 7.3): `AddRIoT2Connector`, `IConnectorSink`, `ConnectorPipeline`, `ConnectorMetrics` |
 | `Directory.Build.repo.props` | The one version of every package |
 | `contracts/golden/` | Golden files for every message, response and stored format; read by RIoT2.Tests, Elsa, UI and firmware tests |
 | `contracts/schemas/`, `tools/SchemaExport/` | The contract JSON Schema, written by the tool on every build; the UI generates its models from it |
@@ -155,8 +156,9 @@ must stay compatible with it.
   compiled against MSBuild 17.14 with `ExcludeAssets="runtime"`. The Node's
   `PluginCompatibilityTests` load a zip it packed.
 - Keep Serilog and the ASP.NET Core framework out of the packages under `src/`: plugins reference them.
-  Service-only hosting code goes in `Hosting/`, and so does OpenTelemetry: Core instruments use
-  `System.Diagnostics.Metrics` only. Use `LogScope` names for ids in log scopes, so the text format shows them.
+  Service-only hosting code goes in `Hosting/` (connectors: `Connector/`), and so does OpenTelemetry:
+  Core instruments use `System.Diagnostics.Metrics` only. The connector SDK queues raw messages;
+  sinks map them. Use `LogScope` names for ids in log scopes, so the text format shows them.
 - A new, renamed or removed `riot2.*` instrument changes the
   [metrics contract](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/metrics.md) and the Grafana dashboard in the hub's `deploy/`;
   RIoT2.Tests `MetricsTests` pins the names. `riot2.node.device_restarts` must stay at zero for an
@@ -170,6 +172,5 @@ must stay compatible with it.
 - [M1](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m01-split-core-packages.md): the package split (steps 1–3 in I27, 4–5 in I28; removing the facade is I45).
 - [M2](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m02-system-text-json-persistence.md): one JSON stack.
 - [M10](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m10-mqtt-client-robustness.md): MQTT client robustness (TLS: I34, I51).
-- [M11](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m11-async-cleanup.md): remaining blocking code.
 - [M12](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m12-device-plugin-sdk.md) ([ADR 0014](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0014-device-plugin-sdk.md)): the `RIoT2.Core.Devices*` plugin SDK packages.
-- Backlog items 3, 4, 11, 12 and 23 in [open-issues.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/backlog/open-issues.md).
+- Backlog items 2, 11, 12 and 23 in [open-issues.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/backlog/open-issues.md).

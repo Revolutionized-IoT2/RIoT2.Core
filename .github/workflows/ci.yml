@@ -39,6 +39,7 @@ jobs:
           - RIoT2.Core.csproj
           - Testing/RIoT2.Core.Devices.Testing.csproj
           - Hosting/RIoT2.Core.Hosting.csproj
+          - Connector/RIoT2.Connector.Sdk.csproj
     uses: Revolutionized-IoT2/.github/.github/workflows/nuget-publish.yml@main
     with:
       project: ${{ matrix.project }}

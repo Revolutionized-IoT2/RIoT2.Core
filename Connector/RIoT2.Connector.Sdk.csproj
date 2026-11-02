@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>RIoT2.Connector.Sdk</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Description>The RIoT2 connector SDK (design 7.3, ADR 0009): settings, the MQTT lifecycle and orchestrator handshake, the template catalog, and a bounded queue with batching and retry. A connector implements IConnectorSink.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="RIoT2.Tests" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Logging, telemetry and the security seams; brings Contracts, Mqtt and Http. -->
+    <ProjectReference Include="..\Hosting\RIoT2.Core.Hosting.csproj" />
+  </ItemGroup>
+
+</Project>
