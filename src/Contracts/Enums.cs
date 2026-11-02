@@ -86,7 +86,9 @@
         Unknown = 0,
         Device = 1,
         Dashboard = 2,
-        Workflow = 3
+        Workflow = 3,
+        /// <summary>A connector built on the connector SDK (design 7.3, Core 1.22.0); the orchestrator lists it but sends it only the configuration command.</summary>
+        Connector = 4
     }
 
     /// <summary>How the UI edits a device parameter (<see cref="Models.DeviceParameterDefinition.Type"/>, Core 1.16.0).</summary>

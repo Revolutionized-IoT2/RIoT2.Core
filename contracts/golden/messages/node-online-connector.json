@@ -1,0 +1,14 @@
+{
+  "name": "InfluxDB",
+  "isOnline": true,
+  "nodeBaseUrl": "http://influxdb-connector:8080",
+  "grpcBaseUrl": "",
+  "nodeType": 4,
+  "manifest": {
+    "name": "RIoT2.Connector.InfluxDB",
+    "version": "1.10.0",
+    "date": "",
+    "installedPackageFilename": "",
+    "coreVersion": "1.22.0"
+  }
+}

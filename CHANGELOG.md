@@ -6,6 +6,17 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.22.0] - 2026-11-02
+
+Connectors as their own node type ([I39](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-3-4.md#i39-connectors-in-the-ui-and-a-prometheus-exporter-m), [design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md) phases 3 and 4). Additive; the golden file
+`node-online-connector` is new.
+
+- Added (`RIoT2.Core.Contracts`): `NodeType.Connector = 4`; the JSON Schema lists it.
+- Changed (`RIoT2.Connector.Sdk`): the presence carries `nodeType` 4, the name (`RIOT2_CONNECTOR_NAME`, else
+  the connector's default), `nodeBaseUrl` from the optional `RIOT2_CONNECTOR_URL` (absolute http/https),
+  and a manifest with the connector's name and version and the SDK's version as `coreVersion`.
+- Added (`RIoT2.Connector.Sdk`): `EntityFlattener`, moved from the InfluxDB connector, for every connector.
+
 ## [1.21.0] - 2026-11-02
 
 The connector spool ([I38](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-3-4.md#i38-connector-spool-m), [design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md) phase 2). Only

@@ -10,6 +10,8 @@ public sealed class ConnectorOptions
 {
     public const string IdVariable = "RIOT2_CONNECTOR_ID";
     public const string HandleCommandsVariable = "RIOT2_HANDLE_COMMANDS";
+    public const string NameVariable = "RIOT2_CONNECTOR_NAME";
+    public const string UrlVariable = "RIOT2_CONNECTOR_URL";
     public const string SpoolVariable = "RIOT2_CONNECTOR_SPOOL";
     public const string SpoolMaxMegabytesVariable = "RIOT2_CONNECTOR_SPOOL_MAX_MB";
     public const string SpoolMaxAgeDaysVariable = "RIOT2_CONNECTOR_SPOOL_MAX_AGE_DAYS";
@@ -17,8 +19,20 @@ public sealed class ConnectorOptions
     /// <summary>Unique id; also the MQTT client id. Required.</summary>
     public string Id { get; set; } = null!;
 
-    /// <summary>The name in the connector's presence message.</summary>
+    /// <summary>
+    /// The name in the connector's presence message and the UI (<c>RIOT2_CONNECTOR_NAME</c>); when that is unset, the
+    /// connector's own default, set in code.
+    /// </summary>
     public string Name { get; set; } = "Connector";
+
+    /// <summary>
+    /// Where the orchestrator reaches the connector (<c>RIOT2_CONNECTOR_URL</c>, optional): announced as
+    /// <c>nodeBaseUrl</c>, so the UI can show the connector's <c>/health</c>.
+    /// </summary>
+    public string? Url { get; set; }
+
+    // RIOT2_CONNECTOR_NAME, which wins over the default set in code (AddRIoT2Connector applies it after configure).
+    internal string? ConfiguredName { get; set; }
 
     /// <summary>Also handle commands (<c>riot2/node/+/command</c>), not only reports.</summary>
     public bool HandleCommands { get; set; }
@@ -86,6 +100,8 @@ public sealed class ConnectorOptions
         return new ConnectorOptions
         {
             Id = settings.Required(IdVariable),
+            ConfiguredName = settings.Optional(NameVariable),
+            Url = settings.Optional(UrlVariable) is { Length: > 0 } ? settings.RequiredHttpUrl(UrlVariable) : null,
             HandleCommands = settings.Flag(HandleCommandsVariable),
             Mqtt = MqttOptions.Read(settings),
             Logging = LoggingOptions.Read(settings),

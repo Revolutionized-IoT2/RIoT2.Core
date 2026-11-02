@@ -76,12 +76,46 @@ public sealed class ConnectorMqttService : IHostedService, IAsyncDisposable
 
     private async Task AnnounceAsync()
     {
-        await _client.PublishAsync(_onlineTopic, Json.SerializeIgnoreNulls(new NodeOnlineMessage
-        {
-            IsOnline = true,
-            Name = _options.Name
-        })).ConfigureAwait(false);
+        await _client.PublishAsync(_onlineTopic, Json.SerializeIgnoreNulls(Presence(_options))).ConfigureAwait(false);
         _logger.LogInformation("Presence sent");
+    }
+
+    /// <summary>
+    /// The connector's presence (design 7.3 phase 3): <see cref="NodeType.Connector"/>, its name, <c>nodeBaseUrl</c>
+    /// from <c>RIOT2_CONNECTOR_URL</c>, and a manifest with the connector's name and version and the SDK's version.
+    /// </summary>
+    internal static NodeOnlineMessage Presence(ConnectorOptions options) => new()
+    {
+        IsOnline = true,
+        Name = options.Name,
+        NodeType = NodeType.Connector,
+        NodeBaseUrl = options.Url ?? "",
+        Manifest = Manifest
+    };
+
+    private static readonly PackageManifest Manifest = CreateManifest();
+
+    private static PackageManifest CreateManifest()
+    {
+        var connector = System.Reflection.Assembly.GetEntryAssembly()?.GetName();
+        return new PackageManifest
+        {
+            Name = connector?.Name ?? "",
+            Version = Version(System.Reflection.Assembly.GetEntryAssembly()),
+            Date = "",
+            InstalledPackageFilename = "",
+            CoreVersion = Version(typeof(ConnectorMqttService).Assembly)
+        };
+    }
+
+    // The informational version without the source revision after '+'.
+    private static string Version(System.Reflection.Assembly? assembly)
+    {
+        var version = assembly?.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+            .OfType<System.Reflection.AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion
+            ?? assembly?.GetName().Version?.ToString() ?? "";
+        var plus = version.IndexOf('+');
+        return plus < 0 ? version : version[..plus];
     }
 
     // Internal for tests: what the connector does with each MQTT message.

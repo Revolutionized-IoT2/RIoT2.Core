@@ -41,6 +41,8 @@ public static class ConnectorHostExtensions
         var loggerFactory = builder.AddRIoT2Logging("connector");
         var (options, settings) = ConnectorOptions.Load(builder.Configuration, component, readSettings, loggerFactory.CreateLogger("RIoT2.Connector"));
         configure?.Invoke(options);
+        if (!string.IsNullOrWhiteSpace(options.ConfiguredName))
+            options.Name = options.ConfiguredName;
         options.Validate();
 
         builder.Services.AddSingleton(options);

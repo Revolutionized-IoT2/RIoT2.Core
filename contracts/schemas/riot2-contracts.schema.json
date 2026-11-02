@@ -1139,13 +1139,15 @@
         0,
         1,
         2,
-        3
+        3,
+        4
       ],
       "x-enumNames": [
         "Unknown",
         "Device",
         "Dashboard",
-        "Workflow"
+        "Workflow",
+        "Connector"
       ]
     },
     "PackageManifest": {
