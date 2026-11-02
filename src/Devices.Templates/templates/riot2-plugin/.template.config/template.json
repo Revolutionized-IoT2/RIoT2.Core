@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Revolutionized-IoT2",
+  "classifications": [ "RIoT2", "IoT", "Plugin", "Library" ],
+  "identity": "RIoT2.Core.Devices.Templates.Plugin",
+  "name": "RIoT2 device plugin",
+  "description": "A RIoT2 device plugin repository: PluginBase, an async sample device with typed options, the conformance test, the plugin zip on dotnet publish, CI and release workflows and the documentation set.",
+  "shortName": "riot2-plugin",
+  "sourceName": "Contoso.Riot2Plugin",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "symbols": {
+    "CoreVersion": {
+      "type": "parameter",
+      "datatype": "text",
+      "defaultValue": "__CORE_VERSION__",
+      "replaces": "RIOT2_CORE_VERSION",
+      "description": "The RIoT2.Core.Devices version to build on. The node installs a plugin only with the same major and a minor no newer than its own, so pick the oldest Core your nodes run."
+    },
+    "DisplayName": {
+      "type": "parameter",
+      "datatype": "text",
+      "defaultValue": "Contoso devices",
+      "replaces": "Contoso devices",
+      "description": "The plugin's name in the node's PluginManifest.json and the UI."
+    }
+  },
+  "sources": [
+    {
+      "modifiers": [
+        { "exclude": [ "**/[Bb]in/**", "**/[Oo]bj/**", "**/TestResults/**" ] }
+      ]
+    }
+  ]
+}

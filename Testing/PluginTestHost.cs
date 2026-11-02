@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using RIoT2.Core.Interfaces;
 using RIoT2.Core.Interfaces.Services;
 using RIoT2.Core.Models;
+using RIoT2.Core.Plugins;
 
 namespace RIoT2.Core.Devices.Testing;
 
@@ -83,23 +84,16 @@ public sealed class PluginTestHost : IDisposable, IAsyncDisposable
         return Task.CompletedTask;
     }
 
+    /// <summary>Starts a device the way the node does (<see cref="DeviceCalls"/>).</summary>
     public static Task StartAsync(IDevice device, CancellationToken cancellationToken = default) =>
-        device is IAsyncDevice asynchronous
-            ? asynchronous.StartAsync(cancellationToken)
-            : Task.Run(device.Start, cancellationToken);
+        DeviceCalls.StartAsync(device, cancellationToken);
 
     public static Task StopAsync(IDevice device, CancellationToken cancellationToken = default) =>
-        device is IAsyncDevice asynchronous
-            ? asynchronous.StopAsync(cancellationToken)
-            : Task.Run(device.Stop, cancellationToken);
+        DeviceCalls.StopAsync(device, cancellationToken);
 
     /// <summary>Sends a command the way the node's command service does. <paramref name="value"/> is the command value as JSON.</summary>
-    public static Task CommandAsync(IDevice device, string commandId, string value, CancellationToken cancellationToken = default) => device switch
-    {
-        IAsyncCommandDevice asynchronous => asynchronous.ExecuteCommandAsync(commandId, value, cancellationToken),
-        ICommandDevice command => Task.Run(() => command.ExecuteCommand(commandId, value), cancellationToken),
-        _ => throw new InvalidOperationException($"{device?.GetType().FullName} doesn't accept commands.")
-    };
+    public static Task CommandAsync(IDevice device, string commandId, string value, CancellationToken cancellationToken = default) =>
+        DeviceCalls.ExecuteCommandAsync(device, commandId, value, cancellationToken);
 
     /// <summary>
     /// Refreshes one report, or the whole device when <paramref name="reportId"/> is null, as the node's scheduler does.
@@ -107,13 +101,7 @@ public sealed class PluginTestHost : IDisposable, IAsyncDisposable
     public static Task RefreshAsync(IDevice device, string? reportId = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(device);
-        var name = reportId ?? device.Id;
-        return device switch
-        {
-            IAsyncRefreshableReportDevice asynchronous => asynchronous.RefreshReportAsync(device.Id, name, cancellationToken),
-            IRefreshableReportDevice refreshable => Task.Run(() => refreshable.RefreshReport(device.Id, name), cancellationToken),
-            _ => throw new InvalidOperationException($"{device.GetType().FullName} has no refreshable reports.")
-        };
+        return DeviceCalls.RefreshAsync(device, device.Id, reportId ?? device.Id, cancellationToken);
     }
 
     private void OnReportUpdated(IDevice sender, IReport report)

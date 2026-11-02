@@ -153,6 +153,7 @@
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Plugins.DeviceParameterAttribute))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Plugins.DeviceOptions))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Plugins.DeviceOptionsException))]
+[assembly: TypeForwardedTo(typeof(RIoT2.Core.Plugins.DeviceCalls))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.ReportUpdatedHandler))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.UnknownCommandException))]
 

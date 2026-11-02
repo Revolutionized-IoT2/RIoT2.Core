@@ -8,19 +8,41 @@ using System.Linq;
 
 namespace RIoT2.Core.Abstracts
 {
+    /// <summary>
+    /// The base class for devices (plan M12 step 5, Core 1.23.0; <see cref="DeviceBase"/> is the legacy synchronous
+    /// one). The node awaits <see cref="StartDeviceAsync"/>, <see cref="StopDeviceAsync"/> and <see cref="RefreshAsync"/>
+    /// through <see cref="IAsyncDevice"/> and <see cref="IAsyncRefreshableReportDevice"/>; a command device implements
+    /// <see cref="IAsyncCommandDevice.ExecuteCommandAsync"/>, and this class supplies
+    /// <see cref="ICommandDevice.ExecuteCommand"/>.
+    /// <para>
+    /// The synchronous <see cref="IDevice"/> members don't block on the async ones: they throw
+    /// <see cref="NotSupportedException"/>. Hosts since Node 1.11 call the async members; call a device the way the node
+    /// does with <see cref="Plugins.DeviceCalls"/>.
+    /// </para>
+    /// </summary>
     public abstract class AsyncDeviceBase : DeviceBase, IAsyncDevice, IAsyncRefreshableReportDevice
     {
         protected AsyncDeviceBase(ILogger logger) : base(logger) { }
 
         protected abstract Task StartDeviceAsync(CancellationToken cancellationToken);
         protected abstract Task StopDeviceAsync(CancellationToken cancellationToken);
-        protected abstract Task RefreshAsync(ReportTemplate? report, CancellationToken cancellationToken);
 
-#pragma warning disable VSTHRD002 // Plan M11 group A: DeviceBase's synchronous contract for older hosts; the node calls the async members.
-        public sealed override void StartDevice() => StartAsync(CancellationToken.None).GetAwaiter().GetResult();
-        public sealed override void StopDevice() => StopAsync(CancellationToken.None).GetAwaiter().GetResult();
-        public sealed override void Refresh(ReportTemplate? report) => RefreshAsync(report, CancellationToken.None).GetAwaiter().GetResult();
-#pragma warning restore VSTHRD002
+        /// <summary>Refreshes one report, or every report when <paramref name="report"/> is null; nothing by default.</summary>
+        protected virtual Task RefreshAsync(ReportTemplate? report, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public sealed override void StartDevice() => throw NotSynchronous(nameof(StartAsync));
+        public sealed override void StopDevice() => throw NotSynchronous(nameof(StopAsync));
+        public sealed override void Refresh(ReportTemplate? report) => throw NotSynchronous(nameof(RefreshReportAsync));
+
+        /// <summary>
+        /// <see cref="ICommandDevice.ExecuteCommand"/> for a device that implements <see cref="IAsyncCommandDevice"/>:
+        /// throws, because the host calls <c>ExecuteCommandAsync</c>. A device with synchronous commands overrides it.
+        /// </summary>
+        public virtual void ExecuteCommand(string commandId, string value) => throw NotSynchronous("ExecuteCommandAsync");
+
+        private NotSupportedException NotSynchronous(string member) =>
+            new NotSupportedException($"{GetType().Name} is an asynchronous device: call {member} " +
+                "(RIoT2.Core.Plugins.DeviceCalls does). Its synchronous members don't block (plan M12 step 5).");
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {

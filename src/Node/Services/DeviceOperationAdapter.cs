@@ -3,9 +3,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using RIoT2.Core.Interfaces;
 using RIoT2.Core.Models;
+using RIoT2.Core.Plugins;
 
 namespace RIoT2.Core.Services
 {
+    // Serializes a device's operations and calls it only through DeviceCalls (async; plan M12 step 5).
     internal sealed class DeviceOperationAdapter : IDisposable
     {
         private readonly IDevice _device;
@@ -47,10 +49,7 @@ namespace RIoT2.Core.Services
                 if (_owned)
                 {
                     Cancel();
-                    if (_device is IAsyncDevice previous)
-                        await previous.StopAsync(cancellationToken).ConfigureAwait(false);
-                    else
-                        await Task.Run(() => _device.Stop(), cancellationToken).ConfigureAwait(false);
+                    await DeviceCalls.StopAsync(_device, cancellationToken).ConfigureAwait(false);
                     _owned = false;
                 }
                 lock (_sync)
@@ -62,10 +61,7 @@ namespace RIoT2.Core.Services
                 }
                 using (var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _run.Token))
                 {
-                    if (_device is IAsyncDevice asynchronous)
-                        await asynchronous.StartAsync(linked.Token).ConfigureAwait(false);
-                    else
-                        await Task.Run(() => _device.Start(), linked.Token).ConfigureAwait(false);
+                    await DeviceCalls.StartAsync(_device, linked.Token).ConfigureAwait(false);
                     linked.Token.ThrowIfCancellationRequested();
                 }
             }
@@ -85,24 +81,17 @@ namespace RIoT2.Core.Services
             {
                 if (!_owned)
                     return;
-                if (_device is IAsyncDevice asynchronous)
-                    await asynchronous.StopAsync(cancellationToken).ConfigureAwait(false);
-                else
-                    await Task.Run(() => _device.Stop(), cancellationToken).ConfigureAwait(false);
+                await DeviceCalls.StopAsync(_device, cancellationToken).ConfigureAwait(false);
                 _owned = false;
             }
             finally { _gate.Release(); }
         }
 
         public Task CommandAsync(string id, string value, CancellationToken cancellationToken) =>
-            RunAsync(token => _device is IAsyncCommandDevice asynchronous
-                ? asynchronous.ExecuteCommandAsync(id, value, token)
-                : Task.Run(() => ((ICommandDevice)_device).ExecuteCommand(id, value), token), cancellationToken);
+            RunAsync(token => DeviceCalls.ExecuteCommandAsync(_device, id, value, token), cancellationToken);
 
         public Task RefreshAsync(string group, string name, CancellationToken cancellationToken) =>
-            RunAsync(token => _device is IAsyncRefreshableReportDevice asynchronous
-                ? asynchronous.RefreshReportAsync(group, name, token)
-                : Task.Run(() => ((IRefreshableReportDevice)_device).RefreshReport(group, name), token), cancellationToken);
+            RunAsync(token => DeviceCalls.RefreshAsync(_device, group, name, token), cancellationToken);
 
         private async Task RunAsync(Func<CancellationToken, Task> operation, CancellationToken cancellationToken)
         {

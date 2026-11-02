@@ -1,0 +1,29 @@
+name: Release
+
+# Push a x.y.z tag to attach Contoso.Riot2Plugin_<tag>.zip and its .sha256 sidecar to a GitHub release. A
+# node installs it from that URL (the plugin package of a node's configuration in the UI).
+
+on:
+  push:
+    tags: ["*.*.*"]
+
+permissions:
+  contents: write
+  packages: read
+
+jobs:
+  validate:
+    uses: Revolutionized-IoT2/.github/.github/workflows/dotnet-validate.yml@main
+    with:
+      build: Contoso.Riot2Plugin.sln
+      test: Tests/Contoso.Riot2Plugin.Tests.csproj
+    secrets: inherit
+
+  plugin:
+    needs: validate
+    uses: Revolutionized-IoT2/.github/.github/workflows/plugin-release.yml@main
+    with:
+      project: Contoso.Riot2Plugin.csproj
+      package: Contoso.Riot2Plugin
+      publish: true
+    secrets: inherit

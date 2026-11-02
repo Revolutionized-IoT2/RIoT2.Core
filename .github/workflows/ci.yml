@@ -40,9 +40,24 @@ jobs:
           - Testing/RIoT2.Core.Devices.Testing.csproj
           - Hosting/RIoT2.Core.Hosting.csproj
           - Connector/RIoT2.Connector.Sdk.csproj
+          - src/Devices.Templates/RIoT2.Core.Devices.Templates.csproj
     uses: Revolutionized-IoT2/.github/.github/workflows/nuget-publish.yml@main
     with:
       project: ${{ matrix.project }}
+  # dotnet new riot2-plugin from this commit's packages: builds without warnings, passes its tests, packs (I41).
+  plugin-template:
+    name: plugin template
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Generate, test and pack a plugin from the template
+        run: pwsh tools/verify-plugin-template.ps1
 
   secret-scan:
     uses: Revolutionized-IoT2/.github/.github/workflows/secret-scan.yml@main

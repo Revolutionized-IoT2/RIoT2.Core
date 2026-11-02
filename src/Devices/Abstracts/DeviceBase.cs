@@ -11,6 +11,11 @@ using System.Linq;
 
 namespace RIoT2.Core.Abstracts
 {
+    /// <summary>
+    /// The legacy synchronous base class (plan M12 step 5): new devices derive from <see cref="AsyncDeviceBase"/>. The
+    /// node runs this lifecycle on a thread-pool thread (<see cref="Plugins.DeviceCalls"/>). It stays for one major
+    /// release, without <c>[Obsolete]</c> until every catalog device has moved.
+    /// </summary>
     public abstract class DeviceBase
     {
         public DeviceBase(ILogger logger)

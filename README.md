@@ -4,7 +4,7 @@ Shared libraries for the [RIoT2](https://github.com/Revolutionized-IoT2) platfor
 and MQTT topics, the MQTT client, the device plugin SDK and the node runtime used by every .NET
 component.
 
-- Type: class libraries, released from one tag as ten NuGet packages on GitHub Packages (since
+- Type: class libraries, released from one tag as eleven NuGet packages on GitHub Packages (since
   1.13.0, [ADR 0005](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0005-split-core-packages.md)):
 
   | Package | Contents | Depends on |
@@ -17,6 +17,7 @@ component.
   | `RIoT2.Core` | Facade: references all five and forwards their types, so code built against an older `RIoT2.Core` keeps working; removed in Core 2.0 | all five |
   | `RIoT2.Core.Devices.Testing` | The plugin test kit (.NET 10) | Node |
   | `RIoT2.Core.Devices.Build` | MSBuild target that packs the plugin zip on `dotnet publish` | none |
+  | `RIoT2.Core.Devices.Templates` | `dotnet new riot2-plugin`: a plugin repository with a sample device, tests and workflows ([src/Devices.Templates/README.md](src/Devices.Templates/README.md)) | none |
   | `RIoT2.Core.Hosting` | The services' logging, metrics and security seams (.NET 10, Serilog, OpenTelemetry) | Mqtt, Http |
   | `RIoT2.Connector.Sdk` | The connector SDK (.NET 10): settings, MQTT, templates, queue, disk spool, health ([Connector/README.md](Connector/README.md)) | Hosting |
 
@@ -37,10 +38,11 @@ How Core fits into the platform: [architecture overview](https://github.com/Revo
 | `src/Contracts/` | `Constants.cs` (topics, API URLs), `Contract.cs` (`Contract.Version`, capability names), `Enums.cs`, `Models/` (the messages, `ValueModel`, configuration, template and Matter models), the message and template interfaces, `Utils/` (`Json`, `RIoT2JsonOptions`, `ConfigurationHash`), `Schema/ContractSchemas.cs` (the JSON Schema export), `Diagnostics/MeterNames.cs` |
 | `src/Mqtt/` | `MqttClient`, `LogScope` (the `CorrelationId` and `MessageId` log scopes), and `Configuration/`: how every service reads and validates its `RIOT2_*` settings |
 | `src/Http/` | `Web` helpers; `Security/`: `ApiKeyHandler` (`X-RIoT2-Key`), `IOutboundUrlPolicy` |
-| `src/Devices/` | `PluginBase`, `DeviceBase(<TOptions>)`, `AsyncDeviceBase(<TOptions>)`, the device and plugin interfaces, `Plugins/` (`PluginHostContract`, `DeviceTemplates`, `DeviceOptions`, `[DeviceParameter]`, `[RequiresHardware]`) |
+| `src/Devices/` | `PluginBase`, `DeviceBase(<TOptions>)`, `AsyncDeviceBase(<TOptions>)`, the device and plugin interfaces, `Plugins/` (`PluginHostContract`, `DeviceCalls`, `DeviceTemplates`, `DeviceOptions`, `[DeviceParameter]`, `[RequiresHardware]`) |
 | `src/Node/` | `NodeMqttService`, `DeviceServiceBase`, `NodeConfigurationServiceBase`, `DeviceSchedulerService`, `CommandService`, `ReportService`, `NodeConfigurationStatus`, `NodeMetrics` (`riot2.node.*`), `Plugins/` (`PluginPackageInstaller`) |
 | `RIoT2.Core.csproj`, `Facade/` | The `RIoT2.Core` facade: type forwards and the `[Obsolete]` orchestrator-only types |
 | `src/Devices.Build/` | `RIoT2.Core.Devices.Build`: the `RIoT2PluginPack` target and its task (`PluginPackager`); compiles `PluginHostContract.cs` from `src/Devices/` |
+| `src/Devices.Templates/` | `RIoT2.Core.Devices.Templates`: the `riot2-plugin` template in `templates/riot2-plugin/` |
 | `Testing/` | `RIoT2.Core.Devices.Testing`: `PluginTestHost`, `PluginConformance`, `DeviceConfigurationBuilder` |
 | `Hosting/` | `RIoT2.Core.Hosting` for the services: `AddRIoT2Logging()`, `AddRIoT2Telemetry()` ([7.4](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/operations.md)), `AddRIoT2Security()` ([7.5](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/security-mode.md)) |
 | `Connector/` | `RIoT2.Connector.Sdk`: `AddRIoT2Connector`, `IConnectorSink`, `ConnectorPipeline` |
@@ -106,14 +108,20 @@ A service reads `SecurityOptions.Read(settings)`, calls `services.AddRIoT2Securi
 - A plugin derives from `PluginBase` and registers its services and devices in `Register()` with
   `AddService<TService, TImplementation>()` and `AddDevice<TDevice>()`. Everything is a singleton
   owned by the node, which also adds the plugin's controllers. `IDevicePlugin.Devices` is obsolete.
-- Devices derive from `AsyncDeviceBase`. Override its async start, stop, command and refresh
-  methods.
+- Start a new plugin with `dotnet new riot2-plugin` (1.23.0); guide:
+  [plugin authoring](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/plugin-authoring.md).
+- Devices derive from `AsyncDeviceBase`. Override `StartDeviceAsync`, `StopDeviceAsync` and
+  `RefreshAsync`, and implement `IAsyncCommandDevice` for commands. Since 1.23.0 its synchronous
+  `IDevice` members throw `NotSupportedException` instead of blocking; a device that keeps a
+  synchronous `ExecuteCommand` overrides it.
+- Hosts call a device through `DeviceCalls`, which runs legacy synchronous devices on the thread pool.
 - A device that reads parameters implements `IDeviceWithConfiguration` and declares every key it
   reads in its template; `DeviceTemplates.Create(device)` builds what the node returns.
 - Mark a device needing hardware or a remote service with `[RequiresHardware("reason")]`.
 - `DeviceServiceBase` runs one serialized operation queue per device; a replaced configuration
   cancels and awaits the old work. Only devices whose configuration changed restart.
-- Synchronous devices (`DeviceBase`) work, but their calls can't be interrupted.
+- Synchronous devices (`DeviceBase`, the legacy base class until Core 2.0) work, but their calls
+  can't be interrupted.
 - Nullable-annotated since 1.17.0: `Refresh`/`RefreshAsync` take `ReportTemplate?` (null: the
   whole device).
 - Declare parameters in an options class and derive from `DeviceBase<TOptions>` or
@@ -192,7 +200,7 @@ commit it here ([contracts/golden/README.md](contracts/golden/README.md)).
 ## Versions and releases
 
 - Release notes are in [CHANGELOG.md](CHANGELOG.md).
-- To release, push a tag `x.y.z`: the release workflow validates, then publishes all nine packages
+- To release, push a tag `x.y.z`: the release workflow validates, then publishes all eleven packages
   with that version (kept in `Directory.Build.repo.props`). A failed run publishes nothing; fix the
   build and push the next version. Every push also runs CI ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)).
 - To try an unreleased Core, pack every project into `C:\Src\RIoT2\.localfeed` and restore the

@@ -8,12 +8,12 @@ workspace map, platform-wide rules and the documentation rules. In the local wor
 
 ## What this is
 
-The RIoT2 core libraries, released from one tag as ten NuGet packages (GitHub Packages) since
-1.13.0 ([ADR 0005](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0005-split-core-packages.md)). Five .NET Standard 2.0 packages under `src/`, each
+The RIoT2 core libraries, released from one tag as eleven NuGet packages (GitHub Packages) since
+1.13.0 (ADR 0005). Five .NET Standard 2.0 packages under `src/`, each
 depending only on the ones below it: `RIoT2.Core.Contracts` (wire models, topics, JSON),
 `.Mqtt` (MQTT client and service settings), `.Http`, `.Devices` (the plugin SDK) and `.Node` (the
 node runtime). `RIoT2.Core` is a facade forwarding their types to older binaries until Core 2.0 (I45). `RIoT2.Core.Devices.Testing`,
-`RIoT2.Core.Hosting` and the connector SDK `RIoT2.Connector.Sdk` are .NET 10. `RIoT2.Core.Devices.Build` packs plugin zips. Consumers reference the narrowest **packages** (I28); RIoT2.Tests
+`RIoT2.Core.Hosting` and the connector SDK `RIoT2.Connector.Sdk` are .NET 10. `RIoT2.Core.Devices.Build` packs plugin zips; `RIoT2.Core.Devices.Templates` is `dotnet new riot2-plugin`. Consumers reference the narrowest **packages** (I28); RIoT2.Tests
 is the only project reference.
 
 ## Commands
@@ -29,9 +29,9 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj
 
 - To check a consumer against unreleased Core, `dotnet pack` **every** project into
   `.\.localfeed`, clear that version from the NuGet cache, and restore with it as an extra source.
-- Every push runs `.github/workflows/ci.yml` (build, pack smoke test of all ten packages, secret
-  scan). To release, push a git tag `x.y.z`: `release.yml` validates, then packs and pushes all
-  ten with that version ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)). Core's tests live in RIoT2.Tests.
+- Every push runs `.github/workflows/ci.yml` (build, pack smoke test of all packages, the template
+  check `tools/verify-plugin-template.ps1`, secret scan). To release, push a tag `x.y.z`: `release.yml`
+  validates, then packs and pushes all with that version ([CI guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/ci.md)). Core's tests live in RIoT2.Tests.
 - Shared settings: `Directory.Build.props`, `.editorconfig`; versions: `Directory.Packages.props`.
 
 ## Layout
@@ -45,6 +45,7 @@ dotnet test .\RIoT2.Tests\RIoT2.Tests.Integration\RIoT2.Tests.Integration.csproj
 | `src/Node/` | `RIoT2.Core.Node`, the node runtime: `NodeMqttService`, `DeviceServiceBase`, `NodeConfigurationServiceBase`, `PluginPackageInstaller`, `DeviceSchedulerService` (Quartz), `NodeMetrics`, `CorrelationCache` |
 | `RIoT2.Core.csproj`, `Facade/` | The facade: `TypeForwards.cs` (every public type of the packages) and the `[Obsolete]` orchestrator-only and unused types, removed in I45 |
 | `src/Devices.Build/` | `RIoT2.Core.Devices.Build`: `build/*.targets` (`RIoT2PluginPack`, after `Publish`), the `PackPlugin` task and `PluginPackager` |
+| `src/Devices.Templates/` | `RIoT2.Core.Devices.Templates`: `templates/riot2-plugin/` (sample device, tests, workflows, docs); the pack stamps the Core version |
 | `Testing/` | `RIoT2.Core.Devices.Testing` (.NET 10): `PluginTestHost`, `PluginConformance`, `DeviceConfigurationBuilder` |
 | `Hosting/` | `RIoT2.Core.Hosting` (.NET 10, Serilog, OpenTelemetry): `AddRIoT2Logging()`, `AddRIoT2Telemetry()`, `AddRIoT2Security()` |
 | `Connector/` | `RIoT2.Connector.Sdk` (design 7.3): `AddRIoT2Connector`, `IConnectorSink`, `ConnectorPipeline` and its `ConnectorSpool`, `ConnectorMetrics` |
@@ -95,8 +96,8 @@ must stay compatible with it.
 - A stored type implements `IStoredObject`; `stored-saved/` golden files pin its format.
 - `PluginPackageInstaller` extracts only into `Plugins.new/` (zip-slip guard); refusals never
   touch `Plugins/`.
-- New device code derives from `AsyncDeviceBase`. No `async void` or blocking waits (the threading
-  analyzers fail CI); a deliberate wait needs a `#pragma` with its reason.
+- New device code derives from `AsyncDeviceBase`, whose sync members throw (1.23.0). Hosts call
+  devices only through `DeviceCalls`. No `async void` or blocking waits (analyzers fail CI).
 - Nullable is on (I32): optional or omitted-when-null contract members are `?`; rules in the hub's
   `build/README.md`.
 - Plugins derive from `PluginBase`. Keep `PluginHostContract.SharedAssemblyPrefixes` the only list
@@ -105,7 +106,7 @@ must stay compatible with it.
   them out of the zip, so keep that file dependency-free. A change to
   `PluginConformance` changes what every plugin repository's CI accepts: say so in the CHANGELOG.
 - `DeviceBase.ParameterRead` (the test kit's read recorder) and `BindOptions` stay internal.
-- The internal rule engine and NCalc are gone. Don't bring them back ([ADR 0003](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0003-elsa-sole-automation-engine.md)).
+- Don't bring back the internal rule engine or NCalc (ADR 0003).
 - Security seams (design 7.5): `SecurityOptions.SupportedModes` stays `off` until `audit`/`on` are
   built. Every endpoint needs a `SecurityPolicies` policy or `[AllowAnonymous]`. Add
   `ApiKeyHandler` only to clients that call RIoT2 services, never to device or Internet clients.
@@ -121,7 +122,7 @@ must stay compatible with it.
   Only `NodeMqttService` retains its last will and presence. Publishing before a start throws.
 - Don't expose MQTTnet types from Core's public API: `MqttQos`, `MqttSubscription` and
   `MqttEventArgs` stand in for them, so a later MQTTnet 5 migration only touches `MqttClient`
-  ([M10](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m10-mqtt-client-robustness.md)).
+  (plan M10).
 - MQTT receive callbacks are serialized (one worker per client; receiving pauses at 1,000
   waiting). Don't await device I/O inside them: a configuration must be able to cancel a stalled command. `NodeMqttService` tracks at most 64
   commands and awaits them at shutdown.

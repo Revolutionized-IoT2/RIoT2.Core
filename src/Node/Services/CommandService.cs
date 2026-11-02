@@ -1,5 +1,6 @@
 ﻿using RIoT2.Core.Interfaces.Services;
 using RIoT2.Core.Models;
+using RIoT2.Core.Plugins;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,7 +42,7 @@ namespace RIoT2.Core.Services
                 var device = _deviceService.GetDeviceByCommandId(cmd.Id);
                 if (device == null)
                     throw new UnknownCommandException(cmd.Id);
-                await Task.Run(() => device.ExecuteCommand(cmd.Id, cmd.Value.ToJson()), cancellationToken).ConfigureAwait(false);
+                await DeviceCalls.ExecuteCommandAsync(device, cmd.Id, cmd.Value.ToJson(), cancellationToken).ConfigureAwait(false);
             }
         }
     }

@@ -1,0 +1,13 @@
+<Project>
+  <!-- Central package versions (plan M8 step 2). The RIoT2 packages are released together; the node installs a
+       plugin only with the same major and a minor no newer than its own, so keep them at the oldest Core your nodes
+       run (dotnet new riot2-plugin CoreVersion). -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="RIoT2.Core.Devices" Version="RIOT2_CORE_VERSION" />
+    <PackageVersion Include="RIoT2.Core.Devices.Build" Version="RIOT2_CORE_VERSION" />
+    <PackageVersion Include="RIoT2.Core.Devices.Testing" Version="RIOT2_CORE_VERSION" />
+  </ItemGroup>
+</Project>

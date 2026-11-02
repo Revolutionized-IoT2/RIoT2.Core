@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -10,6 +10,7 @@ using Quartz.Impl;
 using RIoT2.Core.Interfaces.Services;
 using RIoT2.Core.Models;
 using RIoT2.Core.Interfaces;
+using RIoT2.Core.Plugins;
 
 namespace RIoT2.Core.Services
 {
@@ -183,6 +184,10 @@ namespace RIoT2.Core.Services
                     if (_deviceService is IAsyncDeviceService asynchronous)
                         _refreshActions[deviceTrigger.Group] = token =>
                             asynchronous.RefreshReportAsync(device, deviceTrigger.Group, deviceTrigger.Name, token);
+                    else if (device is IAsyncRefreshableReportDevice)
+                        // AsyncDeviceBase's synchronous RefreshReport throws (plan M12 step 5): await it instead.
+                        _refreshActions[deviceTrigger.Group] = token =>
+                            refreshAsync(device, deviceTrigger.Group, deviceTrigger.Name, token);
                     else
                     {
                         RefreshTriggered += ((IRefreshableReportDevice)device).RefreshReport;
@@ -223,6 +228,19 @@ namespace RIoT2.Core.Services
             }
             finally { _lifecycle.Release(); }
             await worker.ConfigureAwait(false);
+        }
+
+        private async Task refreshAsync(IDevice device, string group, string name, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await DeviceCalls.RefreshAsync(device, group, name, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+            catch (Exception x)
+            {
+                _logger.LogError(x, "Scheduled refresh of device {Device} failed", device.Configuration?.Name);
+            }
         }
 
         private async Task stopScheduler(CancellationToken cancellationToken = default) 

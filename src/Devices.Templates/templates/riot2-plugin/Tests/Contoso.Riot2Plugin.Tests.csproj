@@ -1,0 +1,14 @@
+<Project Sdk="MSTest.Sdk/4.4.1">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <UseVSTest>true</UseVSTest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- PluginConformance and PluginTestHost load the plugin the way the node does. -->
+    <PackageReference Include="RIoT2.Core.Devices.Testing" />
+    <ProjectReference Include="..\Contoso.Riot2Plugin.csproj" />
+  </ItemGroup>
+
+</Project>

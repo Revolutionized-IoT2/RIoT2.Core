@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dotnet:
+    uses: Revolutionized-IoT2/.github/.github/workflows/dotnet-validate.yml@main
+    with:
+      build: Contoso.Riot2Plugin.sln
+      test: Tests/Contoso.Riot2Plugin.Tests.csproj
+    secrets: inherit
+
+  plugin:
+    uses: Revolutionized-IoT2/.github/.github/workflows/plugin-release.yml@main
+    with:
+      project: Contoso.Riot2Plugin.csproj
+      package: Contoso.Riot2Plugin
+    secrets: inherit

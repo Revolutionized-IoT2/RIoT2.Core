@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- dotnet new riot2-plugin (plan M12 step 6): a template package, released with the other RIoT2.Core
+       packages. templates/riot2-plugin is the generated repository; its Core version defaults to this
+       package's version (stamped into template.json when packing). -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageType>Template</PackageType>
+    <Title>RIoT2 device plugin template</Title>
+    <Description>dotnet new riot2-plugin: a RIoT2 device plugin repository with an async sample device, its conformance test, the packing target, CI and release workflows and the documentation set.</Description>
+    <PackageTags>riot2;plugin;template;dotnet-new</PackageTags>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <IncludeContentInPack>true</IncludeContentInPack>
+    <ContentTargetFolders>content</ContentTargetFolders>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <!-- .template.config, .github and .editorconfig start with a dot, which NuGet leaves out by default. -->
+    <NoDefaultExcludes>true</NoDefaultExcludes>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="templates\**\*" Exclude="templates\**\bin\**;templates\**\obj\**;templates\**\.template.config\template.json" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <!-- template.json with this package's version as the default CoreVersion. template.json has no semicolons, so it
+       is written as one line item. -->
+  <Target Name="StampTemplateCoreVersion" BeforeTargets="_GetPackageFiles">
+    <PropertyGroup>
+      <_RIoT2TemplateJson>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\templates\riot2-plugin\.template.config\template.json').Replace('__CORE_VERSION__', '$(Version)'))</_RIoT2TemplateJson>
+      <_RIoT2TemplateJsonPath>$(IntermediateOutputPath)template\template.json</_RIoT2TemplateJsonPath>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_RIoT2TemplateJsonPath)" Lines="$(_RIoT2TemplateJson)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <Content Include="$(_RIoT2TemplateJsonPath)" PackagePath="content\templates\riot2-plugin\.template.config\template.json" />
+    </ItemGroup>
+  </Target>
+
+</Project>

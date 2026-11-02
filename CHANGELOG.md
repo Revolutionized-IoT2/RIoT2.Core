@@ -6,6 +6,33 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.23.0] - 2026-11-02
+
+Async-first plugins and the plugin template ([I41](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-3-4.md#i41-async-first-plugins-and-the-plugin-template-m), [M12](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m12-device-plugin-sdk.md) steps 5 and 6).
+Plugins built on 1.23.0 need Node 1.15.0 or newer; older plugin binaries keep working.
+
+- Changed (`RIoT2.Core.Devices`): `AsyncDeviceBase` no longer blocks. Its synchronous
+  `StartDevice`, `StopDevice` and `Refresh` throw `NotSupportedException` instead of waiting for the
+  async members, so a host must call `StartAsync`, `StopAsync` and `RefreshReportAsync`, as the node
+  has since 1.11. It provides a virtual `ExecuteCommand` that throws, which satisfies
+  `ICommandDevice` for `IAsyncCommandDevice` devices: drop a `public void ExecuteCommand` shim
+  (it now hides the base member, CS0114), or `override` it to keep synchronous commands.
+  `RefreshAsync` is virtual (nothing by default) instead of abstract. `DeviceBase` is documented as
+  the legacy base class.
+- Added (`RIoT2.Core.Devices`): `RIoT2.Core.Plugins.DeviceCalls`, the one way a host calls a device
+  (`StartAsync`, `StopAsync`, `ExecuteCommandAsync`, `RefreshAsync`, `IsAsynchronous`); legacy
+  synchronous devices run on the thread pool. The node runtime (`DeviceServiceBase`'s operations,
+  `CommandService`, `DeviceSchedulerService`), `PluginTestHost` and `PluginConformance` use it.
+  `DeviceSchedulerService` with a device service that isn't an `IAsyncDeviceService` now awaits an
+  async device's scheduled refresh (it subscribed the synchronous `RefreshReport`).
+- Added: the package `RIoT2.Core.Devices.Templates` (`src/Devices.Templates/`), `dotnet new
+  riot2-plugin`: a plugin on `PluginBase` with an async sample device with typed options, a test
+  project running `PluginConformance`, `dotnet publish` packing the zip, CI and release workflows,
+  and README, AGENTS and CHANGELOG. `--CoreVersion` (default: the package's version) and
+  `--DisplayName`. Released from the same tag; CI's `plugin-template` job
+  (`tools/verify-plugin-template.ps1`) generates, tests and publishes a plugin from the packed
+  template.
+
 ## [1.22.0] - 2026-11-02
 
 Connectors as their own node type ([I39](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-3-4.md#i39-connectors-in-the-ui-and-a-prometheus-exporter-m), [design 7.3](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/design/connector-sdk.md) phases 3 and 4). Additive; the golden file
