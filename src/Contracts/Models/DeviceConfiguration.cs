@@ -30,6 +30,15 @@ namespace RIoT2.Core.Models
         public string Hash { get; set; }
 
         /// <summary>
+        /// Optional, templates only (Core 1.16.0, plan M12 step 4): the parameters the device reads, with their
+        /// type, whether they are required or secret, a default and a description. The node fills it for
+        /// devices with typed options; the orchestrator doesn't store it. Omitted when <c>null</c>.
+        /// </summary>
+        [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+        public List<DeviceParameterDefinition> ParameterDefinitions { get; set; }
+
+        /// <summary>
         /// Builds a scheduler trigger from the configured refresh schedule.
         /// </summary>
         /// <returns>

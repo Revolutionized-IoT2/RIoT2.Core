@@ -108,16 +108,16 @@ must stay compatible with it.
   `RIoT2.Core.Devices.Build` compiles the same file (internal there, `DEVICES_BUILD_TASK`) to leave
   them out of the zip, so keep that file dependency-free. A change to
   `PluginConformance` changes what every plugin repository's CI accepts: say so in the CHANGELOG.
-- `DeviceBase.ParameterRead` is the internal hook the test kit uses to record parameter reads
-  (`InternalsVisibleTo RIoT2.Core.Devices.Testing`). Don't make it public.
+- `DeviceBase.ParameterRead` (the test kit's read recorder) and `BindOptions` stay internal.
 - The internal rule engine and NCalc are gone. Don't bring them back ([ADR 0003](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0003-elsa-sole-automation-engine.md)).
 - Record every released change in `CHANGELOG.md` under the version being tagged.
 
 ## Pitfalls
 
-- `Json.Serialize` also camel-cases **dictionary keys**, so `deviceParameters` keys arrive
-  camel-cased, while `DeviceBase.GetConfiguration<T>(key)` is case-sensitive. Use camelCase
-  parameter keys (contract divergence C1).
+- `Json.Serialize` camel-cases **dictionary keys**, so `deviceParameters` keys arrive camel-cased;
+  `DeviceOptions.Find` (binding and `GetConfiguration<T>`) matches case-insensitively, exact match
+  first (C1, fixed in 1.16.0). New parameters go into an options class with `[DeviceParameter]`,
+  keeping stored keys; `parameterDefinitions` is template-only and must stay optional.
 - `MqttClient` uses QoS 1, so receivers must tolerate a duplicate; port `RIOT2_MQTT_PORT` (1883),
   no TLS yet (I34, I51). Only `NodeMqttService` retains its last will and presence. Publishing
   before a start throws.
@@ -140,9 +140,8 @@ must stay compatible with it.
   `SaveAppliedConfiguration`, or the status stays `applying`. `NodeMqttService` advertises `desired-state/1` only for a configuration
   service that implements `INodeConfigurationStatusSource`. The device diff key must keep ignoring
   the entry's `hash`, or the first hashed configuration restarts every device.
-- `NodeMqttService` publishes reports through a bounded queue (1,000, oldest dropped) and one
-  publisher, in the order the devices raised them. Device events are synchronous: never handle one
-  with an `async void` method; hand the work to a queue or a tracked task.
+- `NodeMqttService` publishes reports through a bounded queue (1,000, oldest dropped), in order.
+  Device events are synchronous: never handle one with `async void`; queue the work.
 - `ValueModel` keeps JSON-looking strings and large integers as they are. Path updates throw
   `ArgumentException` when the parent is missing.
 - Call `MqttClient.SetLastWill` before `Start`; `StopAsync` publishes the same message.

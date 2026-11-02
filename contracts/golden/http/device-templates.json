@@ -1,0 +1,90 @@
+[
+  {
+    "id": "mail-device",
+    "name": "Mail",
+    "classFullName": "RIoT2.Tests.DeviceOptionsTests+MailDevice",
+    "commandTemplates": [],
+    "reportTemplates": [],
+    "deviceParameters": {
+      "smtp_Server": "<host>",
+      "smtp_Port": "587",
+      "smtp_Password": "",
+      "useSsl": "true",
+      "timeout": "2.5",
+      "greeting": "hello",
+      "mode": "Fast"
+    },
+    "refreshSchedule": null,
+    "matterEndpoints": null,
+    "parameterDefinitions": [
+      {
+        "key": "smtp_Server",
+        "type": 0,
+        "required": true,
+        "secret": false,
+        "description": "Host name of the SMTP server"
+      },
+      {
+        "key": "smtp_Port",
+        "type": 2,
+        "required": false,
+        "secret": false,
+        "default": "587"
+      },
+      {
+        "key": "smtp_Password",
+        "type": 0,
+        "required": true,
+        "secret": true
+      },
+      {
+        "key": "useSsl",
+        "type": 3,
+        "required": false,
+        "secret": false,
+        "default": "true"
+      },
+      {
+        "key": "timeout",
+        "type": 1,
+        "required": false,
+        "secret": false,
+        "default": "2.5"
+      },
+      {
+        "key": "greeting",
+        "type": 0,
+        "required": false,
+        "secret": false,
+        "default": "hello"
+      },
+      {
+        "key": "mode",
+        "type": 0,
+        "required": false,
+        "secret": false,
+        "default": "Fast"
+      }
+    ]
+  },
+  {
+    "id": "pin-device",
+    "name": "AsyncPinDevice",
+    "classFullName": "RIoT2.Tests.DeviceOptionsTests+AsyncPinDevice",
+    "commandTemplates": null,
+    "reportTemplates": [],
+    "deviceParameters": {
+      "pin": ""
+    },
+    "refreshSchedule": "0 * * ? * * *",
+    "matterEndpoints": null,
+    "parameterDefinitions": [
+      {
+        "key": "pin",
+        "type": 2,
+        "required": false,
+        "secret": true
+      }
+    ]
+  }
+]

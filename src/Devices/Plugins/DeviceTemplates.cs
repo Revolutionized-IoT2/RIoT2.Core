@@ -16,9 +16,30 @@ namespace RIoT2.Core.Plugins
 
         /// <summary>
         /// The device's own template when it implements <see cref="IDeviceWithConfiguration"/>, with its Matter
-        /// endpoints; otherwise a default template without parameters.
+        /// endpoints; otherwise a default template without parameters. For a device with typed options
+        /// (<see cref="IDeviceWithOptions"/>) the template also gets <c>ParameterDefinitions</c>, and every
+        /// parameter key it lacks, with the default value or an empty one.
         /// </summary>
         public static DeviceConfiguration Create(IDevice device)
+        {
+            var template = CreateTemplate(device);
+            if (device is IDeviceWithOptions withOptions)
+                AddParameterDefinitions(template, DeviceOptions.Describe(withOptions.OptionsType));
+            return template;
+        }
+
+        private static void AddParameterDefinitions(DeviceConfiguration template, IReadOnlyList<DeviceParameterDefinition> definitions)
+        {
+            template.ParameterDefinitions = definitions.ToList();
+            template.DeviceParameters = template.DeviceParameters ?? new Dictionary<string, string>();
+            foreach (var definition in definitions)
+            {
+                if (DeviceOptions.Find(template.DeviceParameters, definition.Key) == null)
+                    template.DeviceParameters[definition.Key] = definition.Default ?? "";
+            }
+        }
+
+        private static DeviceConfiguration CreateTemplate(IDevice device)
         {
             if (device == null)
                 throw new ArgumentNullException(nameof(device));

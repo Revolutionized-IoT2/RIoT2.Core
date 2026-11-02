@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using RIoT2.Core.Interfaces;
 using RIoT2.Core.Models;
+using RIoT2.Core.Plugins;
 using RIoT2.Core.Utils;
 using System;
 using System.Collections.Generic;
@@ -103,6 +104,7 @@ namespace RIoT2.Core.Abstracts
             {
                 State = DeviceState.Initialized;
                 StateMessage = "";
+                BindOptions();
                 ConfigureDevice();
             }
             catch (Exception x)
@@ -116,16 +118,24 @@ namespace RIoT2.Core.Abstracts
         // Lets RIoT2.Core.Devices.Testing record which parameter keys a device reads (PluginConformance).
         internal Action<string> ParameterRead { get; set; }
 
+        // DeviceBase<TOptions> binds its options here, before ConfigureDevice.
+        internal virtual void BindOptions() { }
+
+        /// <summary>
+        /// Reads a device parameter. The key matches case-insensitively when no key matches exactly (since Core
+        /// 1.16.0), because the configuration download camel-cases parameter keys (divergence C1).
+        /// </summary>
         public T GetConfiguration<T>(string parameter)
         {
             ParameterRead?.Invoke(parameter);
-            if (_configuration.DeviceParameters == null || !_configuration.DeviceParameters.ContainsKey(parameter))
+            var value = DeviceOptions.Find(_configuration.DeviceParameters, parameter);
+            if (value == null)
                 return default(T);
 
             try
             {
                 var converter = TypeDescriptor.GetConverter(typeof(T));
-                return (T)(converter.ConvertFromInvariantString(_configuration.DeviceParameters[parameter]));
+                return (T)(converter.ConvertFromInvariantString(value));
             }
             catch (Exception x)
             {

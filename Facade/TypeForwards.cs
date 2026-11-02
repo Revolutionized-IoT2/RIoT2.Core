@@ -12,6 +12,7 @@
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.DashboardComponentSize))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.DashboardComponentType))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.DeviceState))]
+[assembly: TypeForwardedTo(typeof(RIoT2.Core.DeviceParameterType))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Diagnostics.MeterNames))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.DocumentType))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Extensions))]
@@ -37,6 +38,7 @@
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Models.DashboardPage))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Models.DeviceCode))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Models.DeviceConfiguration))]
+[assembly: TypeForwardedTo(typeof(RIoT2.Core.Models.DeviceParameterDefinition))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Models.DeviceReconfigurationResult))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Models.DeviceStatus))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Models.Document))]
@@ -114,6 +116,8 @@
 
 // RIoT2.Core.Devices
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Abstracts.AsyncDeviceBase))]
+[assembly: TypeForwardedTo(typeof(RIoT2.Core.Abstracts.AsyncDeviceBase<>))]
+[assembly: TypeForwardedTo(typeof(RIoT2.Core.Abstracts.DeviceBase<>))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Abstracts.DeviceBase))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Abstracts.PluginBase))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.DeviceConfigurationUpdatedHandler))]
@@ -125,6 +129,7 @@
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Interfaces.IDevice))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Interfaces.IDevicePlugin))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Interfaces.IDeviceWithConfiguration))]
+[assembly: TypeForwardedTo(typeof(RIoT2.Core.Interfaces.IDeviceWithOptions))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Interfaces.IMatterDevice))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Interfaces.IRefreshableReportDevice))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Interfaces.Services.IAsyncCommandService))]
@@ -134,6 +139,9 @@
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Plugins.DeviceTemplates))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Plugins.PluginHostContract))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.Plugins.RequiresHardwareAttribute))]
+[assembly: TypeForwardedTo(typeof(RIoT2.Core.Plugins.DeviceParameterAttribute))]
+[assembly: TypeForwardedTo(typeof(RIoT2.Core.Plugins.DeviceOptions))]
+[assembly: TypeForwardedTo(typeof(RIoT2.Core.Plugins.DeviceOptionsException))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.ReportUpdatedHandler))]
 [assembly: TypeForwardedTo(typeof(RIoT2.Core.UnknownCommandException))]
 

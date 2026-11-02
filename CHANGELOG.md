@@ -6,6 +6,25 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-11-02
+
+Typed device options ([I30](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i30-typed-device-options-m), plan M12 step 4). Additive: no golden file
+or hash changes. A plugin built on it needs Node 1.11.0, which ships it.
+
+- Added: `DeviceBase<TOptions>` and `AsyncDeviceBase<TOptions>` (`IDeviceWithOptions`). Before
+  `ConfigureDevice` they bind `deviceParameters` to `Options`, an instance of the options class
+  whose properties carry `[DeviceParameter(key, Required, Secret, Default, Description)]`. An empty
+  value takes `Default` or keeps the property's initial value; a missing required or invalid value
+  throws `DeviceOptionsException`, so the device is in `Error` with every problem in its state
+  message (secret values are never echoed). `DeviceOptions.Describe` and `Bind` do the same for tests.
+- Added (contract, optional): `DeviceConfiguration.ParameterDefinitions`, a list of
+  `DeviceParameterDefinition` (`key`, `type`, `required`, `secret`, `default`, `description`) with
+  `DeviceParameterType` (`Text`, `Number`, `Integer`, `Boolean`), omitted while `null`.
+  `DeviceTemplates.Create` fills it for devices with options and adds every missing key with its
+  default. New golden file `http/device-templates.json`; the schema has both types.
+- Fixed: divergence C1. `GetConfiguration<T>` and binding match parameter keys case-insensitively
+  when no key matches exactly, so a key the configuration download camel-cased is still found.
+
 ## [1.15.0] - 2026-11-02
 
 Plugin packaging ([I29](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i29-plugin-packaging-s), plan M12 step 3). No API, wire, storage or hash change.

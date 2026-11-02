@@ -12,7 +12,7 @@ component.
   | `RIoT2.Core.Contracts` | Wire models, topics, enums, `Json` | System.Text.Json, Newtonsoft.Json (until Core 2.0) |
   | `RIoT2.Core.Mqtt` | `MqttClient`, `LogScope`, the service settings (`SettingsReader`, `MqttOptions`, …) | Contracts, MQTTnet |
   | `RIoT2.Core.Http` | `Web` | Contracts |
-  | `RIoT2.Core.Devices` | The plugin SDK: `PluginBase`, `AsyncDeviceBase`, `DeviceBase`, device interfaces | Contracts, DI and logging abstractions |
+  | `RIoT2.Core.Devices` | The plugin SDK: `PluginBase`, `AsyncDeviceBase`, `DeviceBase`, typed options, device interfaces | Contracts, DI and logging abstractions |
   | `RIoT2.Core.Node` | The node runtime: `NodeMqttService`, `DeviceServiceBase`, the scheduler | all of the above, Quartz |
   | `RIoT2.Core` | Facade: references all five and forwards their types, so code built against an older `RIoT2.Core` keeps working; removed in Core 2.0 | all five |
   | `RIoT2.Core.Devices.Testing` | The plugin test kit (.NET 10) | Node |
@@ -36,7 +36,7 @@ How Core fits into the platform: [architecture overview](https://github.com/Revo
 | `src/Contracts/` | `Constants.cs` (topic templates, API URLs, topic helpers), `Contract.cs` (`Contract.Version`, capability names), `Enums.cs`, `Models/` (messages such as `Report`, `Command`, `NodeOnlineMessage`, `CommandResult`, `NodeStatusMessage`; `ValueModel`; configuration, template and Matter models), the message and template interfaces, `Utils/` (`Json`, `RIoT2JsonOptions`, `ConfigurationHash`), `Schema/ContractSchemas.cs` (the JSON Schema export), `Diagnostics/MeterNames.cs` |
 | `src/Mqtt/` | `MqttClient`, `LogScope` (the `CorrelationId` and `MessageId` log scopes), and `Configuration/`: how every service reads and validates its `RIOT2_*` settings |
 | `src/Http/` | `Web` helpers |
-| `src/Devices/` | `PluginBase`, `DeviceBase`, `AsyncDeviceBase`, the device and plugin interfaces, `Plugins/` (`PluginHostContract`, `DeviceTemplates`, `[RequiresHardware]`) |
+| `src/Devices/` | `PluginBase`, `DeviceBase(<TOptions>)`, `AsyncDeviceBase(<TOptions>)`, the device and plugin interfaces, `Plugins/` (`PluginHostContract`, `DeviceTemplates`, `DeviceOptions`, `[DeviceParameter]`, `[RequiresHardware]`) |
 | `src/Node/` | `NodeMqttService`, `DeviceServiceBase`, `NodeConfigurationServiceBase`, `DeviceSchedulerService`, `CommandService`, `ReportService`, `NodeConfigurationStatus`, `NodeMetrics` (`riot2.node.*`) |
 | `RIoT2.Core.csproj`, `Facade/` | The `RIoT2.Core` facade: type forwards and the `[Obsolete]` orchestrator-only types |
 | `src/Devices.Build/` | `RIoT2.Core.Devices.Build`: the `RIoT2PluginPack` target and its task (`PluginPackager`); compiles `PluginHostContract.cs` from `src/Devices/` |
@@ -79,9 +79,9 @@ golden file against it.
 ### Logging in a service
 
 A service calls `builder.AddRIoT2Logging("<service>")` from `RIoT2.Core.Hosting` first in
-`Program.cs`, uses the returned factory for the logger it needs before the host is built (for
-example to report invalid settings), and reads `LoggingOptions.Read(settings)` in its options type,
-so an invalid `RIOT2_LOG_FORMAT` or `RIOT2_LOG_LEVEL` is reported with its other settings. Use
+`Program.cs` (the returned factory logs before the host is built) and reads
+`LoggingOptions.Read(settings)` in its options type, so invalid log settings are reported with
+the others. Use
 `logger.BeginIdScope(LogScope.CorrelationId, id)` (or `MessageId`) around work for one message:
 every line logged inside it, by any logger, ends with the id.
 
@@ -105,16 +105,18 @@ traces. Instruments cost nothing while no one listens. Every `riot2.*` instrumen
 - A device that reads parameters implements `IDeviceWithConfiguration` and declares every key it
   reads in its template, so the UI shows them. `DeviceTemplates.Create(device)` builds what the
   node returns, with a default template for devices that don't implement it.
-- Mark a device that needs hardware or a remote service with `[RequiresHardware("reason")]`.
+- Mark a device needing hardware or a remote service with `[RequiresHardware("reason")]`.
 - `DeviceServiceBase` runs one serialized operation queue per device. When a device's
   configuration is replaced, its old work is cancelled and awaited before it starts again.
 - `ReconfigureChangedDevicesAsync` (Core 1.1.0) restarts only the devices whose configuration
-  entry changed, plus configured devices that are not running; an identical configuration starts
-  and stops nothing. `ReconfigureDevicesAsync` still restarts every device.
-- Existing synchronous devices (`DeviceBase`) still work. Their calls can't be interrupted,
-  though, so long-running devices should move to `AsyncDeviceBase`.
-- Read device settings with `GetConfiguration<T>("key")`. Keys are case-sensitive, and the
-  configuration download camel-cases them, so use camelCase keys.
+  entry changed, plus configured devices that are not running.
+- Synchronous devices (`DeviceBase`) work, but their calls can't be interrupted.
+- Declare parameters in an options class and derive from `DeviceBase<TOptions>` or
+  `AsyncDeviceBase<TOptions>` (1.16.0): mark each property `[DeviceParameter("key", Required,
+  Secret, Default, Description)]` and read `Options` in `ConfigureDevice`. The base class binds
+  and validates them first (a problem puts the device into `Error`), and the node adds
+  `parameterDefinitions` and the keys to the template: the UI shows typed fields and masks
+  secrets. Keys match case-insensitively, also in `GetConfiguration<T>("key")`.
 
 ### Testing a plugin
 
@@ -127,8 +129,7 @@ public void PluginConforms() => PluginConformance.Verify(typeof(Plugin));
 ```
 
 It loads the plugin as the node does and checks that every device resolves, returns a template
-for its own class with a valid Quartz schedule, and reads only the parameters its template
-declares when initialized with that template. Devices without `[RequiresHardware]` must also
+for its own class with a valid Quartz schedule, and reads only parameters its template declares. Devices without `[RequiresHardware]` must also
 start and stop. Pass a second argument to replace services, for example hardware transports, with
 fakes. `PluginTestHost` hosts a plugin for device tests: it captures reports and sends commands
 and refreshes the way the node does; `DeviceConfigurationBuilder` builds configurations.
@@ -173,9 +174,8 @@ that mint template ids per call would otherwise reference ids that are never per
 `Scale` (for example `Percent0To100ToLevel0To254` for `CurrentLevel`) is declared in the
 RIoT-to-Matter direction; the bridge applies the inverse on the command path.
 
-The templates travel to the orchestrator on `DeviceConfiguration.MatterEndpoints`, through the
-existing configuration-template path, and the orchestrator's Matter bridge turns them into bridged
-endpoints. `RIoT2.Core` itself contains no Matter protocol code.
+The templates reach the orchestrator's Matter bridge on `DeviceConfiguration.MatterEndpoints`.
+`RIoT2.Core` itself contains no Matter protocol code.
 
 ## Dependencies
 

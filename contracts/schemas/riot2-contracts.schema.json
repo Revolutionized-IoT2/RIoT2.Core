@@ -421,6 +421,15 @@
             "string",
             "null"
           ]
+        },
+        "parameterDefinitions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/DeviceParameterDefinition"
+          }
         }
       },
       "required": [
@@ -432,6 +441,61 @@
         "deviceParameters",
         "refreshSchedule",
         "matterEndpoints"
+      ]
+    },
+    "DeviceParameterDefinition": {
+      "title": "DeviceParameterDefinition",
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type": {
+          "$ref": "#/$defs/DeviceParameterType"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "secret": {
+          "type": "boolean"
+        },
+        "default": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "key",
+        "type",
+        "required",
+        "secret"
+      ]
+    },
+    "DeviceParameterType": {
+      "title": "DeviceParameterType",
+      "type": "integer",
+      "enum": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "x-enumNames": [
+        "Text",
+        "Number",
+        "Integer",
+        "Boolean"
       ]
     },
     "DeviceState": {

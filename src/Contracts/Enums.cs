@@ -88,4 +88,13 @@
         Dashboard = 2,
         Workflow = 3
     }
+
+    /// <summary>How the UI edits a device parameter (<see cref="Models.DeviceParameterDefinition.Type"/>, Core 1.16.0).</summary>
+    public enum DeviceParameterType
+    {
+        Text = 0,
+        Number = 1,
+        Integer = 2,
+        Boolean = 3
+    }
 }
