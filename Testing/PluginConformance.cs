@@ -196,7 +196,9 @@ public static class PluginConformance
     {
         try
         {
+#pragma warning disable VSTHRD002 // Verify is synchronous for test frameworks; the wait is bounded by StartStopTimeout.
             operation.WaitAsync(StartStopTimeout).GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
             return true;
         }
         catch (TimeoutException)
@@ -224,7 +226,9 @@ public static class PluginConformance
         try
         {
             if (device is IAsyncDisposable asyncDisposable)
+#pragma warning disable VSTHRD002 // Verify is synchronous for test frameworks.
                 asyncDisposable.DisposeAsync().AsTask().GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
             else if (device is IDisposable disposable)
                 disposable.Dispose();
         }

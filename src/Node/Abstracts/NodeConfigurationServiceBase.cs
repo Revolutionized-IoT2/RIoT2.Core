@@ -200,7 +200,9 @@ namespace RIoT2.Core.Abstracts
         [Obsolete("Blocks the calling thread; use DownloadPluginPackageAsync.")]
         public virtual void DownloadPluginPackage(string url)
         {
+#pragma warning disable VSTHRD002 // The [Obsolete] synchronous member, kept for older hosts (plan M11 group A).
             DownloadPluginPackageAsync(url).GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
         }
 
         /// <inheritdoc/>

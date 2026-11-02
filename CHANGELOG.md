@@ -6,6 +6,19 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [1.16.1] - 2026-11-02
+
+- Fixed: `AsyncDeviceBase` treated every `OperationCanceledException` as a cancellation. An
+  HttpClient timeout during a start left the device `Stopped` without a reason, and one during a
+  refresh didn't mark it `Error`. Only the caller's cancellation stops a device now; any other is a
+  failure ([I31](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i31-async-cleanup-part-2-and-threading-analyzers-m)). Ships with Node 1.11.1.
+- Build: the threading analyzers ([I31](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i31-async-cleanup-part-2-and-threading-analyzers-m)) run in every project from the shared
+  `Directory.Build.props` and `.editorconfig`: a blocking wait, `async void` or an unobserved task
+  fails the CI build. No change to the shipped binaries. The synchronous shims of the synchronous contracts
+  (`AsyncDeviceBase`, `DeviceServiceBase`, `CommandService`, `DownloadPluginPackage`), `MqttClient.Dispose`
+  and the test kit's synchronous `Verify` and `Dispose` keep their waits, each with a justified
+  suppression (plan M11 group A). No API change.
+
 ## [1.16.0] - 2026-11-02
 
 Typed device options ([I30](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-2.md#i30-typed-device-options-m), plan M12 step 4). Additive: no golden file

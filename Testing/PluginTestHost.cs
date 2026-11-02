@@ -137,7 +137,9 @@ public sealed class PluginTestHost : IDisposable, IAsyncDisposable
                 device.ReportUpdated -= OnReportUpdated;
         }
         // Plugin services may implement only IAsyncDisposable, which the sync Dispose rejects.
+#pragma warning disable VSTHRD002 // IDisposable is synchronous; DisposeAsync is the async path.
         _provider.DisposeAsync().AsTask().GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
     }
 
     public async ValueTask DisposeAsync()

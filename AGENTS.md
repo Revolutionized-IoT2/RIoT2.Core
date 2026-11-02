@@ -101,8 +101,8 @@ must stay compatible with it.
   `stored-saved/` golden files.
 - `NodeConfigurationServiceBase` must keep extracting plugin zips only inside `Plugins/`
   (zip-slip guard) and sanitizing package file names.
-- New device code derives from `AsyncDeviceBase` and overrides the async methods. Don't add
-  `async void` lifecycle methods or blocking waits.
+- New device code derives from `AsyncDeviceBase`. No `async void` or blocking waits (the threading
+  analyzers fail CI); a deliberate wait needs a `#pragma` with its reason.
 - Plugins derive from `PluginBase`. Keep `PluginHostContract.SharedAssemblyPrefixes` the only list
   of assemblies the node shares with plugins; the node's `PluginLoadContext` reads it, and
   `RIoT2.Core.Devices.Build` compiles the same file (internal there, `DEVICES_BUILD_TASK`) to leave
@@ -144,7 +144,7 @@ must stay compatible with it.
   Device events are synchronous: never handle one with `async void`; queue the work.
 - `ValueModel` keeps JSON-looking strings and large integers as they are. Path updates throw
   `ArgumentException` when the parent is missing.
-- Call `MqttClient.SetLastWill` before `Start`; `StopAsync` publishes the same message.
+- Call `MqttClient.SetLastWill` before `Start`; `StopAsync` publishes it.
 - `DeviceServiceBase.ReconfigureChangedDevicesAsync` compares each device's entry, serialized with
   `Json.Serialize`, with the one it was last initialized with. Keep that serialization
   deterministic: a field that changes on every download would restart the device every time.

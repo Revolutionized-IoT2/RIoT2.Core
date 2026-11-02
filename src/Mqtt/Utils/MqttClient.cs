@@ -387,7 +387,9 @@ namespace RIoT2.Core.Utils
                 if (client.IsStarted)
                 {
                     using (var timeout = new CancellationTokenSource(StopTimeout))
+#pragma warning disable VSTHRD002 // Dispose is synchronous; the wait is bounded and runs on the thread pool (plan M10).
                         Task.Run(() => StopAsync(timeout.Token)).Wait(StopTimeout + StopTimeout);
+#pragma warning restore VSTHRD002
                 }
             }
             catch (AggregateException x) when (x.InnerException is OperationCanceledException) { }

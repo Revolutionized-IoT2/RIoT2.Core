@@ -57,10 +57,12 @@ namespace RIoT2.Core.Abstracts
                 return _runtimes.TryGetValue(device, out var runtime) && runtime.IsActive;
         }
 
+#pragma warning disable VSTHRD002 // Plan M11 group A: the synchronous service API for older hosts; the node calls the async members.
         public virtual void StartAllDevices(bool restartDevicesInErrorState = false) =>
             StartAllDevicesAsync(restartDevicesInErrorState, CancellationToken.None).GetAwaiter().GetResult();
 
         public virtual void StopAllDevices() => StopAllDevicesAsync(CancellationToken.None).GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
 
         public void ConfigureDevices()
         {
@@ -74,8 +76,10 @@ namespace RIoT2.Core.Abstracts
                     if (configuration == null)
                         continue;
                     var key = Json.Serialize(configuration);
+#pragma warning disable VSTHRD002 // Plan M11 group A: ConfigureDevices is part of the synchronous service API.
                     if (InitializeAsync(device, configuration, CancellationToken.None).GetAwaiter().GetResult())
                         SetApplied(device, key);
+#pragma warning restore VSTHRD002
                 }
             }
             finally { _lifecycle.Release(); }
@@ -343,7 +347,9 @@ namespace RIoT2.Core.Abstracts
             return Runtime(device).RefreshAsync(group, name, cancellationToken);
         }
 
+#pragma warning disable VSTHRD002 // IDisposable is synchronous; the host disposes asynchronously.
         public void Dispose() => DisposeAsync().AsTask().GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
 
         public async ValueTask DisposeAsync()
         {

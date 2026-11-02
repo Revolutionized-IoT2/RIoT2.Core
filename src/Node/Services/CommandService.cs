@@ -24,8 +24,10 @@ namespace RIoT2.Core.Services
         }
 
         /// <inheritdoc/>
+#pragma warning disable VSTHRD002 // Plan M11 group A: the synchronous service API for older hosts; the node calls the async member.
         public void ExecuteJsonCommand(string json)
             => ExecuteJsonCommandAsync(json, CancellationToken.None).GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
 
         public async Task ExecuteJsonCommandAsync(string json, CancellationToken cancellationToken)
         {
