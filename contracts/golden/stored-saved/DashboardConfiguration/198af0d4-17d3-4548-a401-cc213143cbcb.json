@@ -3,7 +3,8 @@
     {
       "name": "page",
       "icon": "add",
-      "components": []
+      "components": [],
+      "id": "golden-generated-1"
     }
   ],
   "name": "",

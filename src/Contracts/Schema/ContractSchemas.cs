@@ -97,6 +97,8 @@ namespace RIoT2.Core.Schema
             };
             foreach (var definition in definitions)
                 defs[definition.Key] = definition.Value.Schema;
+            if (HasPointer(defs))
+                throw new InvalidOperationException("The exported schema has a JSON pointer that is not a $defs reference.");
 
             return new JsonObject
             {
@@ -157,12 +159,38 @@ namespace RIoT2.Core.Schema
                 if (existing.Type != type)
                     throw new InvalidOperationException($"Two contract types are named {type.Name}: {existing.Type.FullName} and {type.FullName}.");
             }
-            else
+            // Where a recursive type (ValueSchema) repeats, the exporter writes JSON pointers into its own output
+            // instead of the schema; only the outermost occurrence has none, so it becomes the definition.
+            else if (!HasPointer(definition))
                 definitions[type.Name] = (type, definition);
 
             var reference = Ref(type.Name);
-            return nullable ? new JsonObject { ["anyOf"] = new JsonArray(reference, new JsonObject { ["type"] = "null" }) } : reference;
+            return nullable ? NullableRef(type.Name) : reference;
         }
+
+        private static bool HasPointer(JsonNode? node)
+        {
+            switch (node)
+            {
+                case JsonObject schema:
+                    foreach (var member in schema)
+                    {
+                        if (member.Key == "$ref" && member.Value is JsonValue value && value.TryGetValue(out string? target)
+                            && !target.StartsWith("#/$defs/", StringComparison.Ordinal))
+                            return true;
+                        if (HasPointer(member.Value))
+                            return true;
+                    }
+                    return false;
+                case JsonArray items:
+                    return items.Any(HasPointer);
+                default:
+                    return false;
+            }
+        }
+
+        private static JsonObject NullableRef(string definition) =>
+            new JsonObject { ["anyOf"] = new JsonArray(Ref(definition), new JsonObject { ["type"] = "null" }) };
 
         private static bool IsAnyValue(Type type) =>
             type == typeof(object) || type == typeof(ValueModel)

@@ -23,6 +23,14 @@ namespace RIoT2.Core.Models
         public object? Model { get; set; }
 
         /// <summary>
+        /// Optional description of the reported value (Core 2.2.0): its JSON type, unit, meaning and range, declared
+        /// by the device plugin (or the user), so the UI can build forms and pick dashboard cards. When <c>null</c>,
+        /// the UI infers it from <see cref="Model"/>. Omitted when <c>null</c>.
+        /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+        public ValueSchema? Schema { get; set; }
+
+        /// <summary>
         /// Provides default report generated from the template
         /// </summary>
         /// <returns>Default report</returns>

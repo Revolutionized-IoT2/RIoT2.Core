@@ -12,7 +12,8 @@ is the JSON Schema (draft 2020-12) of the contract types in `RIoT2.Core.Contract
   (`Report`, `Command`, `CommandResult`, `ConfigurationCommand`, `NodeOnlineMessage`,
   `NodeStatusMessage`), the node configuration (`NodeDeviceConfiguration` and what it contains,
   including the Matter declarations), the template listings (`NodeReportTemplate`,
-  `NodeCommandTemplate`), `Variable` as stored, `DashboardConfiguration`, `DeviceStatus` and the
+  `NodeCommandTemplate`, with their `ValueSchema`, recursive, so one definition), `Variable` as stored,
+  `DashboardConfiguration`, `DeviceStatus` and the
   enums.
 - What `RIoT2JsonOptions.Default` writes: camelCase names, enums as numbers (with their names in
   `x-enumNames`). `ValueModel` and `object` members are `JsonValue`, any JSON value.

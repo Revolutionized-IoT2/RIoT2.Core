@@ -35,7 +35,7 @@ How Core fits into the platform: [architecture overview](https://github.com/Revo
 
 | Path | Contents |
 | --- | --- |
-| `src/Contracts/` | `Constants.cs` (topics, API URLs), `Contract.cs` (`Contract.Version`, capability names), `Enums.cs`, `Models/` (the messages, `ValueModel`, configuration, template and Matter models), the message and template interfaces, `Utils/` (`Json`, `RIoT2JsonOptions`, `RIoT2JsonContext`, `ConfigurationHash`), `Schema/ContractSchemas.cs` (the JSON Schema export), `Diagnostics/MeterNames.cs` |
+| `src/Contracts/` | `Constants.cs` (topics, API URLs), `Contract.cs` (`Contract.Version`, capability names), `Enums.cs`, `Models/` (the messages, `ValueModel`, configuration, template (with `ValueSchema`), dashboard and Matter models), the message and template interfaces, `Utils/` (`Json`, `RIoT2JsonOptions`, `RIoT2JsonContext`, `ConfigurationHash`), `Schema/ContractSchemas.cs` (the JSON Schema export), `Diagnostics/MeterNames.cs` |
 | `src/Mqtt/` | `MqttClient`, `LogScope` (the `CorrelationId` and `MessageId` log scopes), and `Configuration/`: how every service reads and validates its `RIOT2_*` settings |
 | `src/Http/` | `Web` helpers; `Security/`: `ApiKeyHandler` (`X-RIoT2-Key`), `IOutboundUrlPolicy` |
 | `src/Devices/` | `PluginBase`, `AsyncDeviceBase(<TOptions>)`, `DeviceBase(<TOptions>)` (the deprecated synchronous lifecycle), the device and plugin interfaces, `Plugins/` (`PluginHostContract`, `DeviceCalls`, `DeviceTemplates`, `DeviceOptions`, `[DeviceParameter]`, `[RequiresHardware]`) |
@@ -53,6 +53,7 @@ The topics and payloads that these types implement are specified in the platform
 
 - [MQTT topics and payloads](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/mqtt-topics.md)
 - [Node configuration, templates and plugins](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/configuration.md)
+- [Dashboard and value schemas](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/dashboard.md)
 
 The [golden files](contracts/golden/README.md) are examples of each format. RIoT2.Tests, Elsa,
 the UI and the firmware tests read them, so a format change fails their CI. The
@@ -73,6 +74,8 @@ golden file against it.
   `Constants.GetTopicId`.
 - Contract additions are optional properties, omitted while unset, so older readers don't see
   them. Check `NodeOnlineMessage.HasCapability` before you rely on `CommandResult` or `NodeStatusMessage`.
+- Dashboards (2.2.0): pages and cards have an optional `id`; a card has an optional `kind` (the UI card
+  kind, an open set; readers fall back to `type`) and `settings` (defined by the kind).
 - Desired state (1.8.0): `ConfigurationHash.Stamp` computes the hashes, `NodeConfigurationStatus`
   holds the node's status, and `NodeConfigurationServiceBase` skips a configuration it already
   runs and saves and loads the applied one.
@@ -116,6 +119,10 @@ A service reads `SecurityOptions.Read(settings)`, calls `services.AddRIoT2Securi
 - Hosts call a device through `DeviceCalls`, which runs legacy synchronous devices on the thread pool.
 - A device that reads parameters implements `IDeviceWithConfiguration` and declares every key it
   reads in its template; `DeviceTemplates.Create(device)` builds what the node returns.
+- Describe each report and command value with `Schema` (2.2.0): `ValueSchema.Number("°C", ValueSemantics.Temperature)`,
+  `Boolean`, `Integer`, `Text`, `Entity` and `ArrayOf` build the common shapes, or set the members (`unit`, `semantic`,
+  `minimum`, `maximum`, `enum`, …) directly. The UI picks dashboard cards and builds inputs from it, and guesses from
+  `Model` without one.
 - Mark a device needing hardware or a remote service with `[RequiresHardware("reason")]`.
 - `DeviceServiceBase` runs one serialized operation queue per device; a replaced configuration
   cancels and awaits the old work. Only devices whose configuration changed restart.

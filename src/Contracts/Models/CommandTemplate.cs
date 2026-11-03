@@ -11,6 +11,14 @@ namespace RIoT2.Core.Models
         public ValueType Type { get; set; }
 
         /// <summary>
+        /// Optional description of the command's value (Core 2.2.0): its JSON type, unit, meaning and range, declared
+        /// by the device plugin (or the user), so the UI can build forms and pick dashboard cards. When <c>null</c>,
+        /// the UI infers it from <see cref="Model"/>. Omitted when <c>null</c>.
+        /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+        public ValueSchema? Schema { get; set; }
+
+        /// <summary>
         /// Returns the default command genereated from this template.
         /// </summary>
         /// <returns>Default command template</returns>

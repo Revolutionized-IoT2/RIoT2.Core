@@ -30,6 +30,7 @@ namespace RIoT2.Core.Utils
     [JsonSerializable(typeof(CommandTemplate))]
     [JsonSerializable(typeof(Variable))]
     [JsonSerializable(typeof(List<Variable>))]
+    [JsonSerializable(typeof(ValueSchema))]
     [JsonSerializable(typeof(DashboardConfiguration))]
     [JsonSerializable(typeof(DeviceStatus))]
     [JsonSerializable(typeof(List<DeviceStatus>))]

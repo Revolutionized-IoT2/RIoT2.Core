@@ -105,6 +105,16 @@
         },
         "type": {
           "$ref": "#/$defs/ValueType"
+        },
+        "schema": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ValueSchema"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -176,6 +186,27 @@
           ],
           "items": {
             "$ref": "#/$defs/DashboardElement"
+          }
+        },
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kind": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "settings": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
           }
         }
       },
@@ -349,6 +380,12 @@
           "items": {
             "$ref": "#/$defs/DashboardComponent"
           }
+        },
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     },
@@ -848,6 +885,16 @@
         },
         "type": {
           "$ref": "#/$defs/ValueType"
+        },
+        "schema": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ValueSchema"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -1054,6 +1101,16 @@
         },
         "model": {
           "$ref": "#/$defs/JsonValue"
+        },
+        "schema": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ValueSchema"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -1273,6 +1330,16 @@
         },
         "model": {
           "$ref": "#/$defs/JsonValue"
+        },
+        "schema": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ValueSchema"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -1315,6 +1382,91 @@
         "loginRequired",
         "realtime"
       ]
+    },
+    "ValueSchema": {
+      "title": "ValueSchema",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "semantic": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "minimum": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "maximum": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "multipleOf": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "enum": {
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "properties": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "$ref": "#/$defs/ValueSchema"
+          }
+        },
+        "items": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ValueSchema"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "readOnly": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
     },
     "ValueType": {
       "title": "ValueType",

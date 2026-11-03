@@ -58,6 +58,7 @@ Core is the code side of these hub documents. Change both together:
 
 - [mqtt-topics.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/mqtt-topics.md): `src/Contracts/Constants.cs`, `src/Contracts/Contract.cs`, `src/Contracts/Models/Report.cs`, `Command.cs`, `CommandResult.cs`, `ConfigurationCommand.cs`, `NodeOnlineMessage.cs`, `NodeStatusMessage.cs`, `src/Mqtt/Utils/MqttClient.cs`, `src/Node/Services/NodeMqttService.cs`
 - [configuration.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/configuration.md): `src/Contracts/Models/NodeDeviceConfiguration.cs`, `DeviceConfiguration.cs`, templates, `src/Node/Abstracts/NodeConfigurationServiceBase.cs`
+- [dashboard.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/dashboard.md): `ValueSchema.cs` and the dashboard models (`DashboardConfiguration.cs` and its parts), 2.2.0
 - [http-api.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/http-api.md): the shared URLs in `src/Contracts/Constants.cs`
 
 The firmware has its own copy of the topics and models in `RIoT2.Ard.Shared`. Contract changes

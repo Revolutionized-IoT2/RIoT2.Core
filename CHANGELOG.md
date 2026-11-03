@@ -6,6 +6,27 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-11-03
+
+Dashboard card kit and device capability discovery: the contract for the UI's new dashboard cards and for
+templates that describe their values. Additive: objects that don't set the new members serialize as before, and
+the message and response golden files are unchanged. The stored dashboard sample in `stored-saved/` gains a page
+`id`, because Orchestrator 1.21.0 gives pages, cards and elements without one an id when it saves the dashboard.
+
+- Added (`Contracts`): `DashboardPage.Id`, and `DashboardComponent.Id`, `Kind` and `Settings`. `kind` names the UI
+  card kind, an open set (`button`, `gauge`, `sensor`, `light`, `entities`, `markdown`, `motion`, …), so a new card
+  needs no Core change; readers that don't know it use `type`, which the UI still writes. `settings` holds the card's
+  own settings (an `ExpandoObject`, like `DashboardElement.Properties`). All omitted when `null`.
+- Added (`Contracts`): `ValueSchema`, a JSON-Schema-compatible description of a value (`type`, `title`,
+  `description`, `unit`, `semantic`, `minimum`, `maximum`, `multipleOf`, `enum`, `properties`, `items`, `readOnly`),
+  with factories (`Boolean`, `Number`, `Integer`, `Text`, `Entity`, `ArrayOf`) and the well-known meanings in
+  `ValueSemantics`. `ReportTemplate.Schema` and `CommandTemplate.Schema` (so also the node template listings) carry
+  it; the UI builds forms and picks cards from it and infers from `model` without one. Omitted when `null`.
+- Changed (`Contracts`): `ContractSchemas` exports recursive types (`ValueSchema`) as one definition, and fails on a
+  JSON pointer that isn't a `$defs` reference.
+- Added (`RIoT2.Connector.Sdk`): `ConnectorTemplate.Schema`, read from the orchestrator's template routes.
+- Changed (`Devices.Templates`): the sample device declares a `Schema` on its report and command templates.
+
 ## [2.1.0] - 2026-11-03
 
 The connector SDK's write-back side ([I47](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-3-4.md#i47-home-assistant-connector-m), design 7.3 phase 4). Additive.

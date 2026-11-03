@@ -24,6 +24,12 @@ public sealed class ConnectorTemplate
 
     /// <summary>A report template's parameters, for example <c>unit</c> and <c>precision</c> (Core 2.1.0).</summary>
     public Dictionary<string, string>? Parameters { get; set; }
+
+    /// <summary>
+    /// What the value is (Core 2.2.0): its type, unit, meaning and range, when the device declares it; <c>null</c>
+    /// for variables and devices that don't.
+    /// </summary>
+    public RIoT2.Core.Models.ValueSchema? Schema { get; set; }
 }
 
 /// <summary>One complete set of templates; replaced as a whole, never partly.</summary>

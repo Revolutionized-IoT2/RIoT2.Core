@@ -1,0 +1,75 @@
+[
+  {
+    "nodeId": "golden-node",
+    "node": "Golden node",
+    "deviceId": "golden-device",
+    "device": "Climate sensor",
+    "type": 3,
+    "id": "golden-report-climate",
+    "name": "Climate",
+    "address": "climate",
+    "parameters": {},
+    "filters": [],
+    "maintainHistory": false,
+    "model": null,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "temperature": {
+          "type": "number",
+          "unit": "°C",
+          "semantic": "temperature",
+          "minimum": -40,
+          "maximum": 85
+        },
+        "humidity": {
+          "type": "integer",
+          "unit": "%",
+          "semantic": "humidity",
+          "minimum": 0,
+          "maximum": 100,
+          "readOnly": true
+        },
+        "mode": {
+          "type": "string",
+          "title": "Mode",
+          "enum": [
+            "auto",
+            "eco",
+            "off"
+          ]
+        },
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "unit": "°C"
+          }
+        }
+      }
+    }
+  },
+  {
+    "nodeId": "golden-node",
+    "node": "Golden node",
+    "deviceId": "golden-device",
+    "device": "Climate sensor",
+    "type": 2,
+    "id": "golden-report-power",
+    "name": "Power",
+    "address": "power",
+    "parameters": {},
+    "filters": [],
+    "maintainHistory": false,
+    "model": 0,
+    "schema": {
+      "type": "number",
+      "title": "Power",
+      "description": "Active power",
+      "unit": "W",
+      "semantic": "power",
+      "minimum": 0,
+      "multipleOf": 0.5
+    }
+  }
+]

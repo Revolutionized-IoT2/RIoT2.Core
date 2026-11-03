@@ -1,0 +1,61 @@
+{
+  "pages": [
+    {
+      "name": "Living room",
+      "icon": "sofa",
+      "components": [
+        {
+          "name": "Temperature",
+          "description": "Living room temperature",
+          "icon": "thermometer",
+          "type": 5,
+          "size": 3,
+          "elements": [
+            {
+              "name": "Temperature",
+              "id": "golden-element-temperature",
+              "icon": "thermometer",
+              "numberOfPreviousReports": 0,
+              "reportTemplate": {
+                "type": 0,
+                "id": "golden-report-number",
+                "name": null,
+                "address": null,
+                "parameters": {},
+                "filters": [],
+                "maintainHistory": false,
+                "model": null
+              },
+              "commandTemplate": null,
+              "previousReports": null,
+              "properties": null
+            }
+          ],
+          "id": "golden-card-gauge",
+          "kind": "gauge",
+          "settings": {
+            "min": 0,
+            "max": 40,
+            "severity": {
+              "green": 18,
+              "yellow": 26,
+              "red": 30
+            },
+            "needle": true
+          }
+        },
+        {
+          "name": "Lights",
+          "description": "",
+          "icon": "lightbulb",
+          "type": 10,
+          "size": 6,
+          "elements": []
+        }
+      ],
+      "id": "golden-page"
+    }
+  ],
+  "name": "Home",
+  "id": "golden-dashboard-cards"
+}

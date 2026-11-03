@@ -40,7 +40,9 @@ that can read its packages.
 - Derive from `AsyncDeviceBase<TOptions>`; do the I/O in `StartDeviceAsync`, `StopDeviceAsync`, `RefreshAsync`
   and `ExecuteCommandAsync` (`IAsyncCommandDevice`), and never block.
 - Declare parameters as `[DeviceParameter]` properties of the options class; mark secrets `Secret = true`.
-- Return the reports and commands the device offers from `GetConfigurationTemplate()`.
+- Return the reports and commands the device offers from `GetConfigurationTemplate()`. Describe each value with a
+  `Schema` (`ValueSchema.Number("°C", ValueSemantics.Temperature)`, `ValueSchema.Boolean(ValueSemantics.Switch)`, …)
+  so the UI can pick a dashboard card and build inputs; without one it guesses from `Model`.
 - Register the device in `Plugin.Register()`; `PluginConformance` then checks it.
 - Mark a device that needs hardware or a remote service with `[RequiresHardware("...")]`.
 

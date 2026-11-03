@@ -78,11 +78,21 @@ namespace Contoso.Riot2Plugin.Devices
             RefreshSchedule = DeviceTemplates.DefaultRefreshSchedule,
             ReportTemplates =
             [
-                new ReportTemplate { Id = Guid.NewGuid().ToString(), Name = "Counter value", Address = ValueAddress, Type = ValueType.Number, Model = 0 }
+                // Schema (Core 2.2.0) tells the UI what the value is, so it can pick a card and build inputs. A sensor
+                // would declare more, for example ValueSchema.Number("°C", ValueSemantics.Temperature, -40, 85).
+                new ReportTemplate
+                {
+                    Id = Guid.NewGuid().ToString(), Name = "Counter value", Address = ValueAddress, Type = ValueType.Number, Model = 0,
+                    Schema = ValueSchema.Number()
+                }
             ],
             CommandTemplates =
             [
-                new CommandTemplate { Id = Guid.NewGuid().ToString(), Name = "Set counter", Address = SetAddress, Type = ValueType.Number, Model = 0 }
+                new CommandTemplate
+                {
+                    Id = Guid.NewGuid().ToString(), Name = "Set counter", Address = SetAddress, Type = ValueType.Number, Model = 0,
+                    Schema = ValueSchema.Number()
+                }
             ]
         };
     }
