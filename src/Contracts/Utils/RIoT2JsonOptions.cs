@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -22,9 +21,9 @@ namespace RIoT2.Core.Utils
     /// </para>
     /// <para>
     /// Reading: property names are case-insensitive, and a number or boolean is accepted where a
-    /// string is expected (and the reverse), as Newtonsoft accepted it. Newtonsoft's
-    /// <c>[JsonProperty]</c> names and null handling and <c>[JsonIgnore]</c> are honoured, so device
-    /// plugin types written for Newtonsoft keep their format.
+    /// string is expected (and the reverse), as Newtonsoft accepted it. Since Core 2.0.0 (I45)
+    /// Newtonsoft's attributes are no longer read: use the System.Text.Json ones
+    /// (<c>[JsonPropertyName]</c>, <c>[JsonIgnore]</c>, <c>[JsonInclude]</c>).
     /// </para>
     /// </remarks>
     public static class RIoT2JsonOptions
@@ -59,21 +58,22 @@ namespace RIoT2.Core.Utils
                 AllowTrailingCommas = true,
                 // Newtonsoft escaped only quotes, backslashes and control characters.
                 // Newtonsoft's escaping, so emoji keep their bytes in stored files and hashes.
-                Encoder = NewtonsoftJsonEncoder.Instance,
+                Encoder = RIoT2JsonEncoder.Instance,
                 WriteIndented = indented,
-                TypeInfoResolver = new DefaultJsonTypeInfoResolver { Modifiers = { typeInfo => ApplyNewtonsoftConventions(typeInfo, camelCase) } }
+                // The source-generated contract types first (ADR 0015), reflection for everything else.
+                TypeInfoResolver = JsonTypeInfoResolver.Combine(RIoT2JsonContext.Default, new DefaultJsonTypeInfoResolver())
+                    .WithAddedModifier(ApplyMemberOrder)
             };
 
             options.Converters.Add(new EmptyStringAsNullConverterFactory());
-            options.Converters.Add(new NewtonsoftTokenConverterFactory());
             options.Converters.Add(new ValueModelJsonConverter());
             options.Converters.Add(new LooseObjectConverter());
             options.Converters.Add(new ExpandoObjectJsonConverter());
             options.Converters.Add(new LenientStringConverter());
             options.Converters.Add(new LenientBooleanConverter());
-            options.Converters.Add(new NewtonsoftDoubleConverter());
-            options.Converters.Add(new NewtonsoftSingleConverter());
-            options.Converters.Add(new NewtonsoftDecimalConverter());
+            options.Converters.Add(new RIoT2DoubleConverter());
+            options.Converters.Add(new RIoT2SingleConverter());
+            options.Converters.Add(new RIoT2DecimalConverter());
             options.Converters.Add(new LenientDateTimeConverter());
             options.Converters.Add(new LenientDateTimeOffsetConverter());
             options.Converters.Add(new LenientEnumConverterFactory());
@@ -94,8 +94,8 @@ namespace RIoT2.Core.Utils
             {
                 var converter = options.Converters[i];
                 if (converter is EmptyStringAsNullConverterFactory || converter is LenientStringConverter
-                    || converter is LenientBooleanConverter || converter is NewtonsoftDoubleConverter
-                    || converter is NewtonsoftSingleConverter || converter is NewtonsoftDecimalConverter
+                    || converter is LenientBooleanConverter || converter is RIoT2DoubleConverter
+                    || converter is RIoT2SingleConverter || converter is RIoT2DecimalConverter
                     || converter is LenientDateTimeConverter || converter is LenientDateTimeOffsetConverter
                     || converter is LenientEnumConverterFactory)
                     options.Converters.RemoveAt(i);
@@ -109,49 +109,18 @@ namespace RIoT2.Core.Utils
             return options;
         }
 
-        // What Newtonsoft did and System.Text.Json doesn't, for the types that still rely on it:
-        // [JsonIgnore], [JsonProperty] names (camel-cased like every name, as Newtonsoft's camelCase
-        // resolver did), [JsonProperty(NullValueHandling = Ignore)], non-public [JsonProperty]
-        // members, and public fields before properties. Removed with Newtonsoft (plan M2 step 6, I45).
-        private static void ApplyNewtonsoftConventions(JsonTypeInfo typeInfo, bool camelCase)
+        // The member order Newtonsoft used, unless the type orders its members itself. Kept after
+        // Newtonsoft was removed (I45): the configuration hashes of design 7.2 depend on the order.
+        private static void ApplyMemberOrder(JsonTypeInfo typeInfo)
         {
-            if (typeInfo.Kind != JsonTypeInfoKind.Object)
+            if (typeInfo.Kind != JsonTypeInfoKind.Object || typeInfo.Properties.Count < 2 || typeInfo.Properties.Any(p => p.Order != 0))
                 return;
 
-            for (var i = typeInfo.Properties.Count - 1; i >= 0; i--)
-            {
-                var property = typeInfo.Properties[i];
-                if (!(property.AttributeProvider is MemberInfo member))
-                    continue;
-
-                if (member.IsDefined(typeof(Newtonsoft.Json.JsonIgnoreAttribute), true))
-                {
-                    typeInfo.Properties.RemoveAt(i);
-                    continue;
-                }
-
-                var attribute = NewtonsoftProperty(member);
-                if (attribute == null)
-                    continue;
-
-                if (!string.IsNullOrEmpty(attribute.PropertyName) && !member.IsDefined(typeof(JsonPropertyNameAttribute), true))
-                    property.Name = Name(attribute.PropertyName!, camelCase);
-
-                if (attribute.NullValueHandling == Newtonsoft.Json.NullValueHandling.Ignore && property.ShouldSerialize == null)
-                    property.ShouldSerialize = (_, value) => value != null;
-            }
-
-            AddNonPublicMembers(typeInfo, camelCase);
-
-            // Newtonsoft's member order, unless the type orders its members itself.
-            if (typeInfo.Properties.Count > 1 && typeInfo.Properties.All(p => p.Order == 0))
-            {
-                var order = NewtonsoftMemberOrder(typeInfo.Type);
-                foreach (var property in typeInfo.Properties)
-                    property.Order = property.AttributeProvider is MemberInfo member && order.TryGetValue((member.DeclaringType, member.Name), out var rank)
-                        ? rank
-                        : order.Count;
-            }
+            var order = NewtonsoftMemberOrder(typeInfo.Type);
+            foreach (var property in typeInfo.Properties)
+                property.Order = property.AttributeProvider is MemberInfo member && order.TryGetValue((member.DeclaringType, member.Name), out var rank)
+                    ? rank
+                    : order.Count;
         }
 
         // Newtonsoft (ReflectionUtils.GetFieldsAndProperties) listed fields before properties, each as
@@ -172,51 +141,5 @@ namespace RIoT2.Core.Utils
                     order[(member.DeclaringType, member.Name)] = order.Count;
             return order;
         }
-
-        private static void AddNonPublicMembers(JsonTypeInfo typeInfo, bool camelCase)
-        {
-            const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
-            var members = typeInfo.Type.GetFields(flags).Cast<MemberInfo>().Concat(typeInfo.Type.GetProperties(flags));
-            foreach (var member in members)
-            {
-                var attribute = NewtonsoftProperty(member);
-                if (attribute == null || member.IsDefined(typeof(CompilerGeneratedAttribute), false))
-                    continue;
-
-                var name = Name(string.IsNullOrEmpty(attribute.PropertyName) ? member.Name : attribute.PropertyName!, camelCase);
-                if (typeInfo.Properties.Any(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)))
-                    continue;
-
-                JsonPropertyInfo property;
-                if (member is FieldInfo field)
-                {
-                    property = typeInfo.CreateJsonPropertyInfo(field.FieldType, name);
-                    property.Get = field.GetValue;
-                    if (!field.IsInitOnly)
-                        property.Set = field.SetValue;
-                    property.AttributeProvider = field;
-                }
-                else
-                {
-                    var accessor = (PropertyInfo)member;
-                    if (accessor.GetIndexParameters().Length > 0 || accessor.GetGetMethod(true) == null)
-                        continue;
-                    property = typeInfo.CreateJsonPropertyInfo(accessor.PropertyType, name);
-                    property.Get = accessor.GetValue;
-                    if (accessor.GetSetMethod(true) != null)
-                        property.Set = accessor.SetValue;
-                    property.AttributeProvider = accessor;
-                }
-                if (attribute.NullValueHandling == Newtonsoft.Json.NullValueHandling.Ignore)
-                    property.ShouldSerialize = (_, value) => value != null;
-                typeInfo.Properties.Add(property);
-            }
-        }
-
-        private static Newtonsoft.Json.JsonPropertyAttribute NewtonsoftProperty(MemberInfo member) =>
-            (Newtonsoft.Json.JsonPropertyAttribute)Attribute.GetCustomAttribute(member, typeof(Newtonsoft.Json.JsonPropertyAttribute), true);
-
-        private static string Name(string name, bool camelCase) =>
-            camelCase ? JsonNamingPolicy.CamelCase.ConvertName(name) : name;
     }
 }

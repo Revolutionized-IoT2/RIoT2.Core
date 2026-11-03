@@ -3,19 +3,13 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>RIoT2.Core</RootNamespace>
-    <!-- NewtonsoftJsonEncoder overrides TextEncoder's pointer-based members. -->
+    <!-- RIoT2JsonEncoder overrides TextEncoder's pointer-based members. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Description>RIoT2 wire contract: models, topics, enums, the message interfaces and the System.Text.Json setup (RIoT2JsonOptions, Json). Newtonsoft.Json stays a dependency until Core 2.0.</Description>
+    <Description>RIoT2 wire contract: models, topics, enums, the message interfaces and the System.Text.Json setup (RIoT2JsonOptions, Json).</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="System.Text.Json" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- The facade's [Obsolete] CodeProviderService uses DeviceCode.IsValidAt. -->
-    <InternalsVisibleTo Include="RIoT2.Core" />
   </ItemGroup>
 
 </Project>

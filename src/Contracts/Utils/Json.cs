@@ -1,7 +1,4 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
-using RIoT2.Core.Models;
+﻿using RIoT2.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -15,13 +12,11 @@ namespace RIoT2.Core.Utils
 {
     /// <summary>
     /// JSON helpers used across RIoT2. Since Core 1.11.0 they run on System.Text.Json with
-    /// <see cref="RIoT2JsonOptions"/> and write what Newtonsoft.Json wrote (plan M2 step 3, I25). The
-    /// members marked <see cref="ObsoleteAttribute"/> still use Newtonsoft.Json.
+    /// <see cref="RIoT2JsonOptions"/> and write what Newtonsoft.Json wrote (plan M2 step 3, I25). Core
+    /// has no Newtonsoft.Json dependency since 2.0.0 (I45).
     /// </summary>
     public static class Json
     {
-        private static readonly ISerializationBinder _safeTypeNameBinder = new RIoT2SerializationBinder();
-
         /// <summary>
         /// Converts a JSON object into a nested dictionary: objects become dictionaries, arrays
         /// <c>object[]</c>, integers <see cref="long"/>, other numbers <see cref="double"/>.
@@ -44,64 +39,12 @@ namespace RIoT2.Core.Utils
         {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
-#pragma warning disable CS0618 // A JObject keeps its own conversion until JObjects are gone (I26).
-            if (obj is JObject jObject)
-                return ToDictionary(jObject)!;
-#pragma warning restore CS0618
             if (obj is JsonElement element)
                 return ObjectToDictionary(element);
 
             using (var document = JsonSerializer.SerializeToDocument(obj, obj.GetType(), RIoT2JsonOptions.AsDeclared))
                 return ObjectToDictionary(document.RootElement);
         }
-
-        /// <summary>
-        /// Converts a <see cref="JObject"/> into a nested dictionary.
-        /// </summary>
-        /// <param name="jObject">The JSON object to convert.</param>
-        /// <returns>A dictionary representing the JSON object, or <c>null</c> if <paramref name="jObject"/> is <c>null</c>.</returns>
-        [Obsolete("Newtonsoft.Json only. Use ToDictionary(string) or ToDictionary(object).")]
-        public static IDictionary<string, object?>? ToDictionary(JObject? jObject)
-        {
-            if (jObject == null)
-                return null;
-
-            var result = jObject.ToObject<Dictionary<string, object?>>()!;
-
-            var JObjectKeys = (from r in result
-                               let key = r.Key
-                               let value = r.Value
-                               where value != null && value.GetType() == typeof(JObject)
-                               select key).ToList();
-
-            var JArrayKeys = (from r in result
-                              let key = r.Key
-                              let value = r.Value
-                              where value != null && value.GetType() == typeof(JArray)
-                              select key).ToList();
-
-            JArrayKeys.ForEach(key => result[key] = ((JArray)result[key]!).Select(ConvertToken).ToArray());
-            JObjectKeys.ForEach(key => result[key] = ToDictionary(((JObject)result[key]!).ToString()));
-
-            return result;
-        }
-
-#pragma warning disable CS0618
-        private static object? ConvertToken(JToken token)
-        {
-            switch (token)
-            {
-                case JObject obj:
-                    return ToDictionary(obj);
-                case JArray arr:
-                    return arr.Select(ConvertToken).ToArray();
-                case JValue val:
-                    return val.Value;
-                default:
-                    return token?.ToString();
-            }
-        }
-#pragma warning restore CS0618
 
         /// <summary>
         /// Deserializes a JSON string into an object of the specified type.
@@ -118,45 +61,6 @@ namespace RIoT2.Core.Utils
         }
 
         /// <summary>
-        /// Deserializes a JSON string with Newtonsoft's automatic type-name handling, allowing
-        /// polymorphic types to be resolved.
-        /// </summary>
-        /// <typeparam name="T">The target type.</typeparam>
-        /// <param name="json">The JSON string to deserialize.</param>
-        /// <returns>The deserialized object, or the default of <typeparamref name="T"/> if <paramref name="json"/> is null or empty.</returns>
-        [Obsolete("Newtonsoft.Json only, for stored configuration with $type metadata (removed with typed persistence, I26). Use Deserialize<T>.")]
-        public static T? DeserializeAutoTypeNameHandling<T>(string? json)
-        {
-            if (string.IsNullOrEmpty(json))
-                return default(T);
-
-            return JsonConvert.DeserializeObject<T>(json!, new JsonSerializerSettings()
-            {
-                TypeNameHandling = TypeNameHandling.Auto,
-                SerializationBinder = _safeTypeNameBinder
-            });
-        }
-
-        /// <summary>
-        /// Serializes an object with Newtonsoft to camelCase JSON, optionally emitting type information and nulls.
-        /// </summary>
-        /// <param name="obj">The object to serialize.</param>
-        /// <param name="autoTypeNameHandling">If <c>true</c>, embeds type information to support polymorphic deserialization.</param>
-        /// <param name="includeNulls">If <c>true</c>, includes properties with null values.</param>
-        /// <returns>The JSON representation of the object.</returns>
-        [Obsolete("Newtonsoft.Json only, for stored configuration (removed with typed persistence, I26). Use Serialize or SerializeIgnoreNulls.")]
-        public static string SerializeAutoTypeNameHandling(object? obj, bool autoTypeNameHandling = false, bool includeNulls = false)
-        {
-            return JsonConvert.SerializeObject(obj, new JsonSerializerSettings()
-            {
-                TypeNameHandling = autoTypeNameHandling ? TypeNameHandling.Auto : TypeNameHandling.None,
-                SerializationBinder = _safeTypeNameBinder,
-                ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                NullValueHandling = includeNulls ? NullValueHandling.Include : NullValueHandling.Ignore,
-            });
-        }
-
-        /// <summary>
         /// Deserializes a JSON string into an object of the specified type with
         /// <see cref="RIoT2JsonOptions"/>.
         /// </summary>
@@ -170,58 +74,6 @@ namespace RIoT2.Core.Utils
                 return default(T);
 
             return JsonSerializer.Deserialize<T>(json!, RIoT2JsonOptions.Default);
-        }
-
-        /// <summary>
-        /// Deserializes a JSON string into an object of the specified type using PascalCase property naming.
-        /// </summary>
-        /// <typeparam name="T">The target type.</typeparam>
-        /// <param name="json">The JSON string to deserialize.</param>
-        /// <returns>The deserialized object, or the default of <typeparamref name="T"/> if <paramref name="json"/> is null or empty.</returns>
-        [Obsolete("Newtonsoft.Json only. Deserialize<T> matches property names case-insensitively.")]
-        public static T? DeserializePascal<T>(string? json)
-        {
-            if (string.IsNullOrEmpty(json))
-                return default(T);
-
-            var settings = new JsonSerializerSettings()
-            {
-                ContractResolver = new DefaultContractResolver()
-                {
-                    NamingStrategy = new PascalCaseNamingStrategy()
-                }
-            };
-
-            return JsonConvert.DeserializeObject<T>(json!, settings);
-        }
-
-        /// <summary>
-        /// Deserializes a JSON string into a loosely typed Newtonsoft object using PascalCase property naming.
-        /// </summary>
-        /// <param name="json">The JSON string to deserialize.</param>
-        /// <returns>The deserialized object, the original string if deserialization fails, or <c>null</c> if <paramref name="json"/> is null or empty.</returns>
-        [Obsolete("Newtonsoft.Json only: returns JObject or JArray. Use Deserialize<T>, Deserialize<JsonElement> or ToDictionary.")]
-        public static object? Deserialize(string? json)
-        {
-            if (string.IsNullOrEmpty(json))
-                return null;
-
-            var settings = new JsonSerializerSettings()
-            {
-                ContractResolver = new DefaultContractResolver()
-                {
-                    NamingStrategy = new PascalCaseNamingStrategy()
-                }
-            };
-
-            try
-            {
-                return JsonConvert.DeserializeObject(json!, settings);
-            }
-            catch
-            {
-                return json;
-            }
         }
 
         /// <summary>
@@ -473,7 +325,7 @@ namespace RIoT2.Core.Utils
 
         // The text Newtonsoft's JToken.ToString() gave a value: strings as they are, True/False,
         // numbers as their digits, null as empty, and objects and arrays as indented JSON.
-        private static string TokenText(JsonNode? node)
+        internal static string TokenText(JsonNode? node)
         {
             if (node == null)
                 return string.Empty;

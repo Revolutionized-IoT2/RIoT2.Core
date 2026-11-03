@@ -35,7 +35,6 @@ jobs:
           - src/Devices/RIoT2.Core.Devices.csproj
           - src/Devices.Build/RIoT2.Core.Devices.Build.csproj
           - src/Node/RIoT2.Core.Node.csproj
-          - RIoT2.Core.csproj
           - Testing/RIoT2.Core.Devices.Testing.csproj
           - Hosting/RIoT2.Core.Hosting.csproj
           - Connector/RIoT2.Connector.Sdk.csproj

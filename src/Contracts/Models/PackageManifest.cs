@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using Stj = System.Text.Json.Serialization;
 
 namespace RIoT2.Core.Models
@@ -18,7 +17,6 @@ namespace RIoT2.Core.Models
         /// The <c>RIoT2.Core</c> version a plugin was built against; the node installs it only with the
         /// same major and a minor no newer than its own. Omitted when <c>null</c> (packages before Core 1.12).
         /// </summary>
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
         public string? CoreVersion { get; set; }
 
@@ -26,7 +24,6 @@ namespace RIoT2.Core.Models
         /// Lower-case hex SHA-256 of the installed plugin zip, written by the node when it installs the
         /// package (a zip can't contain its own hash). Omitted when <c>null</c>.
         /// </summary>
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
         public string? Sha256 { get; set; }
     }

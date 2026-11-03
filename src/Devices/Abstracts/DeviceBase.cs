@@ -12,13 +12,20 @@ using System.Linq;
 namespace RIoT2.Core.Abstracts
 {
     /// <summary>
-    /// The legacy synchronous base class (plan M12 step 5): new devices derive from <see cref="AsyncDeviceBase"/>. The
-    /// node runs this lifecycle on a thread-pool thread (<see cref="Plugins.DeviceCalls"/>). It stays for one major
-    /// release, without <c>[Obsolete]</c> until every catalog device has moved.
+    /// The shared device state and reporting, and the legacy synchronous lifecycle (plan M12 step 5). Devices derive
+    /// from <see cref="AsyncDeviceBase"/>. Deriving from this class directly is deprecated since Core 2.0.0 (I45): its
+    /// constructor is <c>[Obsolete]</c>, so only such legacy devices get the warning. The node runs their lifecycle on a
+    /// thread-pool thread (<see cref="Plugins.DeviceCalls"/>). The synchronous lifecycle is removed in Core 3.0.
     /// </summary>
     public abstract class DeviceBase
     {
-        public DeviceBase(ILogger logger)
+        internal const string LegacyMessage = "Derive from AsyncDeviceBase (or AsyncDeviceBase<TOptions>). The synchronous device lifecycle is removed in Core 3.0.";
+
+        [Obsolete(LegacyMessage)]
+        protected DeviceBase(ILogger logger) : this(logger, legacy: true) { }
+
+        // AsyncDeviceBase's constructor, so that async devices don't get the warning.
+        private protected DeviceBase(ILogger logger, bool legacy)
         {
             Logger = logger;
             ReportTemplates = new List<ReportTemplate>();

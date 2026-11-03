@@ -1,5 +1,4 @@
 ﻿using RIoT2.Core.Models.Matter;
-using System;
 using System.Collections.Generic;
 
 namespace RIoT2.Core.Models
@@ -26,7 +25,6 @@ namespace RIoT2.Core.Models
         /// Optional lowercase hex SHA-256 of this entry as served (design 7.2), so a node can tell which
         /// devices changed. Omitted when <c>null</c>.
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         public string? Hash { get; set; }
 
@@ -35,31 +33,7 @@ namespace RIoT2.Core.Models
         /// type, whether they are required or secret, a default and a description. The node fills it for
         /// devices with typed options; the orchestrator doesn't store it. Omitted when <c>null</c>.
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         public List<DeviceParameterDefinition>? ParameterDefinitions { get; set; }
-
-        /// <summary>
-        /// Builds a scheduler trigger from the configured refresh schedule.
-        /// </summary>
-        /// <returns>
-        /// A <see cref="SchedulerTrigger"/> when <c>RefreshSchedule</c> is set; otherwise, <c>null</c>.
-        /// Since 1.13.0 the cron expression is not validated here (the contract package has no Quartz):
-        /// the node's scheduler skips an invalid one.
-        /// </returns>
-        [Obsolete("The node's scheduler builds the trigger and validates the cron expression; removed in Core 2.0 (I45).")]
-        public SchedulerTrigger? GetDeviceRefreshSchedule()
-        {
-            if (String.IsNullOrWhiteSpace(RefreshSchedule))
-                return null;
-
-            return new SchedulerTrigger()
-            {
-                CronSchedule = RefreshSchedule!,
-                Group = Id,
-                Name = Id
-            };
-        }
-
     }
 }

@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-using RIoT2.Core.Utils;
+﻿using RIoT2.Core.Utils;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
@@ -34,16 +33,6 @@ namespace RIoT2.Core.Models
             if (value is JsonElement) 
             {
                 _value = ((JsonElement)value).Clone();
-                return;
-            }
-
-            if (value is JObject) 
-            {
-                var json = ((JObject)value).ToString();
-                using (var jsonDocument = isJson(json))
-                    _value = jsonDocument != null ? jsonDocument.RootElement.Clone() :
-                        System.Text.Json.JsonSerializer.SerializeToElement(value, getOptions());
-
                 return;
             }
 
@@ -518,36 +507,66 @@ namespace RIoT2.Core.Models
             return value;
         }
 
-         public ValueModel? Merge(ValueModel from, bool mergeOnlyExistingParameters = false)
+        /// <summary>
+        /// Merges <paramref name="from"/> into a copy of this entity, as Newtonsoft's <c>JObject.Merge</c> did with
+        /// union arrays: property names match case-insensitively (the existing name is kept), objects merge
+        /// recursively, a JSON null doesn't overwrite, and arrays gain the items they don't already contain.
+        /// </summary>
+        /// <param name="from">The entity to merge in.</param>
+        /// <param name="mergeOnlyExistingParameters">Ignore the top-level properties this entity doesn't have.</param>
+        /// <returns>The merged entity, or <c>null</c> unless both values are entities.</returns>
+        public ValueModel? Merge(ValueModel from, bool mergeOnlyExistingParameters = false)
         {
             if (from.Type != ValueType.Entity || Type != ValueType.Entity)
                 return null; //In order to merge, both needs to be Entities
 
-            var mergedValue = new JsonEntity(ToJson());
-            var fromValue = new JsonEntity(from.ToJson());
+            var target = Node!.DeepClone().AsObject();
+            var source = from.Node!.DeepClone().AsObject();
 
-            //if true -> remove parameters that do not exist in target object
-            List<string> parametersToRemove = new List<string>();
-            if (mergeOnlyExistingParameters) 
+            if (mergeOnlyExistingParameters)
             {
-                foreach (var fromParameterName in fromValue.GetProperties())
-                {
-                    if (!mergedValue.ContainsPropertyIgnoreCase(fromParameterName))
-                        parametersToRemove.Add(fromParameterName);
-                }
-
-                foreach (var k in parametersToRemove)
-                    fromValue.Remove(k);
+                var unknown = source.Select(p => p.Key).Where(k => findKey(target, k) == null).ToList();
+                foreach (var key in unknown)
+                    source.Remove(key);
             }
 
-            mergedValue.Merge(fromValue);
-            return new ValueModel(mergedValue.ToString());
+            mergeObject(target, source);
+            return new ValueModel(target.ToJsonString());
+        }
+
+        private static string? findKey(JsonObject obj, string name) =>
+            obj.Select(p => p.Key).FirstOrDefault(k => string.Equals(k, name, StringComparison.OrdinalIgnoreCase));
+
+        private static void mergeObject(JsonObject target, JsonObject source)
+        {
+            foreach (var property in source.ToList())
+            {
+                var key = findKey(target, property.Key);
+                if (key == null)
+                {
+                    target[property.Key] = property.Value?.DeepClone();
+                    continue;
+                }
+
+                var existing = target[key];
+                var incoming = property.Value;
+                if (existing is JsonObject existingObject && incoming is JsonObject incomingObject)
+                    mergeObject(existingObject, incomingObject);
+                else if (existing is JsonArray existingArray && incoming is JsonArray incomingArray)
+                {
+                    foreach (var item in incomingArray)
+                        if (!existingArray.Any(e => JsonNode.DeepEquals(e, item)))
+                            existingArray.Add(item?.DeepClone());
+                }
+                else if (incoming != null)
+                    target[key] = incoming.DeepClone();
+            }
         }
 
         /// <summary>
         /// Returns a new <see cref="ValueModel"/> in which every value matching <paramref name="placeholder"/>
         /// has been replaced with <paramref name="value"/>. For entity values the replacement is applied
-        /// recursively to all properties; for scalar values the whole value is replaced when it matches.
+        /// recursively to all properties and array items; for scalar values the whole value is replaced when it matches.
         /// </summary>
         /// <param name="placeholder">The placeholder token to match (case-insensitive).</param>
         /// <param name="value">The replacement value.</param>
@@ -556,15 +575,44 @@ namespace RIoT2.Core.Models
         {
             if (Type == ValueType.Entity)
             {
-                var jsonEntity = new JsonEntity(ToJson());
-                jsonEntity.ReplacePlaceHolderWithValue(placeholder, value.GetAsObject());
-                return new ValueModel(jsonEntity.ToString());
+                var root = Node!.DeepClone().AsObject();
+                replaceInObject(root, placeholder, value.Node);
+                return new ValueModel(root.ToJsonString());
             }
 
             if (string.Equals(_value.ToString(), placeholder, StringComparison.OrdinalIgnoreCase))
                 return value.Copy();
 
             return this;
+        }
+
+        private static bool isPlaceholder(JsonNode? node, string placeholder) =>
+            node is JsonValue && string.Equals(Json.TokenText(node), placeholder, StringComparison.OrdinalIgnoreCase);
+
+        private static void replaceInObject(JsonObject parent, string placeholder, JsonNode? value)
+        {
+            foreach (var property in parent.ToList())
+            {
+                if (property.Value is JsonObject child)
+                    replaceInObject(child, placeholder, value);
+                else if (property.Value is JsonArray array)
+                    replaceInArray(array, placeholder, value);
+                else if (isPlaceholder(property.Value, placeholder))
+                    parent[property.Key] = value?.DeepClone();
+            }
+        }
+
+        private static void replaceInArray(JsonArray array, string placeholder, JsonNode? value)
+        {
+            for (int i = 0; i < array.Count; i++)
+            {
+                if (array[i] is JsonObject child)
+                    replaceInObject(child, placeholder, value);
+                else if (array[i] is JsonArray nested)
+                    replaceInArray(nested, placeholder, value);
+                else if (isPlaceholder(array[i], placeholder))
+                    array[i] = value?.DeepClone();
+            }
         }
 
         private JsonDocument? isJson(string? source, bool enforceCamelCase = true)

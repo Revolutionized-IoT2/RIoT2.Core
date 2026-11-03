@@ -8,11 +8,11 @@ namespace RIoT2.Core.Utils
     /// lowercase hex), <c>"</c>, <c>\</c>, U+0085, U+2028 and U+2029. Emoji, DEL and HTML characters are
     /// written as they are, so stored files and configuration hashes keep Newtonsoft's bytes.
     /// </summary>
-    internal sealed class NewtonsoftJsonEncoder : JavaScriptEncoder
+    internal sealed class RIoT2JsonEncoder : JavaScriptEncoder
     {
-        public static NewtonsoftJsonEncoder Instance { get; } = new NewtonsoftJsonEncoder();
+        public static RIoT2JsonEncoder Instance { get; } = new RIoT2JsonEncoder();
 
-        private NewtonsoftJsonEncoder() { }
+        private RIoT2JsonEncoder() { }
 
         // A lone surrogate is escaped as one \uXXXX; a valid pair is never escaped.
         public override int MaxOutputCharactersPerInputCharacter => 6;

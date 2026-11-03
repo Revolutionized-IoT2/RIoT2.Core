@@ -23,7 +23,7 @@
     <RIoT2PluginVersion Condition="'$(RIoT2PluginVersion)' == ''">$(Version)</RIoT2PluginVersion>
     <RIoT2PluginOutputDir Condition="'$(RIoT2PluginOutputDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(BaseOutputPath)', 'plugin'))</RIoT2PluginOutputDir>
     <!-- The node's own dependencies; PluginLoadContext resolves them from the node's folder. -->
-    <RIoT2PluginExclude Condition="'$(RIoT2PluginExclude)' == ''">Microsoft.Extensions.*.dll;MQTTnet*.dll;Newtonsoft.Json.dll;Quartz.dll</RIoT2PluginExclude>
+    <RIoT2PluginExclude Condition="'$(RIoT2PluginExclude)' == ''">Microsoft.Extensions.*.dll;MQTTnet*.dll;Quartz.dll</RIoT2PluginExclude>
   </PropertyGroup>
 
   <UsingTask TaskName="RIoT2.Core.Plugins.Build.PackPlugin" AssemblyFile="$(RIoT2PluginTaskAssembly)" />

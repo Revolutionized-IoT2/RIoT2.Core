@@ -18,12 +18,10 @@ namespace RIoT2.Core.Models
         public bool Secret { get; set; }
 
         /// <summary>Used when the parameter is missing or empty. Omitted when <c>null</c>.</summary>
-        [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         public string? Default { get; set; }
 
         /// <summary>Help text for the UI. Omitted when <c>null</c>.</summary>
-        [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         public string? Description { get; set; }
     }

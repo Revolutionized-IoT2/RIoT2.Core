@@ -98,7 +98,7 @@ namespace RIoT2.Core.Plugins.Build
     {
         public const string ManifestFileName = "PluginManifest.json";
 
-        private static readonly string[] CorePackages = { "RIoT2.Core.Devices", "RIoT2.Core" };
+        private static readonly string[] CorePackages = { "RIoT2.Core.Devices" };
 
         public static string ZipFileName(string package, string version) => package + "_" + version + ".zip";
 
@@ -123,7 +123,7 @@ namespace RIoT2.Core.Plugins.Build
         }
 
         /// <summary>
-        /// The version of <c>RIoT2.Core.Devices</c> (or the <c>RIoT2.Core</c> facade) the plugin is built on:
+        /// The version of <c>RIoT2.Core.Devices</c> the plugin is built on:
         /// the package version, or the assembly version of a project reference. Null when neither is found.
         /// </summary>
         public static string? ResolveCoreVersion(IEnumerable<PluginFile> files, string? publishDirectory)

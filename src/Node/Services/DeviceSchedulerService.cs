@@ -45,21 +45,6 @@ namespace RIoT2.Core.Services
         public event SchedulerEventHandler? RefreshTriggered;
 
         /// <summary>
-        /// Occurs when a trigger of any scheduler fires. Kept for one release; use <see cref="RefreshTriggered"/>.
-        /// </summary>
-        [Obsolete("Use the RefreshTriggered event of the scheduler instance. The static event is removed in increment I45.")]
-        public static event SchedulerEventHandler? SchedulerEvent;
-
-        /// <summary>
-        /// Raises the static <see cref="SchedulerEvent"/>. Kept for one release; use <see cref="TriggerRefresh"/>.
-        /// </summary>
-        [Obsolete("Use TriggerRefresh on the scheduler instance. The static method is removed in increment I45.")]
-        public static void TriggerSchedulerEvent(string group, string name)
-        {
-            SchedulerEvent?.Invoke(group, name);
-        }
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="DeviceSchedulerService"/> class.
         /// </summary>
         /// <param name="logger">The logger used to record scheduler activity.</param>
@@ -73,15 +58,11 @@ namespace RIoT2.Core.Services
         }
 
         /// <summary>
-        /// Raises <see cref="RefreshTriggered"/> (and, for one release, the static <see cref="SchedulerEvent"/>)
-        /// for the specified trigger group and name, as a firing trigger does.
+        /// Raises <see cref="RefreshTriggered"/> for the specified trigger group and name, as a firing trigger does.
         /// </summary>
         public void TriggerRefresh(string group, string name)
         {
             RefreshTriggered?.Invoke(group, name);
-#pragma warning disable CS0618 // The static event is forwarded until it is removed.
-            SchedulerEvent?.Invoke(group, name);
-#pragma warning restore CS0618
         }
 
         /// <summary>

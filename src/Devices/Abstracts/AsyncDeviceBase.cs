@@ -9,8 +9,8 @@ using System.Linq;
 namespace RIoT2.Core.Abstracts
 {
     /// <summary>
-    /// The base class for devices (plan M12 step 5, Core 1.23.0; <see cref="DeviceBase"/> is the legacy synchronous
-    /// one). The node awaits <see cref="StartDeviceAsync"/>, <see cref="StopDeviceAsync"/> and <see cref="RefreshAsync"/>
+    /// The base class for devices (plan M12 step 5, Core 1.23.0; deriving from <see cref="DeviceBase"/> directly is
+    /// the deprecated synchronous lifecycle). The node awaits <see cref="StartDeviceAsync"/>, <see cref="StopDeviceAsync"/> and <see cref="RefreshAsync"/>
     /// through <see cref="IAsyncDevice"/> and <see cref="IAsyncRefreshableReportDevice"/>; a command device implements
     /// <see cref="IAsyncCommandDevice.ExecuteCommandAsync"/>, and this class supplies
     /// <see cref="ICommandDevice.ExecuteCommand"/>.
@@ -22,7 +22,7 @@ namespace RIoT2.Core.Abstracts
     /// </summary>
     public abstract class AsyncDeviceBase : DeviceBase, IAsyncDevice, IAsyncRefreshableReportDevice
     {
-        protected AsyncDeviceBase(ILogger logger) : base(logger) { }
+        protected AsyncDeviceBase(ILogger logger) : base(logger, legacy: false) { }
 
         protected abstract Task StartDeviceAsync(CancellationToken cancellationToken);
         protected abstract Task StopDeviceAsync(CancellationToken cancellationToken);

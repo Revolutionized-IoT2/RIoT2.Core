@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using RIoT2.Core.Utils;
 using System.Collections.Generic;
 using Stj = System.Text.Json.Serialization;
@@ -13,12 +12,10 @@ namespace RIoT2.Core.Models
     public class NodeStatusMessage
     {
         /// <summary>Revision of the configuration the node runs, if the orchestrator sent one. Omitted when <c>null</c>.</summary>
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
         public int? AppliedRevision { get; set; }
 
         /// <summary>Hash of the configuration the node runs (<see cref="NodeDeviceConfiguration.Hash"/>). Omitted when <c>null</c>.</summary>
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
         public string? AppliedHash { get; set; }
 
@@ -26,17 +23,14 @@ namespace RIoT2.Core.Models
         public string State { get; set; }
 
         /// <summary>Why the last fetch or apply failed. Omitted when <c>null</c>.</summary>
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
         public string? Error { get; set; }
 
         /// <summary>Devices that failed to start although the configuration was applied. Omitted when <c>null</c>.</summary>
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
         public List<FailedDevice>? FailedDevices { get; set; }
 
         /// <summary>The installed plugin package (.NET nodes). Omitted when <c>null</c>.</summary>
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
         public PackageManifest? PluginManifest { get; set; }
 
@@ -44,7 +38,6 @@ namespace RIoT2.Core.Models
         public long TimeStamp { get; set; }
 
         /// <summary>Contract version of the payload; <see cref="Contract.Version"/> for new messages.</summary>
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
         public int? ContractVersion { get; set; } = Contract.Version;
 

@@ -115,7 +115,7 @@ namespace RIoT2.Core.Schema
         /// </summary>
         public static string ExportJson()
         {
-            var json = Export().ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = NewtonsoftJsonEncoder.Instance });
+            var json = Export().ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = RIoT2JsonEncoder.Instance });
             return json.Replace("\r\n", "\n") + "\n";
         }
 
@@ -167,7 +167,6 @@ namespace RIoT2.Core.Schema
         private static bool IsAnyValue(Type type) =>
             type == typeof(object) || type == typeof(ValueModel)
             || typeof(JsonNode).IsAssignableFrom(type)
-            || typeof(Newtonsoft.Json.Linq.JToken).IsAssignableFrom(type)
             || (type.IsInterface && !typeof(System.Collections.IEnumerable).IsAssignableFrom(type));
 
         private static bool IsContractType(Type type) =>

@@ -22,14 +22,12 @@ namespace RIoT2.Core.Models
         /// <c>["command-result/1","desired-state/1"]</c>. <c>null</c> (omitted) for older nodes, which
         /// get today's behaviour.
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         public List<string>? Capabilities { get; set; }
 
         /// <summary>
         /// Optional contract version of the payload (<see cref="Contract.Version"/>); absent means 1.
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         public int? ContractVersion { get; set; }
 

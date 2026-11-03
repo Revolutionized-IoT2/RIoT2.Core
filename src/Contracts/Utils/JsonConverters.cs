@@ -194,7 +194,7 @@ namespace RIoT2.Core.Utils
     /// exponent: <c>21.0</c>, not <c>21</c>; NaN and infinities as strings) and reads numbers or
     /// numeric strings.
     /// </summary>
-    public sealed class NewtonsoftDoubleConverter : JsonConverter<double>
+    public sealed class RIoT2DoubleConverter : JsonConverter<double>
     {
         public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -212,8 +212,8 @@ namespace RIoT2.Core.Utils
         }
     }
 
-    /// <summary>The <see cref="float"/> counterpart of <see cref="NewtonsoftDoubleConverter"/>.</summary>
-    public sealed class NewtonsoftSingleConverter : JsonConverter<float>
+    /// <summary>The <see cref="float"/> counterpart of <see cref="RIoT2DoubleConverter"/>.</summary>
+    public sealed class RIoT2SingleConverter : JsonConverter<float>
     {
         public override float Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -232,7 +232,7 @@ namespace RIoT2.Core.Utils
     }
 
     /// <summary>Writes a decimal as Newtonsoft did (<c>1.0</c>, not <c>1</c>) and reads numbers or numeric strings.</summary>
-    public sealed class NewtonsoftDecimalConverter : JsonConverter<decimal>
+    public sealed class RIoT2DecimalConverter : JsonConverter<decimal>
     {
         public override decimal Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -378,7 +378,6 @@ namespace RIoT2.Core.Utils
             (typeToConvert.IsInterface || typeToConvert.IsAbstract)
             && !typeToConvert.IsValueType
             && !typeof(IEnumerable).IsAssignableFrom(typeToConvert)
-            && !typeof(Newtonsoft.Json.Linq.JToken).IsAssignableFrom(typeToConvert)
             && !typeof(System.Text.Json.Nodes.JsonNode).IsAssignableFrom(typeToConvert)
             && !typeToConvert.IsDefined(typeof(JsonPolymorphicAttribute), false)
             && !typeToConvert.IsDefined(typeof(JsonDerivedTypeAttribute), false)
@@ -394,32 +393,6 @@ namespace RIoT2.Core.Utils
 
             public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options) =>
                 JsonSerializer.Serialize(writer, value, value.GetType(), options);
-        }
-    }
-
-    /// <summary>
-    /// Writes a Newtonsoft <c>JToken</c> (still produced by the stored-configuration loader until
-    /// I26) as the JSON Newtonsoft wrote for it, and reads one.
-    /// </summary>
-    public sealed class NewtonsoftTokenConverterFactory : JsonConverterFactory
-    {
-        public override bool CanConvert(Type typeToConvert) => typeof(Newtonsoft.Json.Linq.JToken).IsAssignableFrom(typeToConvert);
-
-        public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
-            (JsonConverter)Activator.CreateInstance(typeof(TokenConverter<>).MakeGenericType(typeToConvert));
-
-        private sealed class TokenConverter<T> : JsonConverter<T> where T : Newtonsoft.Json.Linq.JToken
-        {
-            public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            {
-                using (var document = JsonDocument.ParseValue(ref reader))
-                    return (T)Newtonsoft.Json.Linq.JToken.Parse(document.RootElement.GetRawText());
-            }
-
-            public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
-            {
-                writer.WriteRawValue(value.ToString(Newtonsoft.Json.Formatting.None), skipInputValidation: true);
-            }
         }
     }
 

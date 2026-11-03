@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using RIoT2.Core.Interfaces;
 using RIoT2.Core.Utils;
 using Stj = System.Text.Json.Serialization;
@@ -36,7 +35,6 @@ namespace RIoT2.Core.Models
         /// <summary>
         /// Optional contract version of the payload (<see cref="Contract.Version"/>); absent means 1.
         /// </summary>
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
         public int? ContractVersion { get; set; }
 

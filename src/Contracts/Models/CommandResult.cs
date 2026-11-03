@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using RIoT2.Core.Utils;
 using Stj = System.Text.Json.Serialization;
 
@@ -21,7 +20,6 @@ namespace RIoT2.Core.Models
         public string Status { get; set; }
 
         /// <summary>Why the command failed or was rejected. Omitted when <c>null</c>.</summary>
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
         public string? Error { get; set; }
 
@@ -29,7 +27,6 @@ namespace RIoT2.Core.Models
         public long TimeStamp { get; set; }
 
         /// <summary>Contract version of the payload; <see cref="Contract.Version"/> for new results.</summary>
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
         public int? ContractVersion { get; set; } = Contract.Version;
 

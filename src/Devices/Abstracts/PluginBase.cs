@@ -58,8 +58,5 @@ namespace RIoT2.Core.Abstracts
                 throw new ArgumentNullException(nameof(factory));
             Services.AddSingleton(factory);
         }
-
-        [Obsolete("The node resolves devices from DI and never reads this list. The member is removed in the next major release.")]
-        public List<IDevice> Devices { get; } = new List<IDevice>();
     }
 }

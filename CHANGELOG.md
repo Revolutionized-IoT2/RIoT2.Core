@@ -6,6 +6,48 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-03
+
+Core 2.0: the compatibility layers are removed ([I45](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-3-4.md#i45-core-20-remove-compatibility-layers-m), plans M1 step 6, M2 steps 2, 5 and 6,
+M12). **Breaking.** The node refuses a plugin built on another Core major, so Node 2.0, Devices
+2.0 and RasPi.Devices 2.0 are released together, and other plugins must be rebuilt on 2.0.0 (the
+[upgrading guide](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/guides/upgrading.md)). The wire format, `Contract.Version` (1) and every configuration hash are unchanged:
+the golden files are the same.
+
+- Removed: the `RIoT2.Core` facade package (type forwards for plugins built before 1.13.0) and its
+  `[Obsolete]` types (`IStoredObjectService`, `IMessageStateService`, `MessageStateService`,
+  `IOrchestratorConfigurationService`, `IOrchestratorMqttService`, `ICodeProviderService`,
+  `CodeProviderService`, the stored-object delegates). Ten packages remain.
+- Removed (`Contracts`): the Newtonsoft.Json dependency, with `JsonNewtonsoft.cs` (the Newtonsoft
+  `ValueModelConverter`, `JsonEntity`, `RIoT2SerializationBinder`, `PascalCaseNamingStrategy`),
+  `NewtonsoftTokenConverterFactory`, and `Json.DeserializeAutoTypeNameHandling`,
+  `SerializeAutoTypeNameHandling`, `DeserializePascal`, `Deserialize(string)` and
+  `ToDictionary(JObject)`. `RIoT2JsonOptions` no longer reads Newtonsoft's `[JsonProperty]` and
+  `[JsonIgnore]`: plugin types use `[JsonPropertyName]`, `[JsonIgnore]` and `[JsonInclude]` (for
+  non-public members). An explicit name is written as given; Newtonsoft camel-cased it. The member
+  order Newtonsoft used is kept, because the configuration hashes depend on it.
+- Changed (`Contracts`): `NewtonsoftDoubleConverter`, `NewtonsoftSingleConverter`,
+  `NewtonsoftDecimalConverter` and `NewtonsoftJsonEncoder` are renamed `RIoT2DoubleConverter`,
+  `RIoT2SingleConverter`, `RIoT2DecimalConverter` and `RIoT2JsonEncoder`; their output is the same.
+- Changed (`Contracts`): `ValueModel.Merge` and `ReplaceAllPlaceholdersWithValue` run on `JsonNode`
+  with Newtonsoft's merge rules (names match case-insensitively and keep the existing spelling,
+  objects merge, a JSON null doesn't overwrite, arrays gain the items they lack). A placeholder can
+  now be replaced with an entity too, and a replacing number keeps its own text.
+- Added (`Contracts`): `RIoT2JsonContext`, source-generated metadata for the contract types
+  (ADR 0015). It is the first resolver of `RIoT2JsonOptions`; other types still use reflection.
+- Removed (`Devices`, `Mqtt`, `Node`, `Contracts`): `IDevicePlugin.Devices` and `PluginBase.Devices`,
+  the synchronous `INodeConfigurationService.DownloadPluginPackage` and its
+  `NodeConfigurationServiceBase` implementation, `MqttClient.Publish`, the static
+  `DeviceSchedulerService.SchedulerEvent` and `TriggerSchedulerEvent`, and
+  `DeviceConfiguration.GetDeviceRefreshSchedule`.
+- Deprecated (`Devices`): the constructors of `DeviceBase` and `DeviceBase<TOptions>` are
+  `[Obsolete]`, so a device deriving from them directly (the synchronous lifecycle) gets CS0618;
+  derive from `AsyncDeviceBase` or `AsyncDeviceBase<TOptions>`, which get no warning. The node
+  still runs synchronous devices in 2.x; Core 3.0 removes them.
+- Changed (`Devices.Build`): the default `RIoT2PluginExclude` no longer lists `Newtonsoft.Json.dll`.
+  The node doesn't ship it any more, so a plugin that needs it (Google.Apis does) packs its own.
+  `coreVersion` is read from `RIoT2.Core.Devices` only.
+
 ## [1.23.0] - 2026-11-02
 
 Async-first plugins and the plugin template ([I41](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-3-4.md#i41-async-first-plugins-and-the-plugin-template-m), [M12](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/plans/m12-device-plugin-sdk.md) steps 5 and 6).

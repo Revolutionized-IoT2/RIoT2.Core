@@ -1,6 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
 
 namespace RIoT2.Core.Interfaces
 {
@@ -11,8 +9,5 @@ namespace RIoT2.Core.Interfaces
     public interface IDevicePlugin
     {
         void Initialize(IServiceCollection services);
-
-        [Obsolete("The node resolves devices from DI and never reads this list. Derive from PluginBase; the member is removed in the next major release.")]
-        List<IDevice> Devices { get; }
     }
 }

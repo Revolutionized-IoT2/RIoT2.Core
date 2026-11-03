@@ -11,10 +11,13 @@ namespace RIoT2.Core.Abstracts
     /// <see cref="Options"/>; a missing required or invalid value puts the device into
     /// <see cref="DeviceState.Error"/> with one message listing every problem. The node describes the options in
     /// the template's <c>parameterDefinitions</c> and adds their keys to its <c>deviceParameters</c>.
+    /// Deprecated like <see cref="DeviceBase"/>'s synchronous lifecycle since Core 2.0.0: derive from
+    /// <see cref="AsyncDeviceBase{TOptions}"/>.
     /// </summary>
     public abstract class DeviceBase<TOptions> : DeviceBase, IDeviceWithOptions where TOptions : class, new()
     {
-        protected DeviceBase(ILogger logger) : base(logger) { }
+        [Obsolete(LegacyMessage)]
+        protected DeviceBase(ILogger logger) : base(logger, legacy: true) { }
 
         /// <summary>The bound parameters; set before <see cref="DeviceBase.ConfigureDevice"/> runs.</summary>
         public TOptions Options { get; private set; } = new TOptions();

@@ -251,11 +251,6 @@ namespace RIoT2.Core.Utils
             await client.EnqueueAsync(message).ConfigureAwait(false);
         }
 
-        /// <summary>Publishes at QoS 1. Kept for plugins built against Core 1.2 or earlier.</summary>
-        [Obsolete("Use PublishAsync. Publish is removed in increment I45.")]
-        public Task Publish(string topic, string? payload, bool retain = false) =>
-            PublishAsync(topic, payload, MqttQos.AtLeastOnce, retain);
-
         /// <summary>Stops the client; see <see cref="StopAsync"/>.</summary>
         public Task Stop() => StopAsync(CancellationToken.None);
 
