@@ -33,6 +33,14 @@ app.Run();
   - Use `ReceivedUtc` for commands, which carry no time of their own.
   - Use `EntityFlattener.Flatten` for entity values, so every connector names entity fields the same way.
   - Override `CheckHealthAsync` to tell `/health` whether the target answers.
+- Writing back into RIoT2 (2.1.0): inject `IRiot2CommandClient` and call `SendAsync(commandId, value, options)`. It
+  calls the orchestrator's `POST /api/v2/commands`, so the command goes through the outbox with a time-to-live
+  (`CommandSendOptions.TimeToLive`) and a result (`Wait`); it throws `CommandRejectedException` for a 400 or 404,
+  `HttpRequestException` when the orchestrator doesn't answer, and `InvalidOperationException` before the first
+  configuration command (`IsReady`). Never publish command topics from a connector.
+- Reacting to new templates (2.1.0): register an `IConnectorTemplateObserver` singleton; it gets every complete set
+  after it loads. `ConnectorTemplate` carries the value `Type`, `Address`, `DeviceId`, `NodeId` and the report
+  `Parameters` (`unit`, `precision`) since 2.1.0.
 
 ## What the SDK does
 
@@ -43,15 +51,17 @@ app.Run();
 | `ConnectorSpoolOptions` | `RIOT2_CONNECTOR_SPOOL` (on by default; off in options built in code), `RIOT2_CONNECTOR_SPOOL_MAX_MB` (100), `RIOT2_CONNECTOR_SPOOL_MAX_AGE_DAYS` (7); in code also `Path` (`Data/spool` next to the app), `SegmentBytes`, `DeadLetterMaxBytes` and `HighWaterMark` (0.8) |
 | `ConnectorMqttService` | Presence on `riot2/node/{id}/online` as `nodeType` 4 with the name, `RIOT2_CONNECTOR_URL` and a manifest (versions), again when the orchestrator comes online; the templates on the configuration command, and every readable report (and command, with `RIOT2_HANDLE_COMMANDS=true`) queued with its receive time |
 | `TemplateCatalog` | The report, command and variable templates from the orchestrator, replaced only as a complete set |
+| `OrchestratorEndpoint`, `Riot2CommandClient` | The orchestrator URL of the last configuration command, and `IRiot2CommandClient` on it (`X-RIoT2-Key`, outbound URL policy; 2.1.0) |
 | `ConnectorPipeline` | The memory queue and the disk spool (JSON-lines segments with a checkpoint, written in order, oldest segment dropped at the size or age limit), batches, retry, the dead-letter file, and a stop that finishes the write in flight and spools the rest (without the spool: writes what is queued for up to `DrainTimeout`) |
 | `ConnectorHealthReport` | `/health`: MQTT, the sink's `CheckHealthAsync` (5 s) and the spool; `unhealthy` (503) without MQTT, `degraded` when the sink doesn't answer or messages are spooled |
 | `ConnectorMetrics` | `riot2.connector.messages`, `.writes`, `.queue_depth`, `.spool_depth`, `.spool_bytes`, `.spool_dropped` ([metrics.md](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/contracts/metrics.md)) |
 
 The UI lists connectors apart from the nodes, with their `/health` (through the orchestrator's
-`GET /api/v2/connectors`). Still to come (design 7.3 phase 4): `IRiot2CommandClient` for connectors that write back
-into RIoT2. Connectors: [InfluxDB](https://github.com/Revolutionized-IoT2/RIoT2.Connector.InfluxDB) (writes, with the
-spool) and [Prometheus](https://github.com/Revolutionized-IoT2/RIoT2.Connector.Prometheus) (keeps the latest values,
-no spool).
+`GET /api/v2/connectors`). Connectors: [InfluxDB](https://github.com/Revolutionized-IoT2/RIoT2.Connector.InfluxDB) (writes,
+with the spool), [Prometheus](https://github.com/Revolutionized-IoT2/RIoT2.Connector.Prometheus) (keeps the latest values,
+no spool) and [Home Assistant](https://github.com/Revolutionized-IoT2/RIoT2.Connector.HomeAssistant) (MQTT discovery and
+commands back through `IRiot2CommandClient`).
 
 Tests: RIoT2.Tests `ConnectorSdkTests`, `ConnectorSpoolTests`, `ConnectorMetricsTests`, `ConnectorListTests`, the
-connectors' `InfluxSinkTests`, `GoldenInfluxTests`, `PrometheusExporterTests` and `GoldenPrometheusTests`.
+connectors' `InfluxSinkTests`, `GoldenInfluxTests`, `PrometheusExporterTests`, `GoldenPrometheusTests` and
+`HomeAssistantTests` (also the command client and the observers).

@@ -15,6 +15,9 @@ public static class ConnectorHostExtensions
     /// <summary>The <c>IHttpClientFactory</c> client for the orchestrator's template routes.</summary>
     public const string TemplatesHttpClientName = "riot2-templates";
 
+    /// <summary>The <c>IHttpClientFactory</c> client of <see cref="IRiot2CommandClient"/>.</summary>
+    public const string CommandsHttpClientName = "riot2-commands";
+
     /// <summary>
     /// Sets up a connector with sink <typeparamref name="TSink"/>:
     /// <list type="bullet">
@@ -23,7 +26,9 @@ public static class ConnectorHostExtensions
     /// under <paramref name="component"/>;</item>
     /// <item>the security seams, telemetry (meter <c>RIoT2.Connector</c>), the template catalog (with
     /// <c>X-RIoT2-Key</c> and the outbound URL policy), the sink, the <see cref="ConnectorPipeline"/> and the
-    /// <see cref="ConnectorMqttService"/>.</item>
+    /// <see cref="ConnectorMqttService"/>;</item>
+    /// <item>the <see cref="OrchestratorEndpoint"/> and <see cref="IRiot2CommandClient"/> (Core 2.1.0), and every
+    /// <see cref="IConnectorTemplateObserver"/> registered before the host is built.</item>
     /// </list>
     /// The connector's settings are registered as a singleton <typeparamref name="TSettings"/> and returned.
     /// </summary>
@@ -55,12 +60,19 @@ public static class ConnectorHostExtensions
             .AddHttpMessageHandler(services => new OutboundUrlPolicyHandler(services.GetRequiredService<IOutboundUrlPolicy>(), OutboundPurposes.Orchestrator));
         builder.Services.AddSingleton<ITemplateCatalog>(services =>
             new TemplateCatalog(services.GetRequiredService<IHttpClientFactory>().CreateClient(TemplatesHttpClientName)));
+        builder.Services.AddSingleton<OrchestratorEndpoint>();
+        builder.Services.AddHttpClient(CommandsHttpClientName, client => client.Timeout = TimeSpan.FromSeconds(100))
+            .AddHttpMessageHandler(() => new ApiKeyHandler(options.Security.ApiKey))
+            .AddHttpMessageHandler(services => new OutboundUrlPolicyHandler(services.GetRequiredService<IOutboundUrlPolicy>(), OutboundPurposes.Orchestrator));
+        builder.Services.AddSingleton<IRiot2CommandClient>(services => new Riot2CommandClient(
+            services.GetRequiredService<IHttpClientFactory>().CreateClient(CommandsHttpClientName), services.GetRequiredService<OrchestratorEndpoint>()));
         builder.Services.AddSingleton<TSink>();
         builder.Services.AddSingleton<IConnectorSink>(services => services.GetRequiredService<TSink>());
         builder.Services.AddSingleton(services => new ConnectorPipeline(services.GetRequiredService<IConnectorSink>(),
             services.GetRequiredService<ITemplateCatalog>(), options, services.GetRequiredService<ILogger<ConnectorPipeline>>()));
         builder.Services.AddSingleton(services => new ConnectorMqttService(options, services.GetRequiredService<ConnectorPipeline>(),
-            services.GetRequiredService<ITemplateCatalog>(), services.GetRequiredService<ILogger<ConnectorMqttService>>()));
+            services.GetRequiredService<ITemplateCatalog>(), services.GetRequiredService<ILogger<ConnectorMqttService>>(),
+            services.GetRequiredService<OrchestratorEndpoint>(), services.GetServices<IConnectorTemplateObserver>()));
         // Started in this order and stopped in reverse: MQTT stops taking messages before the queue drains.
         builder.Services.AddHostedService(services => services.GetRequiredService<ConnectorPipeline>());
         builder.Services.AddHostedService(services => services.GetRequiredService<ConnectorMqttService>());

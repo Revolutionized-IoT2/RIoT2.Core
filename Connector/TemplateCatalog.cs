@@ -9,6 +9,21 @@ public sealed class ConnectorTemplate
     public string Name { get; set; } = string.Empty;
     public string Device { get; set; } = string.Empty;
     public string Node { get; set; } = string.Empty;
+
+    /// <summary>The device's id (Core 2.1.0); empty for variables.</summary>
+    public string DeviceId { get; set; } = string.Empty;
+
+    /// <summary>The node's id (Core 2.1.0); empty for variables.</summary>
+    public string NodeId { get; set; } = string.Empty;
+
+    /// <summary>The device's address of the report or command (Core 2.1.0).</summary>
+    public string? Address { get; set; }
+
+    /// <summary>The value type (Core 2.1.0).</summary>
+    public RIoT2.Core.ValueType Type { get; set; }
+
+    /// <summary>A report template's parameters, for example <c>unit</c> and <c>precision</c> (Core 2.1.0).</summary>
+    public Dictionary<string, string>? Parameters { get; set; }
 }
 
 /// <summary>One complete set of templates; replaced as a whole, never partly.</summary>

@@ -6,6 +6,19 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-11-03
+
+The connector SDK's write-back side ([I47](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-3-4.md#i47-home-assistant-connector-m), design 7.3 phase 4). Additive.
+
+- Added (`RIoT2.Connector.Sdk`): `IRiot2CommandClient` (`Riot2CommandClient`): sends a command through the
+  orchestrator's `POST /api/v2/commands` with an optional time-to-live and `wait`, with `X-RIoT2-Key` and the outbound
+  URL policy (`HttpClient` `riot2-commands`). Throws `CommandRejectedException` for 400 and 404.
+- Added (`RIoT2.Connector.Sdk`): `OrchestratorEndpoint`, set from the configuration command's `apiBaseUrl`, and
+  `IConnectorTemplateObserver`, told about every complete set of templates (a failing observer is logged and the
+  others still run). `ConnectorMqttService` has a constructor with both; `AddRIoT2Connector` registers them.
+- Added (`RIoT2.Connector.Sdk`): `ConnectorTemplate.Type`, `Address`, `DeviceId`, `NodeId` and `Parameters`, read from
+  the orchestrator's template routes.
+
 ## [2.0.0] - 2026-11-03
 
 Core 2.0: the compatibility layers are removed ([I45](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/increments/phase-3-4.md#i45-core-20-remove-compatibility-layers-m), plans M1 step 6, M2 steps 2, 5 and 6,

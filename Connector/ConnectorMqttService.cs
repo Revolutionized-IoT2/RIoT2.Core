@@ -16,6 +16,8 @@ public sealed class ConnectorMqttService : IHostedService, IAsyncDisposable
     private readonly ConnectorOptions _options;
     private readonly ConnectorPipeline _pipeline;
     private readonly ITemplateCatalog _templates;
+    private readonly OrchestratorEndpoint _endpoint;
+    private readonly IReadOnlyList<IConnectorTemplateObserver> _observers;
     private readonly ILogger _logger;
     private readonly TimeProvider _time;
     private readonly MqttClient _client;
@@ -29,13 +31,25 @@ public sealed class ConnectorMqttService : IHostedService, IAsyncDisposable
         ILogger<ConnectorMqttService> logger, TimeProvider? time = null)
         : this(options, pipeline, templates, logger, time, client: null) { }
 
+    /// <summary>
+    /// With the endpoint the configuration command sets (<see cref="IRiot2CommandClient"/> reads it) and the observers
+    /// told about every new set of templates (Core 2.1.0).
+    /// </summary>
+    public ConnectorMqttService(ConnectorOptions options, ConnectorPipeline pipeline, ITemplateCatalog templates,
+        ILogger<ConnectorMqttService> logger, OrchestratorEndpoint endpoint, IEnumerable<IConnectorTemplateObserver> observers,
+        TimeProvider? time = null)
+        : this(options, pipeline, templates, logger, time, client: null, endpoint, observers) { }
+
     // Tests pass their own client.
     internal ConnectorMqttService(ConnectorOptions options, ConnectorPipeline pipeline, ITemplateCatalog templates,
-        ILogger<ConnectorMqttService> logger, TimeProvider? time, MqttClient? client)
+        ILogger<ConnectorMqttService> logger, TimeProvider? time, MqttClient? client,
+        OrchestratorEndpoint? endpoint = null, IEnumerable<IConnectorTemplateObserver>? observers = null)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
         _templates = templates ?? throw new ArgumentNullException(nameof(templates));
+        _endpoint = endpoint ?? new OrchestratorEndpoint();
+        _observers = observers?.ToList() ?? [];
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _time = time ?? TimeProvider.System;
         _onlineTopic = Constants.Get(options.Id, MqttTopic.NodeOnline);
@@ -132,12 +146,15 @@ public sealed class ConnectorMqttService : IHostedService, IAsyncDisposable
                     var command = Json.Deserialize<ConfigurationCommand>(message.Message);
                     if (string.IsNullOrWhiteSpace(command?.ApiBaseUrl))
                         throw new InvalidDataException("The configuration command has no apiBaseUrl.");
+                    _endpoint.BaseUrl = command.ApiBaseUrl;
                     await _templates.LoadAsync(command.ApiBaseUrl).ConfigureAwait(false);
                 }
                 catch (Exception error)
                 {
                     _logger.LogError(error, "Could not load the templates");
+                    return;
                 }
+                await NotifyObserversAsync().ConfigureAwait(false);
                 return;
             }
             if (MqttClient.IsMatch(message.Topic, _reportTopic))
@@ -148,6 +165,24 @@ public sealed class ConnectorMqttService : IHostedService, IAsyncDisposable
         catch (Exception error)
         {
             _logger.LogError(error, "Could not process the MQTT message on {Topic}", message.Topic);
+        }
+    }
+
+    private async Task NotifyObserversAsync()
+    {
+        var snapshot = _templates.Snapshot;
+        if (snapshot == null)
+            return;
+        foreach (var observer in _observers)
+        {
+            try
+            {
+                await observer.TemplatesLoadedAsync(snapshot, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception error)
+            {
+                _logger.LogError(error, "{Observer} could not process the new templates", observer.GetType().Name);
+            }
         }
     }
 
