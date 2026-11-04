@@ -6,6 +6,21 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-11-04
+
+Forecast values ([ADR 0019](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0019-forecasts-and-command-plans.md)):
+reports can carry values over time ahead, such as a weather forecast or day-ahead electricity prices, and workflows,
+language models and the UI can query them. Additive: existing golden files are unchanged.
+
+- Added (`Contracts`): `ForecastSeries` (`issuedAt`, `kind` `forecast` or `confirmed`, `unit`, `resolution`, `points`
+  of `ForecastPoint` `start`, `end`, `value`), read from a report value with `ForecastSeries.From` and checked with
+  `Validate` (time order, no overlaps, at most 1,000 points), written with `ToValue`.
+- Added (`Contracts`): `ForecastWindow.TryResolve` (`all`, `today`, `tomorrow` in a time zone, `next` hours, `range`) and
+  `ForecastWindow.Summarize`, which returns a `ForecastSummary`: the window's points, `min`, `max`, the time-weighted
+  `average`, `sum`, the `current` point, the lowest and highest N points, and `complete` (values cover the window).
+- Added (`Contracts`): `ValueSemantics.Forecast` (`forecast`) and `ValueSchema.Forecast(item)`, the schema a forecast
+  report template declares. `ForecastSeries` and `ForecastSummary` are contract root types, with the golden files
+  `messages/forecast-series.json` and `http/forecast-summary.json`.
 ## [2.2.0] - 2026-11-03
 
 Dashboard card kit and device capability discovery: the contract for the UI's new dashboard cards and for

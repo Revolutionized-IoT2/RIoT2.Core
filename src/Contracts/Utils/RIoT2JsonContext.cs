@@ -36,6 +36,8 @@ namespace RIoT2.Core.Utils
     [JsonSerializable(typeof(List<DeviceStatus>))]
     [JsonSerializable(typeof(PackageManifest))]
     [JsonSerializable(typeof(SecurityInfo))]
+    [JsonSerializable(typeof(ForecastSeries))]
+    [JsonSerializable(typeof(ForecastSummary))]
     public partial class RIoT2JsonContext : JsonSerializerContext
     {
     }

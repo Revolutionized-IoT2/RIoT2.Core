@@ -38,7 +38,8 @@ namespace RIoT2.Core.Models
         /// <c>humidity</c>, <c>pressure</c>, <c>illuminance</c>, <c>power</c>, <c>energy</c>, <c>voltage</c>,
         /// <c>current</c>, <c>battery</c>, <c>co2</c>, <c>motion</c>, <c>occupancy</c>, <c>contact</c>, <c>door</c>,
         /// <c>window</c>, <c>light</c>, <c>switch</c>, <c>brightness</c>, <c>color</c>, <c>colorTemperature</c>,
-        /// <c>image</c> or <c>text</c>. Readers ignore a meaning they don't know.
+        /// <c>image</c>, <c>text</c> or <c>forecast</c> (a <see cref="ForecastSeries"/>, 2.3.0). Readers ignore a meaning they
+        /// don't know.
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Semantic { get; set; }
@@ -94,6 +95,35 @@ namespace RIoT2.Core.Models
         /// <summary>An <c>array</c> value whose items are <paramref name="items"/>.</summary>
         public static ValueSchema ArrayOf(ValueSchema items) =>
             new ValueSchema { Type = "array", Items = items };
+
+        /// <summary>
+        /// A <see cref="ForecastSeries"/> value (Core 2.3.0) with the semantic <see cref="ValueSemantics.Forecast"/>; the
+        /// points' values are <paramref name="item"/>, a number by default, whose unit becomes the series' unit.
+        /// </summary>
+        public static ValueSchema Forecast(ValueSchema? item = null)
+        {
+            var value = item ?? Number();
+            return new ValueSchema
+            {
+                Type = "object",
+                Semantic = ValueSemantics.Forecast,
+                Unit = value.Unit,
+                Title = value.Title,
+                Properties = new Dictionary<string, ValueSchema>
+                {
+                    ["issuedAt"] = Text(),
+                    ["kind"] = new ValueSchema { Type = "string", Enum = new List<object> { ForecastSeries.ForecastKind, ForecastSeries.ConfirmedKind } },
+                    ["unit"] = Text(),
+                    ["resolution"] = Text(),
+                    ["points"] = ArrayOf(Entity(new Dictionary<string, ValueSchema>
+                    {
+                        ["start"] = Text(),
+                        ["end"] = Text(),
+                        ["value"] = value
+                    }))
+                }
+            };
+        }
     }
 
     /// <summary>Well-known values of <see cref="ValueSchema.Semantic"/> (Core 2.2.0). The set is open.</summary>
@@ -121,5 +151,8 @@ namespace RIoT2.Core.Models
         public const string ColorTemperature = "colorTemperature";
         public const string Image = "image";
         public const string Text = "text";
+
+        /// <summary>A <see cref="ForecastSeries"/>: values over time ahead (Core 2.3.0).</summary>
+        public const string Forecast = "forecast";
     }
 }

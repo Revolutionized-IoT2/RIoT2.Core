@@ -604,6 +604,187 @@
         }
       }
     },
+    "ForecastPoint": {
+      "title": "ForecastPoint",
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "end": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "start",
+        "end",
+        "value"
+      ]
+    },
+    "ForecastSeries": {
+      "title": "ForecastSeries",
+      "type": "object",
+      "properties": {
+        "issuedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "kind": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resolution": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "points": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/ForecastPoint"
+          }
+        }
+      },
+      "required": [
+        "issuedAt",
+        "kind",
+        "points"
+      ]
+    },
+    "ForecastSummary": {
+      "title": "ForecastSummary",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "issuedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "kind": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "from": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "to": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "min": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "max": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "average": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "sum": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "current": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ForecastPoint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "points": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/ForecastPoint"
+          }
+        },
+        "lowest": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/ForecastPoint"
+          }
+        },
+        "highest": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/ForecastPoint"
+          }
+        }
+      },
+      "required": [
+        "issuedAt",
+        "kind",
+        "from",
+        "to",
+        "complete",
+        "count",
+        "points",
+        "lowest",
+        "highest"
+      ]
+    },
     "MatterAttribute": {
       "title": "MatterAttribute",
       "type": "integer",
