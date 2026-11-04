@@ -99,4 +99,16 @@
         Integer = 2,
         Boolean = 3
     }
+
+    /// <summary>Whether a device is linked to its cloud account (<see cref="Models.DeviceAuthorizationStatus.State"/>, Core 2.4.0).</summary>
+    public enum DeviceAuthorizationState
+    {
+        /// <summary>The parameters the sign-in needs (for example a client id and secret) are missing.</summary>
+        NotConfigured = 0,
+        /// <summary>The device can be connected, but has no credentials yet.</summary>
+        NotConnected = 1,
+        Connected = 2,
+        /// <summary>The account refused the stored credentials or lacks a permission: connect again.</summary>
+        Expired = 3
+    }
 }

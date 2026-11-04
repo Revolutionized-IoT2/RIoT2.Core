@@ -1,0 +1,28 @@
+[
+  {
+    "id": "golden-device-netatmo",
+    "name": "Netatmo Security",
+    "message": "",
+    "state": 3,
+    "authorization": {
+      "state": 2,
+      "account": "user@example.com"
+    }
+  },
+  {
+    "id": "golden-device-weather",
+    "name": "Netatmo Weather",
+    "message": "Connect the device to Netatmo.",
+    "state": 3,
+    "authorization": {
+      "state": 1,
+      "message": "Connect the device to Netatmo."
+    }
+  },
+  {
+    "id": "golden-device-timer",
+    "name": "Timer",
+    "message": "",
+    "state": 3
+  }
+]

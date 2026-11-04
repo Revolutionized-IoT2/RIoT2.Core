@@ -18,13 +18,16 @@ namespace RIoT2.Core.Plugins
         /// The device's own template when it implements <see cref="IDeviceWithConfiguration"/>, with its Matter
         /// endpoints; otherwise a default template without parameters. For a device with typed options
         /// (<see cref="IDeviceWithOptions"/>) the template also gets <c>ParameterDefinitions</c>, and every
-        /// parameter key it lacks, with the default value or an empty one.
+        /// parameter key it lacks, with the default value or an empty one. A device that signs in to an account
+        /// (<see cref="IDeviceWithAuthorization"/>) gets its <c>Authorization</c> (Core 2.4.0).
         /// </summary>
         public static DeviceConfiguration Create(IDevice device)
         {
             var template = CreateTemplate(device);
             if (device is IDeviceWithOptions withOptions)
                 AddParameterDefinitions(template, DeviceOptions.Describe(withOptions.OptionsType));
+            if (device is IDeviceWithAuthorization authorizing)
+                template.Authorization = authorizing.Authorization;
             return template;
         }
 

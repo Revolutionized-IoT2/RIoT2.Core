@@ -35,5 +35,13 @@ namespace RIoT2.Core.Models
         /// </summary>
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         public List<DeviceParameterDefinition>? ParameterDefinitions { get; set; }
+
+        /// <summary>
+        /// Optional, templates only (Core 2.4.0): the device signs in to a cloud account, and the UI offers to connect
+        /// it. Set by the node for devices that implement <c>IDeviceWithAuthorization</c>; the orchestrator doesn't
+        /// store it. Omitted when <c>null</c>.
+        /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+        public DeviceAuthorization? Authorization { get; set; }
     }
 }

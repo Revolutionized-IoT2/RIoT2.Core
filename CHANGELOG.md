@@ -6,6 +6,30 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-11-04
+
+Device account sign-in: a device that signs in to a cloud account with an OAuth 2.0 authorization code (Netatmo
+first) can be connected from the UI instead of the user copying tokens. Additive: objects that don't set the new
+members serialize as before, and the existing golden files are unchanged.
+
+- Added (`Contracts`): `DeviceAuthorization` (`provider`, `setupUrl`, `instructions`) and
+  `DeviceConfiguration.Authorization`, template-only like `parameterDefinitions`: the orchestrator doesn't store it.
+- Added (`Contracts`): `DeviceAuthorizationStatus` (`state`, `account`, `message`), `DeviceAuthorizationState`
+  (`NotConfigured` 0, `NotConnected` 1, `Connected` 2, `Expired` 3) and `DeviceStatus.Authorization`. Omitted when
+  `null`.
+- Added (`Contracts`): `DeviceAuthorizationStart` (`redirectUri`, `state`), `DeviceAuthorizationStartResult`
+  (`authorizeUrl`) and `DeviceAuthorizationCompletion` (`code`, `redirectUri`), contract root types; and the URLs
+  `Constants.ApiDeviceAuthorizationStartUrl` (`/api/device/{id}/authorization/start`),
+  `ApiDeviceAuthorizationCompleteUrl` (`/api/device/{id}/authorization/complete`) on the node and
+  `ApiOAuthCallbackPath` (`/api/oauth/callback`) on the orchestrator.
+- Added (`Devices`): `IDeviceWithAuthorization` (`Authorization`, `GetAuthorizationStatus`, `BeginAuthorizationAsync`,
+  `CompleteAuthorizationAsync`), and `DeviceCalls.GetAuthorizationStatus`, `BeginAuthorizationAsync` and
+  `CompleteAuthorizationAsync`, through which hosts call it. `DeviceTemplates.Create` sets the template's
+  `Authorization`.
+- Changed (`Devices.Testing`): `PluginConformance` checks that a device implementing `IDeviceWithAuthorization` names
+  its provider and answers `GetAuthorizationStatus` before and after it is initialized. Plugins without such devices
+  are unaffected.
+
 ## [2.3.0] - 2026-11-04
 
 Forecast values ([ADR 0019](https://github.com/Revolutionized-IoT2/.github/blob/main/docs/adr/0019-forecasts-and-command-plans.md)):

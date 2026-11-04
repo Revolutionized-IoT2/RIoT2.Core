@@ -38,6 +38,9 @@ namespace RIoT2.Core.Utils
     [JsonSerializable(typeof(SecurityInfo))]
     [JsonSerializable(typeof(ForecastSeries))]
     [JsonSerializable(typeof(ForecastSummary))]
+    [JsonSerializable(typeof(DeviceAuthorizationStart))]
+    [JsonSerializable(typeof(DeviceAuthorizationStartResult))]
+    [JsonSerializable(typeof(DeviceAuthorizationCompletion))]
     public partial class RIoT2JsonContext : JsonSerializerContext
     {
     }

@@ -26,6 +26,15 @@ namespace RIoT2.Core
         /// <summary>The API endpoint for retrieving device status.</summary>
         public static readonly string ApiDeviceStateUrl = "/api/device/status";
 
+        /// <summary>The node endpoint template that starts a device's account sign-in (Core 2.4.0).</summary>
+        public static readonly string ApiDeviceAuthorizationStartUrl = "/api/device/{id}/authorization/start";
+
+        /// <summary>The node endpoint template that completes a device's account sign-in with the provider's code (Core 2.4.0).</summary>
+        public static readonly string ApiDeviceAuthorizationCompleteUrl = "/api/device/{id}/authorization/complete";
+
+        /// <summary>The orchestrator path an OAuth provider redirects the browser to after a device sign-in (Core 2.4.0).</summary>
+        public static readonly string ApiOAuthCallbackPath = "/api/oauth/callback";
+
         /// <summary>The API endpoint template for triggering a workflow.</summary>
         public static readonly string ApiWorkflowTriggerUrl = "/riot/trigger/{id}";
 

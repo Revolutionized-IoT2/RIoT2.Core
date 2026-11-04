@@ -62,7 +62,10 @@ namespace RIoT2.Core.Schema
             typeof(DeviceStatus),
             typeof(SecurityInfo),
             typeof(ForecastSeries),
-            typeof(ForecastSummary)
+            typeof(ForecastSummary),
+            typeof(DeviceAuthorizationStart),
+            typeof(DeviceAuthorizationStartResult),
+            typeof(DeviceAuthorizationCompletion)
         };
 
         // Written without nulls somewhere: the MQTT messages (Json.SerializeIgnoreNulls) and the

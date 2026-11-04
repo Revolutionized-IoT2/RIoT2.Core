@@ -389,6 +389,132 @@
         }
       }
     },
+    "DeviceAuthorization": {
+      "title": "DeviceAuthorization",
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "setupUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "instructions": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "provider"
+      ]
+    },
+    "DeviceAuthorizationCompletion": {
+      "title": "DeviceAuthorizationCompletion",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "redirectUri": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "redirectUri"
+      ]
+    },
+    "DeviceAuthorizationStart": {
+      "title": "DeviceAuthorizationStart",
+      "type": "object",
+      "properties": {
+        "redirectUri": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "state": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "redirectUri",
+        "state"
+      ]
+    },
+    "DeviceAuthorizationStartResult": {
+      "title": "DeviceAuthorizationStartResult",
+      "type": "object",
+      "properties": {
+        "authorizeUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "authorizeUrl"
+      ]
+    },
+    "DeviceAuthorizationState": {
+      "title": "DeviceAuthorizationState",
+      "type": "integer",
+      "enum": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "x-enumNames": [
+        "NotConfigured",
+        "NotConnected",
+        "Connected",
+        "Expired"
+      ]
+    },
+    "DeviceAuthorizationStatus": {
+      "title": "DeviceAuthorizationStatus",
+      "type": "object",
+      "properties": {
+        "state": {
+          "$ref": "#/$defs/DeviceAuthorizationState"
+        },
+        "account": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "message": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "state"
+      ]
+    },
     "DeviceConfiguration": {
       "title": "DeviceConfiguration",
       "type": "object",
@@ -467,6 +593,16 @@
           "items": {
             "$ref": "#/$defs/DeviceParameterDefinition"
           }
+        },
+        "authorization": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceAuthorization"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -577,6 +713,16 @@
         },
         "state": {
           "$ref": "#/$defs/DeviceState"
+        },
+        "authorization": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceAuthorizationStatus"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [

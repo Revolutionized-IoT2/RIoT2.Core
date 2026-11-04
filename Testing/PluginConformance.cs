@@ -18,7 +18,9 @@ namespace RIoT2.Core.Devices.Testing;
 /// schedule is a valid Quartz cron expression;</item>
 /// <item>initialized with its own template, the device reads only parameters the template declares
 /// (recorded for devices derived from <see cref="DeviceBase"/>);</item>
-/// <item>unless marked <see cref="RequiresHardwareAttribute"/>, the device initializes, starts and stops.</item>
+/// <item>unless marked <see cref="RequiresHardwareAttribute"/>, the device initializes, starts and stops;</item>
+/// <item>a device that signs in to an account (<see cref="IDeviceWithAuthorization"/>) names its provider, and
+/// answers <c>GetAuthorizationStatus</c> before and after it is initialized (Core 2.4.0).</item>
 /// </list>
 /// </summary>
 public static class PluginConformance
@@ -131,6 +133,12 @@ public static class PluginConformance
             failures.Add($"{name}: the template has no name.");
         if (!string.IsNullOrEmpty(template.RefreshSchedule) && !CronExpression.IsValidExpression(template.RefreshSchedule))
             failures.Add($"{name}: the template's refresh schedule '{template.RefreshSchedule}' isn't a valid Quartz cron expression.");
+        if (device is IDeviceWithAuthorization)
+        {
+            if (string.IsNullOrWhiteSpace(template.Authorization?.Provider))
+                failures.Add($"{name}: signs in to an account, but its Authorization names no provider.");
+            CheckAuthorizationStatus(device, name, "before Initialize", failures);
+        }
 
         var configuration = DeviceConfigurationBuilder.FromTemplate(template).WithId($"conformance-{index}").Build();
         var reads = new List<string>();
@@ -157,6 +165,8 @@ public static class PluginConformance
 
             if (initialized && !requiresHardware)
                 CheckStartStop(device, name, failures);
+            if (device is IDeviceWithAuthorization)
+                CheckAuthorizationStatus(device, name, "after Initialize", failures);
         }
         finally
         {
@@ -170,6 +180,20 @@ public static class PluginConformance
             undeclared = [.. reads.Distinct(StringComparer.Ordinal).Where(key => !declared.Contains(key))];
         foreach (var key in undeclared)
             failures.Add($"{name}: reads parameter '{key}', but its configuration template doesn't declare it.");
+    }
+
+    // The node lists the status with every device's state, so it must answer at any time, from what the device knows.
+    private static void CheckAuthorizationStatus(IDevice device, string name, string when, List<string> failures)
+    {
+        try
+        {
+            if (((IDeviceWithAuthorization)device).GetAuthorizationStatus() == null)
+                failures.Add($"{name}: GetAuthorizationStatus returned null {when}.");
+        }
+        catch (Exception error)
+        {
+            failures.Add($"{name}: GetAuthorizationStatus failed {when}: {Describe(error)}. It must answer from what the device knows.");
+        }
     }
 
     private static void CheckStartStop(IDevice device, string name, List<string> failures)
