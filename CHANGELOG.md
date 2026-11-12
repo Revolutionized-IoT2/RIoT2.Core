@@ -6,6 +6,10 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+- Fixed (`Mqtt`): `MqttClient.StopAsync` threw `MqttProtocolViolationException` when the connection failed
+  while it published the last will (MQTTnet fails every pending request with the receive loop's error). It now stops
+  the client as for a dropped connection, and the broker publishes the last will.
+
 ## [2.4.0] - 2026-11-04
 
 Device account sign-in: a device that signs in to a cloud account with an OAuth 2.0 authorization code (Netatmo

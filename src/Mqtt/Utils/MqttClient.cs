@@ -288,9 +288,10 @@ namespace RIoT2.Core.Utils
                         }
                     }
                 }
-                catch (Exception x) when (x is MqttCommunicationException || x is OperationCanceledException)
+                catch (Exception x) when (x is MqttCommunicationException || x is MqttProtocolViolationException || x is OperationCanceledException)
                 {
                     // The connection dropped or the broker didn't answer, so the broker publishes the last will.
+                    // MQTTnet fails every pending request with the receive loop's error, such as a protocol violation.
                 }
                 finally
                 {
