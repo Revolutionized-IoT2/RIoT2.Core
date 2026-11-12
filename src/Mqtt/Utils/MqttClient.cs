@@ -310,7 +310,10 @@ namespace RIoT2.Core.Utils
         {
             _received?.Writer.TryComplete();
             var worker = _receiveWorker;
-            if (await Task.WhenAny(worker, Task.Delay(StopTimeout)).ConfigureAwait(false) != worker)
+            using var timeout = new CancellationTokenSource();
+            var completed = await Task.WhenAny(worker, Task.Delay(StopTimeout, timeout.Token)).ConfigureAwait(false);
+            timeout.Cancel();
+            if (completed != worker)
                 _logger?.LogWarning("MQTT client {ClientId}: a message handler was still running {Seconds} s after the stop",
                     _settings.ClientId, StopTimeout.TotalSeconds);
         }
