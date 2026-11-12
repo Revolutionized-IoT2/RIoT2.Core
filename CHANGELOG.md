@@ -9,6 +9,8 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 - Fixed (`Mqtt`): `MqttClient.StopAsync` threw `MqttProtocolViolationException` when the connection failed
   while it published the last will (MQTTnet fails every pending request with the receive loop's error). It now stops
   the client as for a dropped connection, and the broker publishes the last will.
+- Fixed (`Mqtt`): `MqttClient.StopAsync` cancels its stop-timeout timer once the receive worker ends (CA2027,
+  reported by the .NET 11 SDK's analyzers).
 
 ## [2.4.0] - 2026-11-04
 
