@@ -54,7 +54,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          global-json-file: global.json
       - name: Generate, test and pack a plugin from the template
         run: pwsh tools/verify-plugin-template.ps1
 
