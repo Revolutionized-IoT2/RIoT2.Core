@@ -6,6 +6,17 @@ the NuGet package to GitHub Packages. Versions without a tag were only packed lo
 
 ## [Unreleased]
 
+Planned as 2.4.2.
+
+- Fixed (`Mqtt`): `MqttClient.ConnectedAsync` handlers ran before the broker had acknowledged the client's
+  subscriptions, and on the first connection MQTTnet 4.3's managed client even published their messages before it
+  subscribed. A service that announces itself on connect could miss the answer: the orchestrator could miss a
+  connector's or node's prompt presence, and a node the configuration command for its first presence. The handlers
+  now run after the subscriptions' SUBACK (MQTTnet's `SubscriptionsChangedAsync`), on every connection; at once for
+  a client without subscriptions, and after a logged error when subscribing fails.
+
+## [2.4.1] - 2026-11-12
+
 - Fixed (`Mqtt`): `MqttClient.StopAsync` threw `MqttProtocolViolationException` when the connection failed
   while it published the last will (MQTTnet fails every pending request with the receive loop's error). It now stops
   the client as for a dropped connection, and the broker publishes the last will.

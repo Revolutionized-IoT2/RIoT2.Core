@@ -54,6 +54,8 @@ namespace RIoT2.Core.Utils
         private readonly ILogger? _logger;
         private readonly SemaphoreSlim _stopGate = new SemaphoreSlim(1, 1);
         private IManagedMqttClient? _client;
+        private bool _hasSubscriptions;
+        private int _announcePending;
         private Channel<MqttEventArgs>? _received;
         private Task _receiveWorker = Task.CompletedTask;
         private string _willTopic;
@@ -76,7 +78,10 @@ namespace RIoT2.Core.Utils
         /// <summary>Raised for every received message and awaited before the next one is handled.</summary>
         public event Func<MqttEventArgs, Task>? MessageReceivedAsync;
 
-        /// <summary>Raised after every (re)connect, before queued messages are sent.</summary>
+        /// <summary>
+        /// Raised after every (re)connect, once the broker has acknowledged the subscriptions and before queued messages
+        /// are sent, so an answer to what a handler publishes can't arrive before the client listens for it.
+        /// </summary>
         public event Func<Task>? ConnectedAsync;
 
         /// <summary>Raised with <c>true</c> when the connection comes up and <c>false</c> when it drops.</summary>
@@ -223,9 +228,12 @@ namespace RIoT2.Core.Utils
             client.ConnectedAsync += OnConnectedAsync;
             client.DisconnectedAsync += OnDisconnectedAsync;
             client.ApplicationMessageSkippedAsync += OnSkippedAsync;
+            client.SubscriptionsChangedAsync += OnSubscriptionsChangedAsync;
+            client.SynchronizingSubscriptionsFailedAsync += OnSubscribingFailedAsync;
             Track(true);
 
-            if (filters.Count > 0)
+            _hasSubscriptions = filters.Count > 0;
+            if (_hasSubscriptions)
                 await client.SubscribeAsync(filters).ConfigureAwait(false);
             await client.StartAsync(options).ConfigureAwait(false);
         }
@@ -366,11 +374,40 @@ namespace RIoT2.Core.Utils
             _logger?.LogError(error, "MQTT client {ClientId}: a handler failed for a message on {Topic}; the next messages are still handled",
                 _settings.ClientId, topic);
 
+        // The ConnectedAsync handlers announce the service, and the answers come on its subscriptions, so they run only
+        // once the broker has acknowledged them. MQTTnet 4.3's managed client raises its connected event first, and on
+        // the first connection it even starts publishing before it subscribes; it raises SubscriptionsChangedAsync after
+        // every SUBACK, also when it subscribes again after a reconnect.
         private async Task OnConnectedAsync(MqttClientConnectedEventArgs _)
         {
             if (Interlocked.Increment(ref _connects) > 1)
                 ReconnectCounter.Add(1, new KeyValuePair<string, object?>("client", _settings.ClientId));
             SetConnected(true);
+            if (_hasSubscriptions)
+                Interlocked.Exchange(ref _announcePending, 1);
+            else
+                await RunConnectedHandlersAsync().ConfigureAwait(false);
+        }
+
+        private async Task OnSubscriptionsChangedAsync(SubscriptionsChangedEventArgs e)
+        {
+            foreach (var item in e.SubscribeResult.SelectMany(r => r.Items).Where(i => i.ResultCode > MqttClientSubscribeResultCode.GrantedQoS2))
+                _logger?.LogError("MQTT client {ClientId}: the broker refused the subscription to {Topic}: {Code}",
+                    _settings.ClientId, item.TopicFilter.Topic, item.ResultCode);
+            if (e.SubscribeResult.Count > 0 && Interlocked.Exchange(ref _announcePending, 0) == 1)
+                await RunConnectedHandlersAsync().ConfigureAwait(false);
+        }
+
+        // The service announces itself anyway: without its subscriptions it still publishes, as before.
+        private async Task OnSubscribingFailedAsync(ManagedProcessFailedEventArgs e)
+        {
+            _logger?.LogError(e.Exception, "MQTT client {ClientId}: could not subscribe; it retries after the next reconnect", _settings.ClientId);
+            if (Interlocked.Exchange(ref _announcePending, 0) == 1)
+                await RunConnectedHandlersAsync().ConfigureAwait(false);
+        }
+
+        private async Task RunConnectedHandlersAsync()
+        {
             var handlers = ConnectedAsync;
             if (handlers == null)
                 return;
